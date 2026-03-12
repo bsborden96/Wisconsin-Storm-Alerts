@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Wisconsin Storm Radar</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+}
+
+#map{
+height:100vh;
+width:100%;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+var map = L.map('map').setView([44.5,-89.5],7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'OpenStreetMap'
+}).addTo(map);
+
+
+// Radar layer
+var radar = L.tileLayer(
+'https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png',
+{opacity:0.6}
+);
+
+radar.addTo(map);
+
+
+// NWS alerts layer
+
+fetch("https://api.weather.gov/alerts/active?area=WI")
+.then(response => response.json())
+.then(data => {
+
+data.features.forEach(alert => {
+
+if(alert.geometry){
+
+var polygon = L.geoJSON(alert.geometry,{
+style: function(){
+
+let color = "yellow"
+
+if(alert.properties.event.includes("Tornado")) color="red"
+if(alert.properties.event.includes("Severe")) color="orange"
+
+return {
+color:color,
+weight:2,
+fillOpacity:0.3
+}
+
+}
+
+}).addTo(map)
+
+
+polygon.bindPopup(
+"<b>"+alert.properties.event+"</b><br>"+
+alert.properties.areaDesc
+)
+
+}
+
+})
+
+})
+
+</script>
+
+</body>
+</html>
