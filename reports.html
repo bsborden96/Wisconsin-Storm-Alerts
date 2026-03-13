@@ -63,16 +63,12 @@ margin-top:4px;
 <body>
 
 <header>
-
 Storm Reports
-
 </header>
 
 <nav>
-
 <a href="index.html">Home</a>
 <a href="reports.html">Storm Reports</a>
-
 </nav>
 
 <div class="section">
@@ -87,7 +83,7 @@ Storm Reports
 let userLat
 let userLon
 
-/* DISTANCE CALCULATION */
+/* DISTANCE FUNCTION */
 
 function distance(lat1,lon1,lat2,lon2){
 
@@ -113,30 +109,37 @@ return km*0.621371
 
 async function loadReports(){
 
-let response=await fetch("https://www.spc.noaa.gov/climo/reports/today.json")
+try{
 
-let data=await response.json()
+let response=await fetch("https://www.spc.noaa.gov/climo/reports/today_wind.csv")
+
+let text=await response.text()
+
+let rows=text.split("\n")
 
 let html=""
 
-data.forEach(report=>{
+rows.forEach(row=>{
 
-let dist=distance(userLat,userLon,report.lat,report.lon)
+let cols=row.split(",")
 
-if(dist<100){
+let lat=parseFloat(cols[7])
+let lon=parseFloat(cols[8])
+let location=cols[5]
+let time=cols[0]
 
-let type=""
+if(!lat || !lon) return
 
-if(report.type==="T") type="🌪 Tornado"
-if(report.type==="H") type="🧊 Hail"
-if(report.type==="W") type="💨 Wind"
+let dist=distance(userLat,userLon,lat,lon)
+
+if(dist<150){
 
 html+=`
 <div class="reportCard">
-<b>${type}</b><br>
-${report.location}<br>
+💨 Wind Report<br>
+${location}<br>
 <div class="distance">${Math.round(dist)} miles away</div>
-${report.time}
+${time}
 </div>
 `
 
@@ -150,9 +153,15 @@ html="No nearby storm reports."
 
 document.getElementById("reports").innerHTML=html
 
+}catch{
+
+document.getElementById("reports").innerHTML="Unable to load storm reports."
+
 }
 
-/* GET USER LOCATION */
+}
+
+/* GET LOCATION */
 
 navigator.geolocation.getCurrentPosition(position=>{
 
