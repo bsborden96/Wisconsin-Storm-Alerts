@@ -9,7 +9,8 @@
 
 <style>
 
-body{
+html,body{
+height:100%;
 margin:0;
 font-family:Arial;
 background:#0a0f1c;
@@ -37,7 +38,7 @@ white-space:nowrap;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 35s linear infinite;
+animation:scrollTicker 40s linear infinite;
 }
 
 #tickerText{
@@ -55,11 +56,12 @@ color:#ffcc00;
 
 #layout{
 display:flex;
-height:calc(100vh - 90px);
+height:calc(100% - 90px);
 }
 
 #map{
 flex:2;
+height:100%;
 background:#0a0f1c;
 }
 
@@ -70,20 +72,6 @@ padding:20px;
 overflow:auto;
 border-left:2px solid #333;
 }
-
-/* COUNTY COLORS */
-
-.normal{
-fill:#0a0f1c;
-stroke:#888;
-}
-
-.red{fill:#8b0000;}
-.orange{fill:#ff7b00;}
-.blue{fill:#0055aa;}
-.yellow{fill:#999900;}
-.purple{fill:#660099;}
-.teal{fill:#008080;}
 
 </style>
 
@@ -114,12 +102,10 @@ stroke:#888;
 
 <script>
 
-/* CREATE MAP */
-
 var map = L.map('map',{
 zoomControl:false,
 attributionControl:false
-})
+}).setView([44.5,-89.5],7)
 
 let countyAlerts={}
 let countiesLayer
@@ -146,7 +132,7 @@ return "📢"
 
 }
 
-/* LOAD COUNTY MAP */
+/* LOAD WI COUNTY MAP */
 
 fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
 
@@ -160,7 +146,7 @@ style:{
 color:"#888",
 weight:1,
 fillColor:"#0a0f1c",
-fillOpacity:0.7
+fillOpacity:0.8
 },
 
 onEachFeature:function(feature,layer){
@@ -176,6 +162,7 @@ document.getElementById("alertText").innerHTML=
 "<b>"+name+" County</b><br>No active alerts."
 
 return
+
 }
 
 let html="<b>"+name+" County</b><br><br>"
@@ -198,13 +185,18 @@ document.getElementById("alertText").innerHTML=html
 
 }).addTo(map)
 
-/* IMPORTANT: FIT MAP TO WISCONSIN */
+/* FIT TO WISCONSIN */
 
 map.fitBounds(countiesLayer.getBounds())
 
-/* LOAD ALERTS */
+/* FORCE RENDER */
+
+setTimeout(()=>{
+map.invalidateSize()
+},200)
 
 loadAlerts()
+
 setInterval(loadAlerts,60000)
 
 })
@@ -257,8 +249,7 @@ let name=layer.feature.properties.name
 if(countyAlerts[name]){
 
 layer.setStyle({
-fillColor:getColor(countyAlerts[name][0].event),
-fillOpacity:0.8
+fillColor:getColor(countyAlerts[name][0].event)
 })
 
 }
