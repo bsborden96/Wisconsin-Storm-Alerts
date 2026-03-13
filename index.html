@@ -45,6 +45,12 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
+.locationCity{
+font-size:18px;
+opacity:0.8;
+margin-top:6px;
+}
+
 </style>
 </head>
 
@@ -54,7 +60,7 @@ background:#1f3b1f;
 
 <div class="section">
 
-<h2>Your County</h2>
+<h2>Your Location</h2>
 <div id="county" class="card">Detecting your location...</div>
 
 </div>
@@ -69,6 +75,7 @@ background:#1f3b1f;
 <script>
 
 let userCounty=""
+let userCity=""
 
 /* DETECT LOCATION */
 
@@ -87,6 +94,12 @@ let lon=position.coords.longitude
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
+/* GET CITY */
+
+userCity=data.properties.relativeLocation.properties.city
+
+/* GET COUNTY */
+
 let countyURL=data.properties.county
 
 let countyRes=await fetch(countyURL)
@@ -95,7 +108,7 @@ let countyData=await countyRes.json()
 userCounty=countyData.properties.name.replace(" County","")
 
 document.getElementById("county").innerHTML=
-"<b>"+userCounty+" County</b>"
+"<b>"+userCounty+" County</b><div class='locationCity'>"+userCity+"</div>"
 
 loadAlerts()
 
