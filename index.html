@@ -12,18 +12,17 @@ background:#0a0f1c;
 color:white;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
-padding:15px;
+padding:16px;
 text-align:center;
 font-size:26px;
 font-weight:bold;
-transition:0.3s;
 }
 
-header.severe{
-background:#7a0000;
-}
+/* NAV */
 
 nav{
 background:#0f1424;
@@ -42,126 +41,78 @@ nav a:hover{
 color:#ffcc00;
 }
 
-#statusBar{
-text-align:center;
-padding:6px;
-font-size:14px;
-color:#ccc;
-}
-
-/* WARNING BANNER */
-
-#warningBanner{
-background:#4a0000;
-padding:10px;
-display:none;
-border-bottom:2px solid #300;
-}
-
-#warningTitle{
-font-weight:bold;
-margin-bottom:8px;
-}
-
-#warningList{
-display:flex;
-flex-wrap:wrap;
-gap:8px;
-}
-
-.warningItem{
-background:#7a0000;
-padding:6px 10px;
-border-radius:6px;
-font-size:14px;
-}
-
-/* TICKER */
-
-#tickerWrapper{
-background:#111;
-border-top:2px solid #444;
-border-bottom:2px solid #444;
-overflow:hidden;
-}
-
-#tickerTrack{
-display:inline-block;
-white-space:nowrap;
-animation:scrollTicker 240s linear infinite;
-}
-
-#ticker{
-padding:10px;
-color:#ffcc00;
-font-weight:bold;
-}
-
-@keyframes scrollTicker{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
-
 /* PANELS */
 
-.panel{
-background:#111;
-margin:12px;
-padding:15px;
-border-radius:8px;
+.section{
+max-width:1000px;
+margin:auto;
+padding:20px;
+}
+
+h2{
+margin-top:0;
+}
+
+/* WARNING CARDS */
+
+#warnings{
+display:flex;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.warningCard{
+background:#7a0000;
+padding:12px;
+border-radius:6px;
+min-width:220px;
 }
 
 /* COUNTY GRID */
 
 #countyGrid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
 gap:8px;
 }
 
 .county{
 padding:10px;
 border-radius:6px;
-cursor:pointer;
 text-align:center;
+cursor:pointer;
 font-weight:bold;
-position:relative;
 }
-
-.county:hover::after{
-content:attr(data-alerts);
-position:absolute;
-bottom:110%;
-left:50%;
-transform:translateX(-50%);
-background:#000;
-padding:4px 8px;
-font-size:12px;
-border-radius:4px;
-white-space:nowrap;
-}
-
-/* ALERT COLORS */
 
 .green{background:#1f3b1f;}
 .orange{background:#8a4b00;}
-.teal{background:#004f4f;}
+.red{background:#7a0000;}
+.gray{background:#333}
 
-.red{
-background:#7a0000;
-animation:flashRed 1s infinite;
+/* FLASH TORNADO */
+
+.flash{
+animation:flash 1s infinite;
 }
 
-@keyframes flashRed{
-0%{background:#7a0000;}
-50%{background:#2a0000;}
-100%{background:#7a0000;}
+@keyframes flash{
+0%{background:#7a0000}
+50%{background:#2a0000}
+100%{background:#7a0000}
 }
 
-#countySelect{
-padding:8px;
+/* DETAILS */
+
+#details{
+background:#111;
+padding:15px;
+border-radius:6px;
+margin-top:20px;
+}
+
+select{
+padding:6px;
 margin-bottom:10px;
-font-size:14px;
 }
 
 </style>
@@ -169,54 +120,52 @@ font-size:14px;
 
 <body>
 
-<header id="header">Wisconsin Storm Alerts</header>
+<header>Wisconsin Storm Alerts</header>
 
 <nav>
 <a href="index.html">Alerts</a>
 <a href="reports.html">Storm Reports</a>
 </nav>
 
-<div id="statusBar">
-Alerts: <span id="alertCount">0</span> |
-Last Updated: <span id="lastUpdated">--</span>
+<div class="section">
+
+<h2>Active Warnings</h2>
+
+<div id="warnings">
+Loading alerts...
 </div>
 
-<div id="warningBanner">
-<div id="warningTitle">⚠ ACTIVE WARNINGS</div>
-<div id="warningList"></div>
 </div>
 
-<div id="tickerWrapper">
-<div id="tickerTrack">
-<div id="ticker">Loading Wisconsin alerts...</div>
-</div>
-</div>
+<div class="section">
 
-<div class="panel">
-
-<h2>Your County Alerts</h2>
+<h2>Your County</h2>
 
 <select id="countySelect"></select>
 
 <div id="localAlerts">
-Select a county to see local alerts.
+Select your county to view alerts.
 </div>
 
 </div>
 
-<div class="panel">
+<div class="section">
+
 <h2>County Status</h2>
+
 <div id="countyGrid"></div>
+
 </div>
 
-<div class="panel">
+<div class="section">
+
 <h2>Alert Details</h2>
-<div id="alertText">Click a county to view alerts.</div>
+
+<div id="details">
+Click a county to see alert information.
 </div>
 
-<audio id="alertSound">
-<source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">
-</audio>
+</div>
 
 <script>
 
@@ -239,21 +188,23 @@ const grid=document.getElementById("countyGrid")
 const countySelect=document.getElementById("countySelect")
 
 let countyAlerts={}
-let previousAlerts=0
+
+/* BUILD COUNTY GRID */
 
 counties.forEach(c=>{
 
 let div=document.createElement("div")
-div.className="county green"
+div.className="county gray"
 div.id=c
 div.innerText=c
-div.dataset.alerts="No alerts"
 div.onclick=()=>showCounty(c)
+
 grid.appendChild(div)
 
 let option=document.createElement("option")
 option.value=c
 option.text=c+" County"
+
 countySelect.appendChild(option)
 
 })
@@ -265,7 +216,7 @@ function showCounty(name){
 let alerts=countyAlerts[name]
 
 if(!alerts){
-document.getElementById("alertText").innerHTML=name+" County<br>No active alerts."
+document.getElementById("details").innerHTML="No alerts for "+name+" County."
 return
 }
 
@@ -275,7 +226,8 @@ alerts.forEach(a=>{
 html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
 })
 
-document.getElementById("alertText").innerHTML=html
+document.getElementById("details").innerHTML=html
+
 }
 
 function updateLocalAlerts(){
@@ -284,10 +236,7 @@ let county=countySelect.value
 let alerts=countyAlerts[county]
 
 if(!alerts){
-
-document.getElementById("localAlerts").innerHTML=
-"No active alerts for "+county+" County."
-
+document.getElementById("localAlerts").innerHTML="No alerts for "+county+" County."
 return
 }
 
@@ -298,6 +247,7 @@ html+="<b>"+a.event+"</b><br>"
 })
 
 document.getElementById("localAlerts").innerHTML=html
+
 }
 
 async function loadAlerts(){
@@ -307,13 +257,10 @@ countyAlerts={}
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
 let data=await response.json()
 
-let ticker=[]
-let warnings=[]
-let count=0
+let warningsHTML=""
 
 counties.forEach(c=>{
-document.getElementById(c).className="county green"
-document.getElementById(c).dataset.alerts="No alerts"
+document.getElementById(c).className="county gray"
 })
 
 data.features.forEach(alert=>{
@@ -328,12 +275,6 @@ let county=a.trim()
 
 if(counties.includes(county)){
 
-count++
-
-ticker.push(event+" - "+county)
-
-if(event.includes("Warning")) warnings.push(event+" - "+county)
-
 if(!countyAlerts[county]) countyAlerts[county]=[]
 
 countyAlerts[county].push({
@@ -343,55 +284,35 @@ description:desc
 
 let box=document.getElementById(county)
 
-box.dataset.alerts=event
-
 if(event.includes("Tornado Warning")){
-box.className="county red"
-}else if(event.includes("Severe Thunderstorm Warning")){
+box.className="county red flash"
+}
+else if(event.includes("Severe Thunderstorm Warning")){
 box.className="county orange"
-}else{
-box.className="county teal"
+}
+else{
+box.className="county green"
 }
 
 }
 
 })
 
-})
+if(event.includes("Warning")){
 
-document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alerts"
-
-document.getElementById("alertCount").innerText=count
-document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
-
-let banner=document.getElementById("warningBanner")
-
-if(warnings.length){
-
-banner.style.display="block"
-
-let listHTML=""
-
-warnings.forEach(w=>{
-listHTML+=`<div class="warningItem">${w}</div>`
-})
-
-document.getElementById("warningList").innerHTML=listHTML
-
-document.getElementById("header").classList.add("severe")
-
-}else{
-
-banner.style.display="none"
-document.getElementById("header").classList.remove("severe")
+warningsHTML+=`
+<div class="warningCard">
+${event}<br>
+${alert.properties.areaDesc}
+</div>
+`
 
 }
 
-if(count>previousAlerts){
-document.getElementById("alertSound").play()
-}
+})
 
-previousAlerts=count
+document.getElementById("warnings").innerHTML=
+warningsHTML || "No active warnings."
 
 updateLocalAlerts()
 
