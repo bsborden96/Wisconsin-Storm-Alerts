@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Wisconsin Storm Radar</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+}
+
+#ticker{
+background:#111;
+color:#ffcc00;
+padding:8px;
+font-weight:bold;
+white-space:nowrap;
+overflow:hidden;
+}
+
+#navbar{
+background:#151c2c;
+padding:10px;
+display:flex;
+gap:20px;
+}
+
+#navbar a{
+color:white;
+text-decoration:none;
+font-weight:bold;
+}
+
+#controls{
+padding:10px;
+text-align:center;
+}
+
+button,select{
+padding:8px;
+margin:5px;
+background:#2c3e50;
+border:none;
+color:white;
+border-radius:5px;
+cursor:pointer;
+}
+
+button:hover{
+background:#e74c3c;
+}
+
+#map{
+height:85vh;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="ticker">
+Loading Wisconsin alerts...
+</div>
+
+<div id="navbar">
+<a href="#">Home</a>
+<a href="#">Radar</a>
+<a href="#">Alerts</a>
+<a href="#">About</a>
+</div>
+
+<div id="controls">
+
+<select id="radarSite">
+<option value="KMKX">Milwaukee Radar (KMKX)</option>
+<option value="KGRB">Green Bay Radar (KGRB)</option>
+<option value="KARX">La Crosse Radar (KARX)</option>
+<option value="KDLH">Duluth Radar (KDLH)</option>
+</select>
+
+<button onclick="setRadar('N0Q')">Reflectivity</button>
+<button onclick="setRadar('N0U')">Velocity</button>
+<button onclick="setRadar('N0C')">Correlation</button>
+
+<button onclick="toggleReports()">Storm Reports</button>
+
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+var map = L.map('map').setView([44.5,-89.5],7)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'© OpenStreetMap'
+}).addTo(map)
+
+var radarLayer
+var currentProduct="N0Q"
+
+function setRadar(product){
+
+currentProduct = product
+loadRadar()
+
+}
+
+function loadRadar(){
+
+let site = document.getElementById("radarSite").value
+
+if(radarLayer){
+map.removeLayer(radarLayer)
+}
+
+let url = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::"+site+"-"+currentProduct+"/{z}/{x}/{y}.png"
+
+radarLayer = L.tileLayer(url,{
+opacity:0.75,
+attribution:"NOAA NEXRAD"
+})
+
+radarLayer.addTo(map)
+
+}
+
+document.getElementById("radarSite").addEventListener("change",loadRadar)
+
+loadRadar()
+
+
+
+
+// ALERT TICKER
+
+fetch("https://api.weather.gov/alerts/active?area=WI")
+.then(r=>r.json())
+.then(data=>{
+
+let alerts=data.features.map(a=>a.properties.event+" - "+a.properties.areaDesc)
+
+document.getElementById("ticker").innerText=alerts.join("   |   ")
+
+})
+
+
+
+
+// WARNING POLYGONS
+
+fetch("https://api.weather.gov/alerts/active?area=WI")
+.then(r=>r.json())
+.then(data=>{
+
+data.features.forEach(alert=>{
+
+if(alert.geometry){
+
+let color="yellow"
+
+if(alert.properties.event.includes("Tornado")) color="red"
+if(alert.properties.event.includes("Severe")) color="orange"
+
+L.geoJSON(alert.geometry,{
+style:{
+color:color,
+weight:2,
+fillOpacity:0.25
+}
+}).addTo(map)
+
+}
+
+})
+
+})
+
+
+
+
+// STORM REPORTS
+
+var reportsLayer
+var reportsVisible=false
+
+function toggleReports(){
+
+if(reportsVisible){
+
+map.removeLayer(reportsLayer)
+reportsVisible=false
+return
+
+}
+
+fetch("https://mesonet.agron.iastate.edu/geojson/lsr.php?sts=1")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+reportsLayer=L.geoJSON(data,{
+pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{
+radius:6,
+color:"white",
+fillColor:"cyan",
+fillOpacity:0.8
+})
+}).addTo(map)
+
+reportsVisible=true
+
+})
+
+}
+
+</script>
+
+</body>
+
+</html>
