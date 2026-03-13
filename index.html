@@ -22,8 +22,6 @@ font-size:26px;
 font-weight:bold;
 }
 
-/* NAV */
-
 nav{
 background:#0f1424;
 text-align:center;
@@ -41,16 +39,10 @@ nav a:hover{
 color:#ffcc00;
 }
 
-/* SECTIONS */
-
 .section{
-max-width:1000px;
+max-width:1100px;
 margin:auto;
 padding:20px;
-}
-
-h2{
-margin-top:0;
 }
 
 /* WARNING CARDS */
@@ -71,9 +63,9 @@ border-radius:6px;
 
 #countyGrid{
 display:grid;
-grid-template-columns:repeat(5,1fr);
+grid-template-columns:repeat(9,1fr);
 gap:6px;
-max-width:500px;
+max-width:700px;
 margin:auto;
 }
 
@@ -83,6 +75,7 @@ border-radius:6px;
 text-align:center;
 cursor:pointer;
 font-weight:bold;
+font-size:13px;
 }
 
 .gray{background:#333}
@@ -126,31 +119,21 @@ margin-top:20px;
 <div class="section">
 
 <h2>Active Warnings</h2>
-
-<div id="warnings">
-Loading alerts...
-</div>
+<div id="warnings">Loading alerts...</div>
 
 </div>
 
 <div class="section">
 
 <h2>Your County</h2>
-
-<div id="userCounty">
-Detecting your location...
-</div>
-
-<div id="localAlerts">
-Checking alerts...
-</div>
+<div id="userCounty">Detecting your location...</div>
+<div id="localAlerts">Checking alerts...</div>
 
 </div>
 
 <div class="section">
 
-<h2>County Status</h2>
-
+<h2>Wisconsin Counties</h2>
 <div id="countyGrid"></div>
 
 </div>
@@ -158,44 +141,43 @@ Checking alerts...
 <div class="section">
 
 <h2>Alert Details</h2>
-
-<div id="details">
-Click a county to see alert information.
-</div>
+<div id="details">Click a county to see alert information.</div>
 
 </div>
 
 <script>
 
+/* WISCONSIN COUNTY LAYOUT */
+
 const counties=[
 
-"Douglas","Bayfield","","","",
+"","","Douglas","Bayfield","","","","","",
 
-"Burnett","Washburn","Sawyer","Ashland","Iron",
+"","","Burnett","Washburn","Sawyer","Ashland","Iron","","",
 
-"Polk","Barron","Rusk","Price","Vilas",
+"","Polk","Barron","Rusk","Price","Vilas","","","",
 
-"St Croix","Dunn","Chippewa","Taylor","Oneida",
+"St Croix","Dunn","Chippewa","Taylor","Oneida","","","","",
 
-"Pierce","Pepin","Eau Claire","Clark","Lincoln",
+"Pierce","Pepin","Eau Claire","Clark","Lincoln","","","","",
 
-"Buffalo","Trempealeau","Jackson","Marathon","Langlade",
+"Buffalo","Trempealeau","Jackson","Marathon","Langlade","","","","",
 
-"La Crosse","Monroe","Juneau","Wood","Forest",
+"La Crosse","Monroe","Juneau","Wood","Forest","","","","",
 
-"Vernon","Richland","Adams","Portage","Florence",
+"Vernon","Richland","Adams","Portage","Florence","","","","",
 
-"Crawford","Grant","Sauk","Waushara","",
+"Crawford","Grant","Sauk","Waushara","","","","","",
 
-"Iowa","Lafayette","Columbia","Marquette","Green Lake",
+"Iowa","Lafayette","Columbia","Marquette","Green Lake","","","","",
 
-"Dane","Green","Dodge","Fond du Lac","",
+"Dane","Green","Dodge","Fond du Lac","","","","","",
 
-"Rock","Jefferson","Washington","Ozaukee","",
+"Rock","Jefferson","Washington","Ozaukee","","","","","",
 
-"Walworth","Waukesha","Milwaukee","","",
+"Walworth","Waukesha","Milwaukee","","","","","","",
 
-"Racine","Kenosha","","",""
+"Racine","Kenosha","","","","","","",""
 
 ]
 
@@ -203,7 +185,7 @@ const grid=document.getElementById("countyGrid")
 
 let countyAlerts={}
 
-/* BUILD COUNTY GRID */
+/* BUILD GRID */
 
 counties.forEach(c=>{
 
@@ -263,7 +245,7 @@ document.getElementById("localAlerts").innerHTML=html
 
 }
 
-/* LOCATION DETECTION */
+/* GPS COUNTY DETECTION */
 
 function detectLocation(){
 
@@ -297,7 +279,6 @@ async function loadAlerts(){
 countyAlerts={}
 
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
-
 let data=await response.json()
 
 let warningGroups={}
@@ -369,7 +350,7 @@ ${countiesList}
 
 }
 
-document.getElementById("warnings").innerHTML=
+document.getElementById("warnings").innerHTML =
 warningsHTML || "No active warnings."
 
 }
