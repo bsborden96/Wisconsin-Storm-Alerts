@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <title>Wisconsin Storm Alerts</title>
 
 <style>
@@ -22,10 +20,19 @@ font-size:26px;
 font-weight:bold;
 }
 
-/* TICKER */
+header.severe{
+background:#8b0000;
+}
+
+#statusBar{
+text-align:center;
+padding:6px;
+font-size:14px;
+color:#ccc;
+}
 
 #tickerWrapper{
-margin-top:10px;
+margin-top:8px;
 background:#111;
 border-top:2px solid #444;
 border-bottom:2px solid #444;
@@ -49,19 +56,9 @@ font-weight:bold;
 100%{transform:translateX(-100%)}
 }
 
-/* DASHBOARD */
-
-#dashboard{
-display:flex;
-flex-direction:column;
-padding:15px;
-gap:15px;
-}
-
-/* PANELS */
-
 .panel{
 background:#111;
+margin:12px;
 padding:15px;
 border-radius:8px;
 }
@@ -70,7 +67,9 @@ border-radius:8px;
 margin-top:0;
 }
 
-/* COUNTY GRID */
+.alertList{
+line-height:1.6;
+}
 
 #countyGrid{
 display:grid;
@@ -86,8 +85,6 @@ text-align:center;
 font-weight:bold;
 }
 
-/* COLORS */
-
 .green{background:#1f3b1f;}
 .orange{background:#7a3b00;}
 .red{background:#8b0000;}
@@ -96,21 +93,48 @@ font-weight:bold;
 .purple{background:#4a0066;}
 .teal{background:#004f4f;}
 
-</style>
+.flash{
+animation:flashAlert 1s infinite;
+}
 
+@keyframes flashAlert{
+0%{background:#8b0000;}
+50%{background:#300000;}
+100%{background:#8b0000;}
+}
+
+</style>
 </head>
 
 <body>
 
-<header>Wisconsin Storm Alerts</header>
+<header id="header">Wisconsin Storm Alerts</header>
+
+<div id="statusBar">
+Alerts: <span id="alertCount">0</span> |
+Last Updated: <span id="lastUpdated">--</span>
+</div>
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
-<div id="ticker">Loading Wisconsin weather alerts...</div>
+<div id="ticker">Loading Wisconsin alerts...</div>
 </div>
 </div>
 
-<div id="dashboard">
+<div class="panel">
+<h2>⚠ Warnings</h2>
+<div id="warnings" class="alertList">None</div>
+</div>
+
+<div class="panel">
+<h2>👀 Watches</h2>
+<div id="watches" class="alertList">None</div>
+</div>
+
+<div class="panel">
+<h2>📢 Advisories</h2>
+<div id="advisories" class="alertList">None</div>
+</div>
 
 <div class="panel">
 <h2>County Status</h2>
@@ -122,7 +146,9 @@ font-weight:bold;
 <div id="alertText">Click a county to view alerts.</div>
 </div>
 
-</div>
+<audio id="alertSound">
+<source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3">
+</audio>
 
 <script>
 
@@ -143,8 +169,7 @@ const counties=[
 
 const grid=document.getElementById("countyGrid")
 let countyAlerts={}
-
-/* BUILD COUNTY GRID */
+let previousAlerts=0
 
 counties.forEach(c=>{
 let div=document.createElement("div")
@@ -155,70 +180,34 @@ div.onclick=()=>showCounty(c)
 grid.appendChild(div)
 })
 
-function getColor(event){
-
-if(event.includes("Tornado Warning"))return"red"
-if(event.includes("Severe Thunderstorm Warning"))return"orange"
-if(event.includes("Winter Storm Warning"))return"blue"
-if(event.includes("Wind Warning"))return"yellow"
-if(event.includes("Watch"))return"purple"
-
-return"teal"
-
-}
-
-function getEmoji(event){
-
-if(event.includes("Tornado"))return"🌪"
-if(event.includes("Severe Thunderstorm"))return"⛈"
-if(event.includes("Winter Storm"))return"❄️"
-if(event.includes("Wind"))return"💨"
-if(event.includes("Watch"))return"👀"
-
-return"📢"
-
-}
-
 function showCounty(name){
 
 let alerts=countyAlerts[name]
 
 if(!alerts){
-
-document.getElementById("alertText").innerHTML=
-"<b>"+name+" County</b><br>No active alerts."
-
+document.getElementById("alertText").innerHTML=name+" County<br>No active alerts."
 return
-
 }
 
 let html="<b>"+name+" County</b><br><br>"
 
 alerts.forEach(a=>{
-html+=`
-<b>${getEmoji(a.event)} ${a.event}</b><br>
-${a.headline}<br><br>
-${a.description}<hr>
-`
+html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
 })
 
 document.getElementById("alertText").innerHTML=html
-
 }
-
-/* LOAD ALERTS */
 
 async function loadAlerts(){
 
-try{
-
-countyAlerts={}
-
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
-
 let data=await response.json()
 
-let tickerSet=new Set()
+let warnings=[]
+let watches=[]
+let advisories=[]
+let ticker=[]
+let count=0
 
 counties.forEach(c=>{
 document.getElementById(c).className="county green"
@@ -227,29 +216,37 @@ document.getElementById(c).className="county green"
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-let headline=alert.properties.headline
 let desc=alert.properties.description
-
 let areas=alert.properties.areaDesc.split(";")
 
-areas.forEach(area=>{
+areas.forEach(a=>{
 
-let county=area.trim()
+let county=a.trim()
 
 if(counties.includes(county)){
 
-if(!countyAlerts[county])
-countyAlerts[county]=[]
+count++
+
+ticker.push(event+" - "+county)
+
+if(event.includes("Warning")) warnings.push(event+" - "+county)
+else if(event.includes("Watch")) watches.push(event+" - "+county)
+else advisories.push(event+" - "+county)
+
+if(!countyAlerts[county]) countyAlerts[county]=[]
 
 countyAlerts[county].push({
 event:event,
-headline:headline,
 description:desc
 })
 
-document.getElementById(county).className="county "+getColor(event)
-
-tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
+if(event.includes("Tornado Warning")){
+document.getElementById(county).className="county red flash"
+}else if(event.includes("Severe Thunderstorm Warning")){
+document.getElementById(county).className="county orange"
+}else{
+document.getElementById(county).className="county teal"
+}
 
 }
 
@@ -257,23 +254,27 @@ tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
-document.getElementById("ticker").innerText=
-tickerSet.size?[...tickerSet].join("   |   "):"No active alerts for Wisconsin"
+document.getElementById("warnings").innerHTML=warnings.join("<br>")||"None"
+document.getElementById("watches").innerHTML=watches.join("<br>")||"None"
+document.getElementById("advisories").innerHTML=advisories.join("<br>")||"None"
 
-}catch(err){
+document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alerts"
 
-document.getElementById("ticker").innerText="Unable to load alerts from NWS"
+document.getElementById("alertCount").innerText=count
+document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
 
+if(count>previousAlerts){
+document.getElementById("alertSound").play()
 }
+
+previousAlerts=count
 
 }
 
 loadAlerts()
-
 setInterval(loadAlerts,60000)
 
 </script>
 
 </body>
-
 </html>
