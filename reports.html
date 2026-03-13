@@ -49,13 +49,13 @@ padding:10px;
 border-bottom:1px solid #333;
 }
 
-.time{
-color:#aaa;
-font-size:12px;
-}
-
 .type{
 font-weight:bold;
+}
+
+.time{
+font-size:12px;
+color:#aaa;
 }
 
 </style>
@@ -88,34 +88,40 @@ async function loadReports(){
 try{
 
 let response = await fetch(
-"https://mesonet.agron.iastate.edu/cgi-bin/request/gis/lsr.py?state=WI&fmt=geojson&hours=12"
+"https://api.allorigins.win/raw?url=https://www.spc.noaa.gov/climo/reports/today.csv"
 )
 
-let data = await response.json()
+let text = await response.text()
+
+let lines = text.split("\n").slice(1)
 
 let reportsHTML=""
 
-data.features.slice(0,20).forEach(report=>{
+lines.slice(0,25).forEach(line=>{
 
-let type=report.properties.typetext
-let city=report.properties.city
-let county=report.properties.county
-let magnitude=report.properties.magnitude||""
-let time=new Date(report.properties.valid).toLocaleString()
+let parts=line.split(",")
+
+let type=parts[0]
+let location=parts[1]
+let state=parts[2]
+let time=parts[3]
+
+if(state==="WI"){
 
 reportsHTML+=`
 <div class="report">
 <div class="type">${type}</div>
-${city}, ${county} County<br>
-${magnitude}<br>
+${location}, WI
 <div class="time">${time}</div>
 </div>
 `
 
+}
+
 })
 
 if(reportsHTML===""){
-reportsHTML="No recent storm reports."
+reportsHTML="No recent storm reports in Wisconsin."
 }
 
 document.getElementById("reports").innerHTML=reportsHTML
