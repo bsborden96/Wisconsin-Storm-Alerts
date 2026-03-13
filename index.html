@@ -32,6 +32,8 @@ margin:auto;
 padding:25px;
 }
 
+/* LOCATION CARD */
+
 .locationCard{
 background:#111827;
 padding:40px;
@@ -47,18 +49,39 @@ font-weight:bold;
 .cityName{
 font-size:32px;
 margin-top:10px;
-opacity:0.9;
 }
 
-/* WEATHER CARD */
+/* WEATHER GRID */
+
+.weatherGrid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+margin-top:15px;
+}
 
 .weatherCard{
 background:#0f172a;
-padding:30px;
-border-radius:12px;
-margin-top:15px;
+padding:20px;
+border-radius:10px;
 font-size:22px;
-line-height:1.7;
+}
+
+.weatherTitle{
+font-size:16px;
+opacity:0.8;
+}
+
+.weatherValue{
+font-size:30px;
+font-weight:bold;
+margin-top:5px;
+}
+
+/* WIND CARD FULL WIDTH */
+
+.windCard{
+grid-column:1/3;
 }
 
 /* ALERT CARDS */
@@ -82,6 +105,8 @@ background:#8a4b00;
 .none{
 background:#1f3b1f;
 }
+
+/* MOBILE */
 
 @media (max-width:600px){
 
@@ -114,7 +139,35 @@ Wisconsin Storm Alerts
 <div class="section">
 
 <h2>Current Conditions</h2>
-<div id="weather" class="weatherCard">Loading weather...</div>
+
+<div class="weatherGrid">
+
+<div class="weatherCard">
+<div class="weatherTitle">Temperature</div>
+<div id="temp" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Dew Point</div>
+<div id="dew" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Humidity</div>
+<div id="humidity" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Precipitation</div>
+<div id="precip" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard windCard">
+<div class="weatherTitle">Wind</div>
+<div id="wind" class="weatherValue">--</div>
+</div>
+
+</div>
 
 </div>
 
@@ -129,9 +182,21 @@ Wisconsin Storm Alerts
 
 let userCounty=""
 let userCity=""
-let forecastURL=""
+let stationsURL=""
 
-/* DETECT LOCATION */
+/* CARDINAL WIND FUNCTION */
+
+function getCardinal(deg){
+
+if(deg==null) return ""
+
+const dirs=["N","NE","E","SE","S","SW","W","NW"]
+
+return dirs[Math.round(deg/45)%8]
+
+}
+
+/* LOCATION */
 
 async function detectLocation(){
 
@@ -145,7 +210,7 @@ let data=await res.json()
 
 userCity=data.properties.relativeLocation.properties.city
 
-forecastURL=data.properties.observationStations
+stationsURL=data.properties.observationStations
 
 let countyURL=data.properties.county
 
@@ -158,23 +223,22 @@ document.getElementById("county").innerHTML=
 "<div class='locationCard'><div class='countyName'>"+userCounty+" County</div><div class='cityName'>"+userCity+"</div></div>"
 
 loadWeather()
-
 loadAlerts()
 
 })
 
 }
 
-/* LOAD WEATHER */
+/* WEATHER */
 
 async function loadWeather(){
 
-let stationsRes=await fetch(forecastURL)
+let stationsRes=await fetch(stationsURL)
 let stations=await stationsRes.json()
 
-let stationURL=stations.features[0].id
+let station=stations.features[0].id
 
-let obsRes=await fetch(stationURL+"/observations/latest")
+let obsRes=await fetch(station+"/observations/latest")
 let obs=await obsRes.json()
 
 let tempC=obs.properties.temperature.value
@@ -183,35 +247,26 @@ let dewC=obs.properties.dewpoint.value
 let tempF=Math.round((tempC*9/5)+32)
 let dewF=Math.round((dewC*9/5)+32)
 
-let humidity=obs.properties.relativeHumidity.value
+let humidity=Math.round(obs.properties.relativeHumidity.value)
 
 let windSpeed=obs.properties.windSpeed.value
 if(windSpeed) windSpeed=Math.round(windSpeed*2.237)
 
-let windDir=obs.properties.windDirection.value
+let windDir=getCardinal(obs.properties.windDirection.value)
 
 let precip=obs.properties.precipitationLastHour.value
-
 let precipIn=0
 if(precip) precipIn=(precip*0.03937).toFixed(2)
 
-document.getElementById("weather").innerHTML=`
-
-🌡 Temperature: ${tempF}°F<br>
-
-🌬 Wind: ${windSpeed||0} mph ${windDir||""}<br>
-
-💧 Humidity: ${humidity||0}%<br>
-
-🌫 Dew Point: ${dewF}°F<br>
-
-🌧 Precipitation: ${precipIn} in
-
-`
+document.getElementById("temp").innerText=tempF+"°F"
+document.getElementById("dew").innerText=dewF+"°F"
+document.getElementById("humidity").innerText=humidity+"%"
+document.getElementById("precip").innerText=precipIn+" in"
+document.getElementById("wind").innerText=(windSpeed||0)+" mph "+windDir
 
 }
 
-/* LOAD ALERTS */
+/* ALERTS */
 
 async function loadAlerts(){
 
@@ -255,12 +310,12 @@ updateTime()
 
 }
 
-/* UPDATE TIME */
+/* TIME */
 
 function updateTime(){
 
 let now=new Date()
-let time=now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 
 document.getElementById("status").innerText="Last Updated: "+time
 
@@ -269,7 +324,6 @@ document.getElementById("status").innerText="Last Updated: "+time
 detectLocation()
 
 setInterval(loadAlerts,60000)
-
 setInterval(loadWeather,300000)
 
 </script>
