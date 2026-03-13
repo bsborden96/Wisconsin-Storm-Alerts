@@ -20,16 +20,14 @@ font-size:26px;
 font-weight:bold;
 }
 
-header.severe{
-background:#8b0000;
-}
-
 #statusBar{
 text-align:center;
 padding:6px;
 font-size:14px;
 color:#ccc;
 }
+
+/* TICKER */
 
 #tickerWrapper{
 margin-top:8px;
@@ -42,7 +40,7 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 180s linear infinite;
+animation:scrollTicker 240s linear infinite;
 }
 
 #ticker{
@@ -56,6 +54,8 @@ font-weight:bold;
 100%{transform:translateX(-100%)}
 }
 
+/* PANELS */
+
 .panel{
 background:#111;
 margin:12px;
@@ -67,9 +67,7 @@ border-radius:8px;
 margin-top:0;
 }
 
-.alertList{
-line-height:1.6;
-}
+/* COUNTY GRID */
 
 #countyGrid{
 display:grid;
@@ -84,6 +82,8 @@ cursor:pointer;
 text-align:center;
 font-weight:bold;
 }
+
+/* COLORS */
 
 .green{background:#1f3b1f;}
 .orange{background:#7a3b00;}
@@ -103,12 +103,33 @@ animation:flashAlert 1s infinite;
 100%{background:#8b0000;}
 }
 
+/* LEGEND */
+
+#legend{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+font-size:14px;
+}
+
+.legendItem{
+display:flex;
+align-items:center;
+gap:6px;
+}
+
+.legendColor{
+width:16px;
+height:16px;
+border-radius:3px;
+}
+
 </style>
 </head>
 
 <body>
 
-<header id="header">Wisconsin Storm Alerts</header>
+<header>Wisconsin Storm Alerts</header>
 
 <div id="statusBar">
 Alerts: <span id="alertCount">0</span> |
@@ -122,18 +143,42 @@ Last Updated: <span id="lastUpdated">--</span>
 </div>
 
 <div class="panel">
-<h2>⚠ Warnings</h2>
-<div id="warnings" class="alertList">None</div>
+<h2>Alert Legend</h2>
+
+<div id="legend">
+
+<div class="legendItem">
+<div class="legendColor" style="background:#8b0000"></div>
+Tornado Warning
 </div>
 
-<div class="panel">
-<h2>👀 Watches</h2>
-<div id="watches" class="alertList">None</div>
+<div class="legendItem">
+<div class="legendColor" style="background:#7a3b00"></div>
+Severe Thunderstorm Warning
 </div>
 
-<div class="panel">
-<h2>📢 Advisories</h2>
-<div id="advisories" class="alertList">None</div>
+<div class="legendItem">
+<div class="legendColor" style="background:#003c66"></div>
+Winter Storm Warning
+</div>
+
+<div class="legendItem">
+<div class="legendColor" style="background:#4a0066"></div>
+Watch
+</div>
+
+<div class="legendItem">
+<div class="legendColor" style="background:#004f4f"></div>
+Advisory
+</div>
+
+<div class="legendItem">
+<div class="legendColor" style="background:#1f3b1f"></div>
+No Alerts
+</div>
+
+</div>
+
 </div>
 
 <div class="panel">
@@ -203,9 +248,6 @@ async function loadAlerts(){
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
 let data=await response.json()
 
-let warnings=[]
-let watches=[]
-let advisories=[]
 let ticker=[]
 let count=0
 
@@ -229,10 +271,6 @@ count++
 
 ticker.push(event+" - "+county)
 
-if(event.includes("Warning")) warnings.push(event+" - "+county)
-else if(event.includes("Watch")) watches.push(event+" - "+county)
-else advisories.push(event+" - "+county)
-
 if(!countyAlerts[county]) countyAlerts[county]=[]
 
 countyAlerts[county].push({
@@ -254,12 +292,7 @@ document.getElementById(county).className="county teal"
 
 })
 
-document.getElementById("warnings").innerHTML=warnings.join("<br>")||"None"
-document.getElementById("watches").innerHTML=watches.join("<br>")||"None"
-document.getElementById("advisories").innerHTML=advisories.join("<br>")||"None"
-
 document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alerts"
-
 document.getElementById("alertCount").innerText=count
 document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
 
