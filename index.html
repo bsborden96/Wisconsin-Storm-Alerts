@@ -25,24 +25,19 @@ text-align:center;
 
 #tickerWrapper{
 background:#111;
-border-bottom:2px solid #444;
 overflow:hidden;
-width:100%;
-}
-
-#tickerTrack{
-display:flex;
-white-space:nowrap;
+border-bottom:2px solid #444;
 }
 
 #ticker{
+white-space:nowrap;
 color:#ffcc00;
 padding:8px 0;
 display:inline-block;
-animation:scrollTicker 55s linear infinite;
+animation:tickerScroll 70s linear infinite;
 }
 
-@keyframes scrollTicker{
+@keyframes tickerScroll{
 0%{transform:translateX(100%)}
 100%{transform:translateX(-100%)}
 }
@@ -50,8 +45,7 @@ animation:scrollTicker 55s linear infinite;
 /* DIVIDER */
 
 .divider{
-height:15px;
-background:#0a0f1c;
+height:12px;
 border-bottom:1px solid #333;
 }
 
@@ -67,7 +61,6 @@ padding:20px;
 padding:10px;
 border-bottom:1px solid #333;
 background:#1f3b1f;
-transition:0.3s;
 }
 
 .countyName{
@@ -84,6 +77,8 @@ margin-left:10px;
 .orange{background:#7a3b00;}
 .yellow{background:#666600;}
 .blue{background:#003c66;}
+.purple{background:#4a0066;}
+.teal{background:#004f4f;}
 .green{background:#1f3b1f;}
 
 /* FLASHING TORNADO */
@@ -109,23 +104,16 @@ Wisconsin County Alerts
 </header>
 
 <div id="tickerWrapper">
-<div id="tickerTrack">
 <div id="ticker">Loading alerts...</div>
-</div>
 </div>
 
 <div class="divider"></div>
 
 <div id="container"></div>
 
-<!-- ALERT SOUND -->
-<audio id="alertSound">
-<source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg">
-</audio>
-
 <script>
 
-// COUNTY LIST
+// COUNTY LIST (alphabetical)
 
 const counties = [
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
@@ -159,9 +147,9 @@ container.appendChild(div)
 
 })
 
-let previousAlerts = new Set()
-
 function loadAlerts(){
+
+// reset counties
 
 counties.forEach(c=>{
 let county=document.getElementById(c)
@@ -176,8 +164,6 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 .then(data=>{
 
 let tickerSet=new Set()
-let currentAlerts=new Set()
-let alertCounties=[]
 
 data.features.forEach(alert=>{
 
@@ -185,28 +171,38 @@ let event=alert.properties.event
 let areas=alert.properties.areaDesc.split(";")
 
 let emoji="⚠️"
-let color="yellow"
+let color="teal"
 let flash=false
 
-if(event.includes("Tornado")){
+if(event.includes("Tornado Warning")){
 emoji="🌪"
 color="red"
 flash=true
 }
 
-if(event.includes("Severe Thunderstorm")){
+else if(event.includes("Severe Thunderstorm Warning")){
 emoji="⛈"
 color="orange"
 }
 
-if(event.includes("High Wind")){
+else if(event.includes("Winter Storm Warning")){
+emoji="❄️"
+color="blue"
+}
+
+else if(event.includes("Wind Warning")){
 emoji="💨"
 color="yellow"
 }
 
-if(event.includes("Winter Storm")){
-emoji="❄️"
-color="blue"
+else if(event.includes("Watch")){
+emoji="👀"
+color="purple"
+}
+
+else if(event.includes("Advisory")){
+emoji="📢"
+color="teal"
 }
 
 areas.forEach(a=>{
@@ -232,10 +228,6 @@ county.querySelector(".alerts").innerHTML+=
 
 tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 
-currentAlerts.add(`${event}-${countyName}`)
-
-alertCounties.push(county)
-
 }
 
 }
@@ -243,26 +235,10 @@ alertCounties.push(county)
 })
 
 })
-
-// play sound if new alert
-
-currentAlerts.forEach(a=>{
-if(!previousAlerts.has(a)){
-document.getElementById("alertSound").play()
-}
-})
-
-previousAlerts=currentAlerts
 
 // update ticker
 
 document.getElementById("ticker").innerText=[...tickerSet].join("   |   ")
-
-// move counties with alerts to top
-
-alertCounties.forEach(c=>{
-container.prepend(c)
-})
 
 })
 
