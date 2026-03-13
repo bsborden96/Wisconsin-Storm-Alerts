@@ -122,15 +122,6 @@ border-radius:8px;
 font-size:18px;
 }
 
-@media (max-width:600px){
-
-header{font-size:44px;}
-.status{font-size:26px;}
-.countyName{font-size:64px;}
-.cityName{font-size:36px;}
-
-}
-
 </style>
 </head>
 
@@ -199,23 +190,42 @@ US Storm Alerts
 
 </div>
 
-<div class="section">
-
-<h2>Recent Storm Reports</h2>
-<div id="reports">Loading reports...</div>
-
-</div>
-
 <script>
 
 let userCounty=""
 let userCity=""
 let userState=""
+let userLat
+let userLon
 let stationsURL=""
+
+/* safe value */
 
 function safe(v){
 return v==null ? 0 : v
 }
+
+/* distance calc */
+
+function distance(lat1,lon1,lat2,lon2){
+
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*
+Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2)
+
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+
+return R*c
+
+}
+
+/* wind direction */
 
 function getCardinal(deg){
 
@@ -227,14 +237,14 @@ return dirs[Math.round(deg/45)%8]
 
 }
 
-async function detectLocation(){
+/* location */
 
 navigator.geolocation.getCurrentPosition(async position=>{
 
-let lat=position.coords.latitude
-let lon=position.coords.longitude
+userLat=position.coords.latitude
+userLon=position.coords.longitude
 
-let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let res=await fetch(`https://api.weather.gov/points/${userLat},${userLon}`)
 let data=await res.json()
 
 userCity=data.properties.relativeLocation.properties.city
@@ -243,7 +253,6 @@ userState=data.properties.relativeLocation.properties.state
 stationsURL=data.properties.observationStations
 
 let countyURL=data.properties.county
-
 let countyRes=await fetch(countyURL)
 let countyData=await countyRes.json()
 
@@ -254,55 +263,66 @@ document.getElementById("county").innerHTML=
 
 loadWeather()
 loadAlerts()
-loadReports()
 
 })
 
-}
+/* weather */
 
 async function loadWeather(){
 
 let stationsRes=await fetch(stationsURL)
 let stations=await stationsRes.json()
 
-let station=stations.features[0].id
+let closestStation=null
+let minDist=999999
 
-let obsRes=await fetch(station+"/observations/latest")
+stations.features.forEach(s=>{
+
+let lat=s.geometry.coordinates[1]
+let lon=s.geometry.coordinates[0]
+
+let d=distance(userLat,userLon,lat,lon)
+
+if(d<minDist){
+
+minDist=d
+closestStation=s.id
+
+}
+
+})
+
+let obsRes=await fetch(closestStation+"/observations/latest")
 let obs=await obsRes.json()
 
-let tempC=safe(obs.properties.temperature.value)
-let dewC=safe(obs.properties.dewpoint.value)
-
-let tempF=Math.round((tempC*9/5)+32)
-let dewF=Math.round((dewC*9/5)+32)
+let tempF=Math.round((safe(obs.properties.temperature.value)*9/5)+32)
+let dewF=Math.round((safe(obs.properties.dewpoint.value)*9/5)+32)
 
 let humidity=Math.round(safe(obs.properties.relativeHumidity.value))
 
-let windSpeed=safe(obs.properties.windSpeed.value)
-windSpeed=Math.round(windSpeed*2.237)
-
-let windGust=safe(obs.properties.windGust.value)
-windGust=Math.round(windGust*2.237)
+let windSpeed=Math.round(safe(obs.properties.windSpeed.value)*2.237)
+let windGust=Math.round(safe(obs.properties.windGust.value)*2.237)
 
 let windDir=getCardinal(obs.properties.windDirection.value)
 
-let precip=safe(obs.properties.precipitationLastHour.value)
-let precipIn=(precip*0.03937).toFixed(2)
+let precip=(safe(obs.properties.precipitationLastHour.value)*0.03937).toFixed(2)
 
 document.getElementById("temp").innerText=tempF+"°F"
 document.getElementById("dew").innerText=dewF+"°F"
 document.getElementById("humidity").innerText=humidity+"%"
-document.getElementById("precip").innerText=precipIn+" in"
+document.getElementById("precip").innerText=precip+" in"
 
-let windText = windSpeed + " mph " + windDir
+let windText=windSpeed+" mph "+windDir
 
 if(windGust>0){
-windText += " (gust " + windGust + ")"
+windText+=" (gust "+windGust+")"
 }
 
-document.getElementById("wind").innerText = windText
+document.getElementById("wind").innerText=windText
 
 }
+
+/* alerts */
 
 async function loadAlerts(){
 
@@ -342,59 +362,12 @@ html='<div class="card none">No active alerts for your county.</div>'
 
 document.getElementById("alerts").innerHTML=html
 
-updateTime()
-
-}
-
-async function loadReports(){
-
-let response=await fetch("https://www.spc.noaa.gov/climo/reports/today_wind.csv")
-
-let text=await response.text()
-
-let rows=text.split("\n")
-
-let html=""
-
-rows.forEach(row=>{
-
-let cols=row.split(",")
-
-let location=cols[5]
-let time=cols[0]
-
-if(location && location.includes(userState)){
-
-html+=`
-<div class="reportCard">
-💨 Wind Report<br>
-${location}<br>
-${time}
-</div>
-`
-
-}
-
-})
-
-if(html===""){
-html="No recent storm reports in your area."
-}
-
-document.getElementById("reports").innerHTML=html
-
-}
-
-function updateTime(){
-
 let now=new Date()
 let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 
 document.getElementById("status").innerText="Last Updated: "+time
 
 }
-
-detectLocation()
 
 setInterval(loadAlerts,60000)
 setInterval(loadWeather,300000)
