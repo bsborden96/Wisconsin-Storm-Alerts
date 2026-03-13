@@ -10,82 +10,35 @@ margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
+text-align:center;
 }
 
 header{
 background:#151c2c;
-padding:16px;
-text-align:center;
-font-size:26px;
+padding:20px;
+font-size:28px;
 font-weight:bold;
-}
-
-nav{
-background:#0f1424;
-text-align:center;
-padding:10px;
-}
-
-nav a{
-color:white;
-text-decoration:none;
-margin:0 15px;
-font-weight:bold;
-}
-
-nav a:hover{
-color:#ffcc00;
 }
 
 .section{
-max-width:1100px;
+max-width:600px;
 margin:auto;
-padding:20px;
+padding:25px;
 }
 
-#warnings{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-gap:10px;
-}
-
-.warningCard{
-background:#7a0000;
-padding:12px;
-border-radius:6px;
-}
-
-#map{
-max-width:800px;
-margin:auto;
-}
-
-.county{
-fill:#333;
-stroke:#111;
-stroke-width:0.6;
-cursor:pointer;
-}
-
-.green{fill:#1f3b1f}
-.orange{fill:#8a4b00}
-.red{fill:#7a0000}
-
-.flash{
-animation:flash 1s infinite;
-}
-
-@keyframes flash{
-0%{opacity:1}
-50%{opacity:0.4}
-100%{opacity:1}
-}
-
-#details{
+.alertCard{
 background:#111;
-padding:15px;
-border-radius:6px;
-margin-top:20px;
+padding:20px;
+margin-top:15px;
+border-radius:8px;
+}
+
+.tornado{
+background:#7a0000;
+}
+
+.severe{
+background:#8a4b00;
 }
 
 </style>
@@ -95,168 +48,97 @@ margin-top:20px;
 
 <header>Wisconsin Storm Alerts</header>
 
-<nav>
-<a href="index.html">Alerts</a>
-<a href="reports.html">Storm Reports</a>
-</nav>
-
 <div class="section">
 
-<h2>Active Warnings</h2>
-<div id="warnings">Loading alerts...</div>
+<h2>Your Location</h2>
+<div id="county">Detecting your location...</div>
 
 </div>
 
 <div class="section">
 
-<h2>Wisconsin County Map</h2>
+<h2>Active Alerts</h2>
 
-<div id="map">
-
-<object id="wiMap"
-type="image/svg+xml"
-data="https://cdn.jsdelivr.net/gh/codeforamerica/click_that_hood/public/data/wisconsin-counties.svg"
-width="800">
-</object>
-
+<div id="alerts">
+Checking alerts...
 </div>
-
-</div>
-
-<div class="section">
-
-<h2>Alert Details</h2>
-<div id="details">Click a county to view alert information.</div>
 
 </div>
 
 <script>
 
-let countyAlerts={}
+let userCounty=""
 
-const mapObject=document.getElementById("wiMap")
+function detectLocation(){
+
+if(!navigator.geolocation){
+document.getElementById("county").innerText="Location unavailable"
+return
+}
+
+navigator.geolocation.getCurrentPosition(async position=>{
+
+let lat=position.coords.latitude
+let lon=position.coords.longitude
+
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
+
+userCounty=data.properties.relativeLocation.properties.city
+
+document.getElementById("county").innerHTML="<b>"+userCounty+" County</b>"
+
+loadAlerts()
+
+})
+
+}
 
 async function loadAlerts(){
-
-countyAlerts={}
 
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
 let data=await response.json()
 
-let warningGroups={}
+let html=""
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
 let desc=alert.properties.description
-let areas=alert.properties.areaDesc.split(";")
+let areas=alert.properties.areaDesc
 
-areas.forEach(a=>{
+if(areas.includes(userCounty)){
 
-let county=a.trim()
+let style="alertCard"
 
-if(!countyAlerts[county]) countyAlerts[county]=[]
-
-countyAlerts[county].push({
-event:event,
-description:desc
-})
-
-})
-
-if(event.includes("Warning")){
-if(!warningGroups[event]) warningGroups[event]=[]
-warningGroups[event].push(...areas)
+if(event.includes("Tornado Warning")){
+style+=" tornado"
+}
+else if(event.includes("Severe Thunderstorm Warning")){
+style+=" severe"
 }
 
-})
-
-let warningsHTML=""
-
-for(let event in warningGroups){
-
-let counties=[...new Set(warningGroups[event])].join(" • ")
-
-warningsHTML+=`
-<div class="warningCard">
-<b>${event}</b><br>
-${counties}
+html+=`
+<div class="${style}">
+<h3>${event}</h3>
+<p>${desc}</p>
 </div>
 `
 
 }
 
-document.getElementById("warnings").innerHTML =
-warningsHTML || "No active warnings."
+})
+
+if(html===""){
+html="No active alerts for your county."
+}
+
+document.getElementById("alerts").innerHTML=html
 
 }
 
-mapObject.addEventListener("load",()=>{
+detectLocation()
 
-const svgDoc=mapObject.contentDocument
-
-const counties=svgDoc.querySelectorAll("path")
-
-counties.forEach(c=>{
-
-let countyName=c.getAttribute("name") || c.getAttribute("id")
-
-c.classList.add("county")
-
-c.addEventListener("click",()=>{
-
-let alerts=countyAlerts[countyName]
-
-if(!alerts){
-document.getElementById("details").innerHTML="No alerts for "+countyName+" County."
-return
-}
-
-let html="<b>"+countyName+" County</b><br><br>"
-
-alerts.forEach(a=>{
-html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
-})
-
-document.getElementById("details").innerHTML=html
-
-})
-
-})
-
-setInterval(()=>{
-
-counties.forEach(c=>{
-
-let countyName=c.getAttribute("name") || c.getAttribute("id")
-
-c.classList.remove("green","orange","red","flash")
-
-let alerts=countyAlerts[countyName]
-
-if(!alerts) return
-
-alerts.forEach(a=>{
-
-if(a.event.includes("Tornado Warning")){
-c.classList.add("red","flash")
-}
-else if(a.event.includes("Severe Thunderstorm Warning")){
-c.classList.add("orange")
-}
-else{
-c.classList.add("green")
-}
-
-})
-
-})
-
-},2000)
-
-})
-
-loadAlerts()
 setInterval(loadAlerts,60000)
 
 </script>
