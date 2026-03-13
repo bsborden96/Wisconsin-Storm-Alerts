@@ -45,13 +45,14 @@ border-radius:8px;
 }
 
 .report{
-padding:10px;
+padding:12px;
 border-bottom:1px solid #333;
 }
 
 .time{
 color:#aaa;
 font-size:12px;
+margin-bottom:4px;
 }
 
 </style>
@@ -89,16 +90,24 @@ let data = await response.json()
 
 let reportsHTML = ""
 
-data["@graph"].slice(0,15).forEach(report => {
+for(let i=0;i<10;i++){
+
+let productURL = data["@graph"][i].id
+
+let reportResponse = await fetch(productURL)
+
+let reportData = await reportResponse.json()
+
+let text = reportData.productText
 
 reportsHTML += `
 <div class="report">
-<b>${report.wfo}</b><br>
-<div class="time">${new Date(report.issueTime).toLocaleString()}</div>
+<div class="time">${new Date(reportData.issuanceTime).toLocaleString()}</div>
+<pre>${text}</pre>
 </div>
 `
 
-})
+}
 
 document.getElementById("reports").innerHTML = reportsHTML
 
