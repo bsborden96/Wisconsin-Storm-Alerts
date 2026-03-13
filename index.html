@@ -27,8 +27,8 @@ font-size:22px;
 
 #tickerWrapper{
 background:#111;
-overflow:hidden;
 border-bottom:2px solid #444;
+overflow:hidden;
 white-space:nowrap;
 }
 
@@ -36,7 +36,7 @@ white-space:nowrap;
 display:inline-block;
 padding:8px;
 color:#ffcc00;
-animation:scrollTicker 40s linear infinite;
+animation:scrollTicker 120s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -97,7 +97,7 @@ background:#0a0f1c;
 var map = L.map('map',{
 zoomControl:false,
 attributionControl:false
-})
+}).setView([44.5,-89.5],7)
 
 let countyAlerts={}
 let countiesLayer
@@ -124,19 +124,15 @@ return "📢"
 
 }
 
-/* LOAD REAL WI COUNTY SHAPES */
+/* LOAD WI COUNTY MAP */
 
-fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
+fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
 
 .then(r=>r.json())
 
 .then(data=>{
 
-let counties = topojson.feature(data,data.objects.counties).features
-
-let wi = counties.filter(c => c.id.startsWith("55"))
-
-countiesLayer = L.geoJSON(wi,{
+countiesLayer = L.geoJSON(data,{
 
 style:{
 color:"#777",
@@ -147,31 +143,22 @@ fillOpacity:0.8
 
 onEachFeature:function(feature,layer){
 
-let fips=feature.id
-let countyName
-
-const mapNames={
-"55025":"Dane",
-"55079":"Milwaukee",
-"55009":"Brown"
-}
-
-countyName=mapNames[fips] || "Unknown"
+let name=feature.properties.name
 
 layer.on("click",function(){
 
-let alerts=countyAlerts[countyName]
+let alerts=countyAlerts[name]
 
 if(!alerts){
 
 document.getElementById("alertText").innerHTML=
-"<b>"+countyName+" County</b><br>No active alerts."
+"<b>"+name+" County</b><br>No active alerts."
 
 return
 
 }
 
-let html="<b>"+countyName+" County</b><br><br>"
+let html="<b>"+name+" County</b><br><br>"
 
 alerts.forEach(a=>{
 
@@ -239,6 +226,26 @@ ticker.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
+countiesLayer.eachLayer(layer=>{
+
+let name=layer.feature.properties.name
+
+if(countyAlerts[name]){
+
+layer.setStyle({
+fillColor:getColor(countyAlerts[name][0].event)
+})
+
+}else{
+
+layer.setStyle({
+fillColor:"#0a0f1c"
+})
+
+}
+
+})
+
 document.getElementById("ticker").innerText=ticker.join("   |   ")
 
 })
@@ -246,8 +253,6 @@ document.getElementById("ticker").innerText=ticker.join("   |   ")
 }
 
 </script>
-
-<script src="https://unpkg.com/topojson-client@3"></script>
 
 </body>
 
