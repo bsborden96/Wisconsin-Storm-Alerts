@@ -35,7 +35,7 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 90s linear infinite;
+animation:scrollTicker 180s linear infinite;
 }
 
 #ticker{
@@ -49,7 +49,7 @@ font-weight:bold;
 100%{transform:translateX(-100%)}
 }
 
-/* MAIN LAYOUT */
+/* DASHBOARD */
 
 #dashboard{
 display:flex;
@@ -106,16 +106,13 @@ font-weight:bold;
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
-<div id="ticker">Loading alerts...</div>
+<div id="ticker">
+Loading Wisconsin weather alerts...
+</div>
 </div>
 </div>
 
 <div id="dashboard">
-
-<div class="panel">
-<h2>Active Warnings</h2>
-<div id="warnings">Loading warnings...</div>
-</div>
 
 <div class="panel">
 <h2>County Status</h2>
@@ -149,7 +146,7 @@ const counties=[
 const grid=document.getElementById("countyGrid")
 let countyAlerts={}
 
-/* BUILD GRID */
+/* BUILD COUNTY GRID */
 
 counties.forEach(c=>{
 
@@ -190,101 +187,4 @@ return"📢"
 
 function showCounty(name){
 
-let alerts=countyAlerts[name]
-
-if(!alerts){
-
-document.getElementById("alertText").innerHTML=
-"<b>"+name+" County</b><br>No active alerts."
-
-return
-
-}
-
-let html="<b>"+name+" County</b><br><br>"
-
-alerts.forEach(a=>{
-
-html+=`
-<b>${getEmoji(a.event)} ${a.event}</b><br>
-${a.headline}<br><br>
-${a.description}<hr>
-`
-
-})
-
-document.getElementById("alertText").innerHTML=html
-
-}
-
-/* LOAD ALERTS */
-
-function loadAlerts(){
-
-countyAlerts={}
-
-fetch("https://api.weather.gov/alerts/active?area=WI")
-.then(r=>r.json())
-.then(data=>{
-
-let tickerSet=new Set()
-let warnings=[]
-
-counties.forEach(c=>{
-document.getElementById(c).className="county green"
-})
-
-data.features.forEach(alert=>{
-
-let event=alert.properties.event
-let headline=alert.properties.headline
-let desc=alert.properties.description
-
-let areas=alert.properties.areaDesc.split(";")
-
-areas.forEach(area=>{
-
-let county=area.trim()
-
-if(counties.includes(county)){
-
-if(!countyAlerts[county])
-countyAlerts[county]=[]
-
-countyAlerts[county].push({
-event:event,
-headline:headline,
-description:desc
-})
-
-document.getElementById(county).className="county "+getColor(event)
-
-tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
-
-if(event.includes("Warning"))
-warnings.push(`${getEmoji(event)} ${event} - ${county} County`)
-
-}
-
-})
-
-})
-
-document.getElementById("ticker").innerText=
-tickerSet.size>0?[...tickerSet].join("   |   "):"No active alerts for Wisconsin"
-
-document.getElementById("warnings").innerHTML=
-warnings.length?warnings.join("<br>"):"No active warnings."
-
-})
-
-}
-
-loadAlerts()
-setInterval(loadAlerts,60000)
-
-</script>
-
-</body>
-
-</html>
+let alerts=
