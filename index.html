@@ -27,8 +27,8 @@ font-size:22px;
 
 #tickerWrapper{
 background:#111;
-border-bottom:2px solid #444;
 overflow:hidden;
+border-bottom:2px solid #444;
 white-space:nowrap;
 }
 
@@ -36,7 +36,7 @@ white-space:nowrap;
 display:inline-block;
 padding:8px;
 color:#ffcc00;
-animation:scrollTicker 35s linear infinite;
+animation:scrollTicker 40s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -94,8 +94,6 @@ background:#0a0f1c;
 
 <script>
 
-/* CREATE MAP */
-
 var map = L.map('map',{
 zoomControl:false,
 attributionControl:false
@@ -126,20 +124,22 @@ return "📢"
 
 }
 
-/* LOAD WI COUNTY MAP */
+/* LOAD REAL WI COUNTY SHAPES */
 
-fetch("https://raw.githubusercontent.com/PublicaMundi/MappingAPI/master/data/geojson/us-counties.json")
+fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
 
 .then(r=>r.json())
 
 .then(data=>{
 
-let wi=data.features.filter(f=>f.properties.STATE=="55")
+let counties = topojson.feature(data,data.objects.counties).features
 
-countiesLayer=L.geoJSON(wi,{
+let wi = counties.filter(c => c.id.startsWith("55"))
+
+countiesLayer = L.geoJSON(wi,{
 
 style:{
-color:"#888",
+color:"#777",
 weight:1,
 fillColor:"#0a0f1c",
 fillOpacity:0.8
@@ -147,22 +147,31 @@ fillOpacity:0.8
 
 onEachFeature:function(feature,layer){
 
-let name=feature.properties.NAME
+let fips=feature.id
+let countyName
+
+const mapNames={
+"55025":"Dane",
+"55079":"Milwaukee",
+"55009":"Brown"
+}
+
+countyName=mapNames[fips] || "Unknown"
 
 layer.on("click",function(){
 
-let alerts=countyAlerts[name]
+let alerts=countyAlerts[countyName]
 
 if(!alerts){
 
 document.getElementById("alertText").innerHTML=
-"<b>"+name+" County</b><br>No active alerts."
+"<b>"+countyName+" County</b><br>No active alerts."
 
 return
 
 }
 
-let html="<b>"+name+" County</b><br><br>"
+let html="<b>"+countyName+" County</b><br><br>"
 
 alerts.forEach(a=>{
 
@@ -230,26 +239,6 @@ ticker.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
-countiesLayer.eachLayer(layer=>{
-
-let name=layer.feature.properties.NAME
-
-if(countyAlerts[name]){
-
-layer.setStyle({
-fillColor:getColor(countyAlerts[name][0].event)
-})
-
-}else{
-
-layer.setStyle({
-fillColor:"#0a0f1c"
-})
-
-}
-
-})
-
 document.getElementById("ticker").innerText=ticker.join("   |   ")
 
 })
@@ -257,6 +246,8 @@ document.getElementById("ticker").innerText=ticker.join("   |   ")
 }
 
 </script>
+
+<script src="https://unpkg.com/topojson-client@3"></script>
 
 </body>
 
