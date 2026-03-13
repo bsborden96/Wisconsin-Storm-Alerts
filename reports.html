@@ -87,31 +87,31 @@ async function loadReports(){
 
 try{
 
-let response = await fetch(
-"https://api.allorigins.win/raw?url=https://www.spc.noaa.gov/climo/reports/today.csv"
-)
+let tornadoData = await fetch("https://www.spc.noaa.gov/climo/reports/today_torn.csv").then(r=>r.text())
+let hailData = await fetch("https://www.spc.noaa.gov/climo/reports/today_hail.csv").then(r=>r.text())
+let windData = await fetch("https://www.spc.noaa.gov/climo/reports/today_wind.csv").then(r=>r.text())
 
-let text = await response.text()
+let lines = tornadoData.split("\n")
+.concat(hailData.split("\n"))
+.concat(windData.split("\n"))
 
-let lines = text.split("\n").slice(1)
+let html=""
 
-let reportsHTML=""
-
-lines.slice(0,25).forEach(line=>{
+lines.slice(1,40).forEach(line=>{
 
 let parts=line.split(",")
 
-let type=parts[0]
-let location=parts[1]
+let time=parts[0]
+let city=parts[1]
 let state=parts[2]
-let time=parts[3]
+let type=parts[3]
 
 if(state==="WI"){
 
-reportsHTML+=`
+html+=`
 <div class="report">
 <div class="type">${type}</div>
-${location}, WI
+${city}, WI
 <div class="time">${time}</div>
 </div>
 `
@@ -120,16 +120,16 @@ ${location}, WI
 
 })
 
-if(reportsHTML===""){
-reportsHTML="No recent storm reports in Wisconsin."
+if(html===""){
+html="No recent storm reports in Wisconsin."
 }
 
-document.getElementById("reports").innerHTML=reportsHTML
+document.getElementById("reports").innerHTML=html
 
 }catch{
 
 document.getElementById("reports").innerHTML=
-"Unable to load storm reports."
+"Storm report feed unavailable."
 
 }
 
@@ -137,7 +137,7 @@ document.getElementById("reports").innerHTML=
 
 loadReports()
 
-setInterval(loadReports,60000)
+setInterval(loadReports,300000)
 
 </script>
 
