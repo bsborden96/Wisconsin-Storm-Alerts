@@ -21,6 +21,15 @@ font-size:22px;
 text-align:center;
 }
 
+#ticker{
+background:#111;
+color:#ffcc00;
+padding:8px;
+font-weight:bold;
+white-space:nowrap;
+overflow:hidden;
+}
+
 #container{
 max-width:900px;
 margin:auto;
@@ -30,13 +39,15 @@ padding:20px;
 .county{
 padding:10px;
 border-bottom:1px solid #333;
-display:flex;
-justify-content:space-between;
 background:#1f3b1f;
 }
 
-.alert{
+.countyName{
 font-weight:bold;
+}
+
+.alert{
+margin-left:10px;
 }
 
 .red{background:#5a0000;}
@@ -55,99 +66,58 @@ font-weight:bold;
 Wisconsin County Alerts
 </header>
 
+<div id="ticker">Loading alerts...</div>
+
 <div id="container"></div>
 
 <script>
 
-// Wisconsin counties with UGC codes
+// Counties alphabetical
 
 const counties = [
-{name:"Adams",ugc:"WIZ025"},
-{name:"Ashland",ugc:"WIZ003"},
-{name:"Barron",ugc:"WIZ017"},
-{name:"Bayfield",ugc:"WIZ002"},
-{name:"Brown",ugc:"WIZ020"},
-{name:"Buffalo",ugc:"WIZ041"},
-{name:"Burnett",ugc:"WIZ008"},
-{name:"Calumet",ugc:"WIZ045"},
-{name:"Chippewa",ugc:"WIZ018"},
-{name:"Clark",ugc:"WIZ019"},
-{name:"Columbia",ugc:"WIZ042"},
-{name:"Crawford",ugc:"WIZ043"},
-{name:"Dane",ugc:"WIZ051"},
-{name:"Dodge",ugc:"WIZ046"},
-{name:"Door",ugc:"WIZ022"},
-{name:"Douglas",ugc:"WIZ001"},
-{name:"Dunn",ugc:"WIZ026"},
-{name:"Eau Claire",ugc:"WIZ029"},
-{name:"Florence",ugc:"WIZ010"},
-{name:"Fond du Lac",ugc:"WIZ047"},
-{name:"Forest",ugc:"WIZ011"},
-{name:"Grant",ugc:"WIZ061"},
-{name:"Green",ugc:"WIZ062"},
-{name:"Green Lake",ugc:"WIZ048"},
-{name:"Iowa",ugc:"WIZ063"},
-{name:"Iron",ugc:"WIZ012"},
-{name:"Jackson",ugc:"WIZ034"},
-{name:"Jefferson",ugc:"WIZ065"},
-{name:"Juneau",ugc:"WIZ044"},
-{name:"Kenosha",ugc:"WIZ071"},
-{name:"Kewaunee",ugc:"WIZ021"},
-{name:"La Crosse",ugc:"WIZ041"},
-{name:"Lafayette",ugc:"WIZ069"},
-{name:"Langlade",ugc:"WIZ013"},
-{name:"Lincoln",ugc:"WIZ014"},
-{name:"Manitowoc",ugc:"WIZ022"},
-{name:"Marathon",ugc:"WIZ030"},
-{name:"Marinette",ugc:"WIZ009"},
-{name:"Marquette",ugc:"WIZ049"},
-{name:"Menominee",ugc:"WIZ073"},
-{name:"Milwaukee",ugc:"WIZ066"},
-{name:"Monroe",ugc:"WIZ035"},
-{name:"Oconto",ugc:"WIZ024"},
-{name:"Oneida",ugc:"WIZ015"},
-{name:"Outagamie",ugc:"WIZ031"},
-{name:"Ozaukee",ugc:"WIZ067"},
-{name:"Pepin",ugc:"WIZ027"},
-{name:"Pierce",ugc:"WIZ028"},
-{name:"Polk",ugc:"WIZ007"},
-{name:"Portage",ugc:"WIZ036"},
-{name:"Price",ugc:"WIZ016"},
-{name:"Racine",ugc:"WIZ072"},
-{name:"Richland",ugc:"WIZ053"},
-{name:"Rock",ugc:"WIZ064"},
-{name:"Rusk",ugc:"WIZ023"},
-{name:"Sauk",ugc:"WIZ054"},
-{name:"Sawyer",ugc:"WIZ004"},
-{name:"Shawano",ugc:"WIZ032"},
-{name:"Sheboygan",ugc:"WIZ050"},
-{name:"St Croix",ugc:"WIZ006"},
-{name:"Taylor",ugc:"WIZ005"},
-{name:"Trempealeau",ugc:"WIZ033"},
-{name:"Vernon",ugc:"WIZ055"},
-{name:"Vilas",ugc:"WIZ017"},
-{name:"Walworth",ugc:"WIZ070"},
-{name:"Washburn",ugc:"WIZ008"},
-{name:"Washington",ugc:"WIZ068"},
-{name:"Waukesha",ugc:"WIZ052"},
-{name:"Waupaca",ugc:"WIZ037"},
-{name:"Waushara",ugc:"WIZ038"},
-{name:"Winnebago",ugc:"WIZ039"},
-{name:"Wood",ugc:"WIZ040"}
+"Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
+"Calumet","Chippewa","Clark","Columbia","Crawford","Dane","Dodge",
+"Door","Douglas","Dunn","Eau Claire","Florence","Fond du Lac",
+"Forest","Grant","Green","Green Lake","Iowa","Iron","Jackson",
+"Jefferson","Juneau","Kenosha","Kewaunee","La Crosse","Lafayette",
+"Langlade","Lincoln","Manitowoc","Marathon","Marinette","Marquette",
+"Menominee","Milwaukee","Monroe","Oconto","Oneida","Outagamie",
+"Ozaukee","Pepin","Pierce","Polk","Portage","Price","Racine",
+"Richland","Rock","Rusk","Sauk","Sawyer","Shawano","Sheboygan",
+"St Croix","Taylor","Trempealeau","Vernon","Vilas","Walworth",
+"Washburn","Washington","Waukesha","Waupaca","Waushara",
+"Winnebago","Wood"
 ]
 
 const container=document.getElementById("container")
 
 counties.forEach(c=>{
+
 let div=document.createElement("div")
 div.className="county green"
-div.id=c.ugc
-div.innerHTML=`<span>${c.name} County</span><span class="alert">🟩 No Alerts</span>`
+div.id=c
+
+div.innerHTML=`
+<div class="countyName">${c} County</div>
+<div class="alerts"></div>
+`
+
 container.appendChild(div)
+
 })
 
 
-// FETCH ALERTS
+// LOAD ALERTS
+
+function loadAlerts(){
+
+// reset counties
+
+counties.forEach(c=>{
+let county=document.getElementById(c)
+county.className="county green"
+county.querySelector(".alerts").innerHTML=""
+})
 
 fetch("https://api.weather.gov/alerts/active?area=WI")
 
@@ -155,10 +125,12 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 
 .then(data=>{
 
+let ticker=[]
+
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-let zones=alert.properties.geocode.UGC
+let areas=alert.properties.areaDesc.split(";")
 
 let emoji="⚠️"
 let color="yellow"
@@ -183,14 +155,20 @@ emoji="❄️"
 color="blue"
 }
 
-zones.forEach(zone=>{
+areas.forEach(a=>{
 
-let county=document.getElementById(zone)
+let countyName=a.trim().replace(" County","")
+
+let county=document.getElementById(countyName)
 
 if(county){
 
 county.className="county "+color
-county.querySelector(".alert").innerHTML=`${emoji} ${event}`
+
+county.querySelector(".alerts").innerHTML+=
+`<div class="alert">${emoji} ${event}</div>`
+
+ticker.push(`${emoji} ${event} - ${countyName} County`)
 
 }
 
@@ -198,7 +176,19 @@ county.querySelector(".alert").innerHTML=`${emoji} ${event}`
 
 })
 
+// ticker
+
+document.getElementById("ticker").innerText=ticker.join(" | ")
+
 })
+
+}
+
+loadAlerts()
+
+// auto refresh every minute
+
+setInterval(loadAlerts,60000)
 
 </script>
 
