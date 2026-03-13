@@ -123,8 +123,10 @@ margin-top:20px;
 
 <div id="map">
 
-<object id="wiMap" type="image/svg+xml"
-data="https://upload.wikimedia.org/wikipedia/commons/5/5c/Wisconsin_counties_named.svg">
+<object id="wiMap"
+type="image/svg+xml"
+data="https://cdn.jsdelivr.net/gh/codeforamerica/click_that_hood/public/data/wisconsin-counties.svg"
+width="750">
 </object>
 
 </div>
@@ -215,7 +217,7 @@ const counties=svgDoc.querySelectorAll("path")
 
 counties.forEach(c=>{
 
-let countyName=c.getAttribute("inkscape:label") || c.getAttribute("id")
+let countyName=c.getAttribute("name") || c.getAttribute("id")
 
 c.classList.add("county")
 
@@ -244,7 +246,7 @@ setInterval(()=>{
 
 counties.forEach(c=>{
 
-let countyName=c.getAttribute("inkscape:label") || c.getAttribute("id")
+let countyName=c.getAttribute("name") || c.getAttribute("id")
 
 c.classList.remove("green","orange","red","flash")
 
