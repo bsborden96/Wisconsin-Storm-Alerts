@@ -21,7 +21,7 @@ text-align:center;
 font-size:24px;
 }
 
-/* TICKER POSITION */
+/* TICKER */
 
 #tickerWrapper{
 margin-top:15px;
@@ -29,16 +29,19 @@ background:#111;
 border-top:2px solid #444;
 border-bottom:2px solid #444;
 overflow:hidden;
-white-space:nowrap;
 }
 
-/* TICKER */
+#tickerTrack{
+display:inline-block;
+white-space:nowrap;
+animation:scrollTicker 160s linear infinite;
+}
 
 #ticker{
 display:inline-block;
 padding:10px;
 color:#ffcc00;
-animation:scrollTicker 140s linear infinite;
+font-weight:bold;
 }
 
 @keyframes scrollTicker{
@@ -99,7 +102,9 @@ font-weight:bold;
 <header>Wisconsin Storm Alerts</header>
 
 <div id="tickerWrapper">
+<div id="tickerTrack">
 <div id="ticker">Loading alerts...</div>
+</div>
 </div>
 
 <div id="layout">
@@ -154,8 +159,6 @@ div.onclick = () => showCounty(c)
 container.appendChild(div)
 
 })
-
-/* COLORS */
 
 function getColor(event){
 
