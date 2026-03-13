@@ -3,7 +3,7 @@
 
 <head>
 
-<title>Wisconsin Weather Alerts</title>
+<title>Wisconsin Alerts Dashboard</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
@@ -34,11 +34,16 @@ overflow:hidden;
 white-space:nowrap;
 }
 
-#ticker{
+#tickerTrack{
+display:inline-block;
+white-space:nowrap;
+animation:scrollTicker 35s linear infinite;
+}
+
+#tickerText{
 display:inline-block;
 padding:8px;
 color:#ffcc00;
-animation:scrollTicker 40s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -55,6 +60,7 @@ height:calc(100vh - 90px);
 
 #map{
 flex:2;
+background:#0a0f1c;
 }
 
 #panel{
@@ -65,16 +71,33 @@ overflow:auto;
 border-left:2px solid #333;
 }
 
+/* COUNTY COLORS */
+
+.normal{
+fill:#0a0f1c;
+stroke:#888;
+}
+
+.red{fill:#8b0000;}
+.orange{fill:#ff7b00;}
+.blue{fill:#0055aa;}
+.yellow{fill:#999900;}
+.purple{fill:#660099;}
+.teal{fill:#008080;}
+
 </style>
 
 </head>
 
 <body>
 
-<header>Wisconsin Weather Alerts</header>
+<header>Wisconsin Alerts Dashboard</header>
 
 <div id="tickerWrapper">
-<div id="ticker">Loading alerts...</div>
+<div id="tickerTrack">
+<div id="tickerText">Loading alerts...</div>
+<div id="tickerTextClone"></div>
+</div>
 </div>
 
 <div id="layout">
@@ -82,7 +105,7 @@ border-left:2px solid #333;
 <div id="map"></div>
 
 <div id="panel">
-<h2>Alert Details</h2>
+<h2>County Alerts</h2>
 <div id="alertText">Click a county to view alerts.</div>
 </div>
 
@@ -92,14 +115,22 @@ border-left:2px solid #333;
 
 <script>
 
-var map = L.map('map').setView([44.5,-89.5],7)
+/* CREATE MAP */
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-).addTo(map)
+var map = L.map('map',{
+zoomControl:false,
+attributionControl:false
+}).setView([44.5,-89.5],7)
+
+/* NO BASEMAP */
+
+
+/* STORAGE */
 
 let countyAlerts={}
 let countiesLayer
+
+/* COLORS */
 
 function getColor(event){
 
@@ -123,7 +154,7 @@ return "📢"
 
 }
 
-/* LOAD COUNTY MAP */
+/* LOAD COUNTY SHAPES */
 
 fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
 
@@ -133,13 +164,11 @@ fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/p
 
 countiesLayer = L.geoJSON(data,{
 
-style:function(){
-return{
+style:{
 color:"#888",
 weight:1,
-fillColor:"#1f3b1f",
+fillColor:"#0a0f1c",
 fillOpacity:0.7
-}
 },
 
 onEachFeature:function(feature,layer){
@@ -147,6 +176,7 @@ onEachFeature:function(feature,layer){
 layer.on("click",function(){
 
 let name=feature.properties.name
+
 let alerts=countyAlerts[name]
 
 if(!alerts){
@@ -155,7 +185,6 @@ document.getElementById("alertText").innerHTML=
 "<b>"+name+" County</b><br>No active alerts."
 
 return
-
 }
 
 let html="<b>"+name+" County</b><br><br>"
@@ -178,12 +207,13 @@ document.getElementById("alertText").innerHTML=html
 
 }).addTo(map)
 
-/* LOAD ALERTS AFTER MAP IS READY */
-
 loadAlerts()
+
 setInterval(loadAlerts,60000)
 
 })
+
+/* LOAD ALERTS */
 
 function loadAlerts(){
 
@@ -242,7 +272,7 @@ fillOpacity:0.8
 else{
 
 layer.setStyle({
-fillColor:"#1f3b1f"
+fillColor:"#0a0f1c"
 })
 
 }
@@ -251,7 +281,10 @@ fillColor:"#1f3b1f"
 
 /* UPDATE TICKER */
 
-document.getElementById("ticker").innerText=ticker.join("   |   ")
+let text=ticker.join("   |   ")
+
+document.getElementById("tickerText").innerText=text
+document.getElementById("tickerTextClone").innerText=text
 
 })
 
