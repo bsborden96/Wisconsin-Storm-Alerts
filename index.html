@@ -15,8 +15,8 @@ text-align:center;
 
 header{
 background:#151c2c;
-padding:22px;
-font-size:28px;
+padding:24px;
+font-size:30px;
 font-weight:bold;
 }
 
@@ -25,6 +25,28 @@ max-width:650px;
 margin:auto;
 padding:25px;
 }
+
+/* LOCATION CARD */
+
+.locationCard{
+background:#111827;
+padding:28px;
+border-radius:10px;
+margin-top:15px;
+}
+
+.countyName{
+font-size:34px;
+font-weight:bold;
+}
+
+.cityName{
+font-size:20px;
+opacity:0.8;
+margin-top:6px;
+}
+
+/* ALERT CARDS */
 
 .card{
 background:#111;
@@ -45,10 +67,12 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-.locationCity{
-font-size:18px;
-opacity:0.8;
-margin-top:6px;
+/* STATUS */
+
+.status{
+margin-top:20px;
+opacity:0.7;
+font-size:14px;
 }
 
 </style>
@@ -61,7 +85,7 @@ margin-top:6px;
 <div class="section">
 
 <h2>Your Location</h2>
-<div id="county" class="card">Detecting your location...</div>
+<div id="county">Detecting your location...</div>
 
 </div>
 
@@ -69,6 +93,12 @@ margin-top:6px;
 
 <h2>Active Alerts</h2>
 <div id="alerts">Checking alerts...</div>
+
+</div>
+
+<div class="section">
+
+<div id="status" class="status">System starting...</div>
 
 </div>
 
@@ -94,11 +124,7 @@ let lon=position.coords.longitude
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
-/* GET CITY */
-
 userCity=data.properties.relativeLocation.properties.city
-
-/* GET COUNTY */
 
 let countyURL=data.properties.county
 
@@ -108,7 +134,7 @@ let countyData=await countyRes.json()
 userCounty=countyData.properties.name.replace(" County","")
 
 document.getElementById("county").innerHTML=
-"<b>"+userCounty+" County</b><div class='locationCity'>"+userCity+"</div>"
+"<div class='locationCard'><div class='countyName'>"+userCounty+" County</div><div class='cityName'>"+userCity+"</div></div>"
 
 loadAlerts()
 
@@ -161,6 +187,21 @@ html='<div class="card none">No active alerts for your county.</div>'
 }
 
 document.getElementById("alerts").innerHTML=html
+
+updateTime()
+
+}
+
+/* UPDATE TIME */
+
+function updateTime(){
+
+let now=new Date()
+
+let time=now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
+
+document.getElementById("status").innerText=
+"Last Updated: "+time
 
 }
 
