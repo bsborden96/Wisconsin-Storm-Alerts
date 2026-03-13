@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Wisconsin Storm Reports</title>
+<title>Local Storm Reports</title>
 
 <style>
 
@@ -10,26 +10,26 @@ margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
+text-align:center;
 }
 
 header{
 background:#151c2c;
-padding:15px;
-text-align:center;
-font-size:26px;
+padding:30px;
+font-size:38px;
 font-weight:bold;
 }
 
 nav{
 background:#0f1424;
-text-align:center;
-padding:10px;
+padding:12px;
 }
 
 nav a{
 color:white;
 text-decoration:none;
 margin:0 15px;
+font-size:20px;
 font-weight:bold;
 }
 
@@ -37,25 +37,23 @@ nav a:hover{
 color:#ffcc00;
 }
 
-.panel{
-background:#111;
-margin:20px;
+.section{
+max-width:700px;
+margin:auto;
+padding:25px;
+}
+
+.reportCard{
+background:#0f172a;
 padding:20px;
-border-radius:8px;
+margin-top:15px;
+border-radius:10px;
+font-size:20px;
 }
 
-.report{
-padding:10px;
-border-bottom:1px solid #333;
-}
-
-.type{
-font-weight:bold;
-}
-
-.time{
-font-size:12px;
-color:#aaa;
+.distance{
+opacity:0.7;
+margin-top:4px;
 }
 
 </style>
@@ -64,55 +62,81 @@ color:#aaa;
 
 <body>
 
-<header>Wisconsin Storm Reports</header>
+<header>
+
+Storm Reports
+
+</header>
 
 <nav>
-<a href="index.html">Alerts</a>
+
+<a href="index.html">Home</a>
 <a href="reports.html">Storm Reports</a>
+
 </nav>
 
-<div class="panel">
+<div class="section">
 
-<h2>Recent Storm Reports</h2>
-
-<div id="reports">
-Loading storm reports...
-</div>
+<h2>Recent Local Storm Reports</h2>
+<div id="reports">Finding nearby reports...</div>
 
 </div>
 
 <script>
 
+let userLat
+let userLon
+
+/* DISTANCE CALCULATION */
+
+function distance(lat1,lon1,lat2,lon2){
+
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*
+Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2)
+
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+
+let km=R*c
+
+return km*0.621371
+
+}
+
+/* LOAD REPORTS */
+
 async function loadReports(){
 
-try{
+let response=await fetch("https://www.spc.noaa.gov/climo/reports/today.json")
 
-let tornadoData = await fetch("https://www.spc.noaa.gov/climo/reports/today_torn.csv").then(r=>r.text())
-let hailData = await fetch("https://www.spc.noaa.gov/climo/reports/today_hail.csv").then(r=>r.text())
-let windData = await fetch("https://www.spc.noaa.gov/climo/reports/today_wind.csv").then(r=>r.text())
-
-let lines = tornadoData.split("\n")
-.concat(hailData.split("\n"))
-.concat(windData.split("\n"))
+let data=await response.json()
 
 let html=""
 
-lines.slice(1,40).forEach(line=>{
+data.forEach(report=>{
 
-let parts=line.split(",")
+let dist=distance(userLat,userLon,report.lat,report.lon)
 
-let time=parts[0]
-let city=parts[1]
-let state=parts[2]
-let type=parts[3]
+if(dist<100){
 
-if(state==="WI"){
+let type=""
+
+if(report.type==="T") type="🌪 Tornado"
+if(report.type==="H") type="🧊 Hail"
+if(report.type==="W") type="💨 Wind"
 
 html+=`
-<div class="report">
-<div class="type">${type}</div>
-${city}, WI
-<div class="time">${time}</div>
+<div class="reportCard">
+<b>${type}</b><br>
+${report.location}<br>
+<div class="distance">${Math.round(dist)} miles away</div>
+${report.time}
 </div>
 `
 
@@ -121,23 +145,23 @@ ${city}, WI
 })
 
 if(html===""){
-html="No recent storm reports in Wisconsin."
+html="No nearby storm reports."
 }
 
 document.getElementById("reports").innerHTML=html
 
-}catch{
-
-document.getElementById("reports").innerHTML=
-"Storm report feed unavailable."
-
 }
 
-}
+/* GET USER LOCATION */
+
+navigator.geolocation.getCurrentPosition(position=>{
+
+userLat=position.coords.latitude
+userLon=position.coords.longitude
 
 loadReports()
 
-setInterval(loadReports,300000)
+})
 
 </script>
 
