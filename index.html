@@ -96,7 +96,6 @@ stroke:#888;
 <div id="tickerWrapper">
 <div id="tickerTrack">
 <div id="tickerText">Loading alerts...</div>
-<div id="tickerTextClone"></div>
 </div>
 </div>
 
@@ -120,17 +119,10 @@ stroke:#888;
 var map = L.map('map',{
 zoomControl:false,
 attributionControl:false
-}).setView([44.5,-89.5],7)
-
-/* NO BASEMAP */
-
-
-/* STORAGE */
+})
 
 let countyAlerts={}
 let countiesLayer
-
-/* COLORS */
 
 function getColor(event){
 
@@ -154,7 +146,7 @@ return "📢"
 
 }
 
-/* LOAD COUNTY SHAPES */
+/* LOAD COUNTY MAP */
 
 fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
 
@@ -176,7 +168,6 @@ onEachFeature:function(feature,layer){
 layer.on("click",function(){
 
 let name=feature.properties.name
-
 let alerts=countyAlerts[name]
 
 if(!alerts){
@@ -207,13 +198,16 @@ document.getElementById("alertText").innerHTML=html
 
 }).addTo(map)
 
-loadAlerts()
+/* IMPORTANT: FIT MAP TO WISCONSIN */
 
+map.fitBounds(countiesLayer.getBounds())
+
+/* LOAD ALERTS */
+
+loadAlerts()
 setInterval(loadAlerts,60000)
 
 })
-
-/* LOAD ALERTS */
 
 function loadAlerts(){
 
@@ -281,10 +275,7 @@ fillColor:"#0a0f1c"
 
 /* UPDATE TICKER */
 
-let text=ticker.join("   |   ")
-
-document.getElementById("tickerText").innerText=text
-document.getElementById("tickerTextClone").innerText=text
+document.getElementById("tickerText").innerText=ticker.join("   |   ")
 
 })
 
