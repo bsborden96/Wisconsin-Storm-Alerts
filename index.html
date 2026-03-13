@@ -13,16 +13,12 @@ color:white;
 text-align:center;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:30px;
 font-size:38px;
 font-weight:bold;
 }
-
-/* NAV */
 
 nav{
 background:#0f1424;
@@ -41,23 +37,17 @@ nav a:hover{
 color:#ffcc00;
 }
 
-/* STATUS */
-
 .status{
 font-size:22px;
 margin-top:10px;
 opacity:0.9;
 }
 
-/* SECTIONS */
-
 .section{
 max-width:650px;
 margin:auto;
 padding:25px;
 }
-
-/* LOCATION */
 
 .locationCard{
 background:#111827;
@@ -75,8 +65,6 @@ font-weight:bold;
 font-size:32px;
 margin-top:10px;
 }
-
-/* WEATHER GRID */
 
 .weatherGrid{
 display:grid;
@@ -106,8 +94,6 @@ margin-top:5px;
 grid-column:1/3;
 }
 
-/* ALERT CARDS */
-
 .card{
 background:#111;
 padding:24px;
@@ -128,7 +114,13 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-/* MOBILE */
+.reportCard{
+background:#0f172a;
+padding:18px;
+margin-top:12px;
+border-radius:8px;
+font-size:18px;
+}
 
 @media (max-width:600px){
 
@@ -207,6 +199,13 @@ US Storm Alerts
 
 </div>
 
+<div class="section">
+
+<h2>Recent Storm Reports</h2>
+<div id="reports">Loading reports...</div>
+
+</div>
+
 <script>
 
 let userCounty=""
@@ -214,13 +213,9 @@ let userCity=""
 let userState=""
 let stationsURL=""
 
-/* SAFE VALUE */
-
 function safe(v){
 return v==null ? 0 : v
 }
-
-/* CARDINAL WIND */
 
 function getCardinal(deg){
 
@@ -231,8 +226,6 @@ const dirs=["N","NE","E","SE","S","SW","W","NW"]
 return dirs[Math.round(deg/45)%8]
 
 }
-
-/* LOCATION */
 
 async function detectLocation(){
 
@@ -261,12 +254,11 @@ document.getElementById("county").innerHTML=
 
 loadWeather()
 loadAlerts()
+loadReports()
 
 })
 
 }
-
-/* WEATHER */
 
 async function loadWeather(){
 
@@ -289,6 +281,9 @@ let humidity=Math.round(safe(obs.properties.relativeHumidity.value))
 let windSpeed=safe(obs.properties.windSpeed.value)
 windSpeed=Math.round(windSpeed*2.237)
 
+let windGust=safe(obs.properties.windGust.value)
+windGust=Math.round(windGust*2.237)
+
 let windDir=getCardinal(obs.properties.windDirection.value)
 
 let precip=safe(obs.properties.precipitationLastHour.value)
@@ -298,11 +293,16 @@ document.getElementById("temp").innerText=tempF+"°F"
 document.getElementById("dew").innerText=dewF+"°F"
 document.getElementById("humidity").innerText=humidity+"%"
 document.getElementById("precip").innerText=precipIn+" in"
-document.getElementById("wind").innerText=windSpeed+" mph "+windDir
 
+let windText = windSpeed + " mph " + windDir
+
+if(windGust>0){
+windText += " (gust " + windGust + ")"
 }
 
-/* ALERTS */
+document.getElementById("wind").innerText = windText
+
+}
 
 async function loadAlerts(){
 
@@ -346,7 +346,44 @@ updateTime()
 
 }
 
-/* TIME */
+async function loadReports(){
+
+let response=await fetch("https://www.spc.noaa.gov/climo/reports/today_wind.csv")
+
+let text=await response.text()
+
+let rows=text.split("\n")
+
+let html=""
+
+rows.forEach(row=>{
+
+let cols=row.split(",")
+
+let location=cols[5]
+let time=cols[0]
+
+if(location && location.includes(userState)){
+
+html+=`
+<div class="reportCard">
+💨 Wind Report<br>
+${location}<br>
+${time}
+</div>
+`
+
+}
+
+})
+
+if(html===""){
+html="No recent storm reports in your area."
+}
+
+document.getElementById("reports").innerHTML=html
+
+}
 
 function updateTime(){
 
