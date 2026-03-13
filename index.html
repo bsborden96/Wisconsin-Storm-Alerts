@@ -194,6 +194,8 @@ let stationsURL=""
 let currentLat=""
 let currentLon=""
 
+/* LOAD LOCATION */
+
 async function loadLocation(lat,lon){
 
 currentLat=lat
@@ -221,6 +223,8 @@ loadAlerts()
 
 }
 
+/* DEVICE LOCATION */
+
 function detectLocation(){
 
 navigator.geolocation.getCurrentPosition(position=>{
@@ -230,6 +234,8 @@ loadLocation(position.coords.latitude,position.coords.longitude)
 })
 
 }
+
+/* SEARCH LOCATION */
 
 async function searchLocation(){
 
@@ -249,14 +255,39 @@ loadLocation(lat,lon)
 
 }
 
+/* CLOSEST WEATHER STATION */
+
 async function loadWeather(){
 
 let stationsRes=await fetch(stationsURL)
 let stations=await stationsRes.json()
 
-let station=stations.features[0].id
+let closestStation=null
+let closestDistance=999999
 
-let obsRes=await fetch(station+"/observations/latest")
+stations.features.forEach(station=>{
+
+let coords=station.geometry.coordinates
+let lon=coords[0]
+let lat=coords[1]
+
+let distance=Math.sqrt(
+Math.pow(lat-currentLat,2)+
+Math.pow(lon-currentLon,2)
+)
+
+if(distance<closestDistance){
+
+closestDistance=distance
+closestStation=station.id
+
+}
+
+})
+
+if(!closestStation) return
+
+let obsRes=await fetch(closestStation+"/observations/latest")
 let obs=await obsRes.json()
 
 let tempC=obs.properties.temperature.value
@@ -277,6 +308,8 @@ document.getElementById("humidity").innerText=humidity+"%"
 document.getElementById("precip").innerText=precipIn+" in"
 
 }
+
+/* ALERTS */
 
 async function loadAlerts(){
 
@@ -317,6 +350,8 @@ let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 document.getElementById("status").innerText="Last Updated: "+time
 
 }
+
+/* START */
 
 detectLocation()
 
