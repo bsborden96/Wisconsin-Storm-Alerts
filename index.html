@@ -27,22 +27,27 @@ text-align:center;
 background:#111;
 border-bottom:2px solid #444;
 overflow:hidden;
+width:100%;
+}
+
+#tickerTrack{
+display:flex;
+white-space:nowrap;
 }
 
 #ticker{
 color:#ffcc00;
-padding:8px;
-white-space:nowrap;
+padding:8px 0;
 display:inline-block;
-animation:scrollTicker 35s linear infinite;
+animation:scrollTicker 55s linear infinite;
 }
 
 @keyframes scrollTicker{
-0% {transform:translateX(100%)}
-100% {transform:translateX(-100%)}
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
 }
 
-/* PAGE BREAK */
+/* DIVIDER */
 
 .divider{
 height:15px;
@@ -62,6 +67,7 @@ padding:20px;
 padding:10px;
 border-bottom:1px solid #333;
 background:#1f3b1f;
+transition:0.3s;
 }
 
 .countyName{
@@ -72,13 +78,25 @@ font-weight:bold;
 margin-left:10px;
 }
 
-/* COLORS */
+/* ALERT COLORS */
 
 .red{background:#5a0000;}
 .orange{background:#7a3b00;}
 .yellow{background:#666600;}
 .blue{background:#003c66;}
 .green{background:#1f3b1f;}
+
+/* FLASHING TORNADO */
+
+.flash{
+animation:flashRed 1s infinite;
+}
+
+@keyframes flashRed{
+0%{background:#5a0000;}
+50%{background:#a00000;}
+100%{background:#5a0000;}
+}
 
 </style>
 
@@ -91,12 +109,19 @@ Wisconsin County Alerts
 </header>
 
 <div id="tickerWrapper">
+<div id="tickerTrack">
 <div id="ticker">Loading alerts...</div>
+</div>
 </div>
 
 <div class="divider"></div>
 
 <div id="container"></div>
+
+<!-- ALERT SOUND -->
+<audio id="alertSound">
+<source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg">
+</audio>
 
 <script>
 
@@ -134,12 +159,9 @@ container.appendChild(div)
 
 })
 
-
-// LOAD ALERTS
+let previousAlerts = new Set()
 
 function loadAlerts(){
-
-// reset counties
 
 counties.forEach(c=>{
 let county=document.getElementById(c)
@@ -153,7 +175,9 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 
 .then(data=>{
 
-let tickerSet = new Set()
+let tickerSet=new Set()
+let currentAlerts=new Set()
+let alertCounties=[]
 
 data.features.forEach(alert=>{
 
@@ -162,10 +186,12 @@ let areas=alert.properties.areaDesc.split(";")
 
 let emoji="⚠️"
 let color="yellow"
+let flash=false
 
 if(event.includes("Tornado")){
 emoji="🌪"
 color="red"
+flash=true
 }
 
 if(event.includes("Severe Thunderstorm")){
@@ -193,19 +219,23 @@ if(county){
 
 let alertText=`${emoji} ${event}`
 
-// prevent duplicates
-
 let existing=[...county.querySelectorAll(".alert")].map(e=>e.innerText)
 
 if(!existing.includes(alertText)){
 
 county.className="county "+color
 
+if(flash) county.classList.add("flash")
+
 county.querySelector(".alerts").innerHTML+=
 `<div class="alert">${alertText}</div>`
 
 tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 
+currentAlerts.add(`${event}-${countyName}`)
+
+alertCounties.push(county)
+
 }
 
 }
@@ -213,18 +243,32 @@ tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 })
 
 })
+
+// play sound if new alert
+
+currentAlerts.forEach(a=>{
+if(!previousAlerts.has(a)){
+document.getElementById("alertSound").play()
+}
+})
+
+previousAlerts=currentAlerts
 
 // update ticker
 
 document.getElementById("ticker").innerText=[...tickerSet].join("   |   ")
+
+// move counties with alerts to top
+
+alertCounties.forEach(c=>{
+container.prepend(c)
+})
 
 })
 
 }
 
 loadAlerts()
-
-// refresh every minute
 
 setInterval(loadAlerts,60000)
 
