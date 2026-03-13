@@ -190,13 +190,9 @@ US Storm Alerts
 
 <script>
 
-let userCity=""
-let userState=""
 let stationsURL=""
 let currentLat=""
 let currentLon=""
-
-/* load location info */
 
 async function loadLocation(lat,lon){
 
@@ -206,8 +202,8 @@ currentLon=lon
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
-userCity=data.properties.relativeLocation.properties.city
-userState=data.properties.relativeLocation.properties.state
+let city=data.properties.relativeLocation.properties.city
+let state=data.properties.relativeLocation.properties.state
 
 stationsURL=data.properties.observationStations
 
@@ -218,14 +214,12 @@ let countyData=await countyRes.json()
 let countyName=countyData.properties.name
 
 document.getElementById("county").innerHTML=
-"<div class='locationCard'><div class='countyName'>"+countyName+"</div><div class='cityName'>"+userCity+", "+userState+"</div></div>"
+"<div class='locationCard'><div class='countyName'>"+countyName+"</div><div class='cityName'>"+city+", "+state+"</div></div>"
 
 loadWeather()
 loadAlerts()
 
 }
-
-/* use device location */
 
 function detectLocation(){
 
@@ -237,8 +231,6 @@ loadLocation(position.coords.latitude,position.coords.longitude)
 
 }
 
-/* search city or town */
-
 async function searchLocation(){
 
 let query=document.getElementById("searchBox").value
@@ -246,7 +238,6 @@ let query=document.getElementById("searchBox").value
 if(!query) return
 
 let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=en&format=json`)
-
 let geoData=await geo.json()
 
 if(!geoData.results) return
@@ -257,8 +248,6 @@ let lon=geoData.results[0].longitude
 loadLocation(lat,lon)
 
 }
-
-/* weather observations */
 
 async function loadWeather(){
 
@@ -289,16 +278,9 @@ document.getElementById("precip").innerText=precipIn+" in"
 
 }
 
-/* load alerts correctly using NWS zone */
-
 async function loadAlerts(){
 
-let zoneRes=await fetch(`https://api.weather.gov/points/${currentLat},${currentLon}`)
-let zoneData=await zoneRes.json()
-
-let zone=zoneData.properties.forecastZone.split("/").pop()
-
-let response=await fetch(`https://api.weather.gov/alerts/active?zone=${zone}`)
+let response=await fetch(`https://api.weather.gov/alerts/active?point=${currentLat},${currentLon}`)
 let data=await response.json()
 
 let html=""
@@ -310,4 +292,38 @@ let desc=alert.properties.description
 
 let style="card"
 
-if(event.includes("Tornado Warning")) style
+if(event.includes("Tornado Warning")) style+=" tornado"
+else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+else style+=" none"
+
+html+=`
+<div class="${style}">
+<h3>${event}</h3>
+<p>${desc}</p>
+</div>
+`
+
+})
+
+if(html===""){
+html='<div class="card none">No active alerts for this location.</div>'
+}
+
+document.getElementById("alerts").innerHTML=html
+
+let now=new Date()
+let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+
+document.getElementById("status").innerText="Last Updated: "+time
+
+}
+
+detectLocation()
+
+setInterval(loadAlerts,60000)
+setInterval(loadWeather,300000)
+
+</script>
+
+</body>
+</html>
