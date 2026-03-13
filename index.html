@@ -34,7 +34,13 @@ white-space:nowrap;
 color:#ffcc00;
 padding:8px 0;
 display:inline-block;
-animation:tickerScroll 70s linear infinite;
+animation:none;
+}
+
+/* ticker animation starts after alerts load */
+
+.scroll{
+animation:tickerScroll 140s linear infinite;
 }
 
 @keyframes tickerScroll{
@@ -113,7 +119,7 @@ Wisconsin County Alerts
 
 <script>
 
-// COUNTY LIST (alphabetical)
+// COUNTY LIST
 
 const counties = [
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
@@ -238,7 +244,13 @@ tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 
 // update ticker
 
-document.getElementById("ticker").innerText=[...tickerSet].join("   |   ")
+let ticker=document.getElementById("ticker")
+
+ticker.innerText=[...tickerSet].join("   |   ")
+
+ticker.classList.remove("scroll")
+void ticker.offsetWidth
+ticker.classList.add("scroll")
 
 })
 
