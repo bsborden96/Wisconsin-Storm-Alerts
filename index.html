@@ -25,8 +25,6 @@ header.severe{
 background:#8b0000;
 }
 
-/* NAVIGATION BAR */
-
 nav{
 background:#0f1424;
 text-align:center;
@@ -51,8 +49,6 @@ font-size:14px;
 color:#ccc;
 }
 
-/* WARNING BANNER */
-
 #warningBanner{
 background:#5a0000;
 padding:10px;
@@ -60,8 +56,6 @@ text-align:center;
 font-weight:bold;
 display:none;
 }
-
-/* TICKER */
 
 #tickerWrapper{
 background:#111;
@@ -86,8 +80,6 @@ font-weight:bold;
 0%{transform:translateX(100%)}
 100%{transform:translateX(-100%)}
 }
-
-/* PANELS */
 
 .panel{
 background:#111;
@@ -124,13 +116,9 @@ border-radius:4px;
 white-space:nowrap;
 }
 
-/* COLORS */
-
 .green{background:#1f3b1f;}
 .orange{background:#7a3b00;}
 .red{background:#8b0000;}
-.blue{background:#003c66;}
-.yellow{background:#666600;}
 .teal{background:#004f4f;}
 
 .flash{
@@ -141,6 +129,12 @@ animation:flashAlert 1s infinite;
 0%{background:#8b0000;}
 50%{background:#300000;}
 100%{background:#8b0000;}
+}
+
+#countySelect{
+padding:8px;
+margin-bottom:10px;
+font-size:14px;
 }
 
 </style>
@@ -166,6 +160,18 @@ Last Updated: <span id="lastUpdated">--</span>
 <div id="tickerTrack">
 <div id="ticker">Loading Wisconsin alerts...</div>
 </div>
+</div>
+
+<div class="panel">
+
+<h2>Your County Alerts</h2>
+
+<select id="countySelect"></select>
+
+<div id="localAlerts">
+Select a county to see local alerts.
+</div>
+
 </div>
 
 <div class="panel">
@@ -200,10 +206,13 @@ const counties=[
 ]
 
 const grid=document.getElementById("countyGrid")
+const countySelect=document.getElementById("countySelect")
+
 let countyAlerts={}
 let previousAlerts=0
 
 counties.forEach(c=>{
+
 let div=document.createElement("div")
 div.className="county green"
 div.id=c
@@ -211,7 +220,15 @@ div.innerText=c
 div.dataset.alerts="No alerts"
 div.onclick=()=>showCounty(c)
 grid.appendChild(div)
+
+let option=document.createElement("option")
+option.value=c
+option.text=c+" County"
+countySelect.appendChild(option)
+
 })
+
+countySelect.addEventListener("change",updateLocalAlerts)
 
 function showCounty(name){
 
@@ -231,7 +248,32 @@ html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
 document.getElementById("alertText").innerHTML=html
 }
 
+function updateLocalAlerts(){
+
+let county=countySelect.value
+let alerts=countyAlerts[county]
+
+if(!alerts){
+
+document.getElementById("localAlerts").innerHTML=
+"No active alerts for "+county+" County."
+
+return
+}
+
+let html=""
+
+alerts.forEach(a=>{
+html+="<b>"+a.event+"</b><br>"
+})
+
+document.getElementById("localAlerts").innerHTML=html
+
+}
+
 async function loadAlerts(){
+
+countyAlerts={}
 
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
 let data=await response.json()
@@ -308,6 +350,8 @@ document.getElementById("alertSound").play()
 }
 
 previousAlerts=count
+
+updateLocalAlerts()
 
 }
 
