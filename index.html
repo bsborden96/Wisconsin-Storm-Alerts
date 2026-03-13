@@ -24,7 +24,7 @@ font-size:24px;
 /* TICKER */
 
 #tickerWrapper{
-margin-top:15px;
+margin-top:20px;
 background:#111;
 border-top:2px solid #444;
 border-bottom:2px solid #444;
@@ -34,7 +34,7 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 160s linear infinite;
+animation:scrollTicker 90s linear infinite;
 }
 
 #ticker{
@@ -43,6 +43,8 @@ padding:10px;
 color:#ffcc00;
 font-weight:bold;
 }
+
+/* SCROLL ANIMATION */
 
 @keyframes scrollTicker{
 0%{transform:translateX(100%)}
@@ -56,8 +58,6 @@ display:flex;
 height:calc(100vh - 120px);
 }
 
-/* COUNTY PANEL */
-
 #counties{
 flex:1;
 padding:20px;
@@ -65,15 +65,13 @@ overflow:auto;
 border-right:2px solid #333;
 }
 
-/* ALERT PANEL */
-
 #panel{
 flex:1;
 padding:20px;
 overflow:auto;
 }
 
-/* COUNTY STYLE */
+/* COUNTY BOX */
 
 .county{
 padding:10px;
@@ -103,7 +101,9 @@ font-weight:bold;
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
-<div id="ticker">Loading alerts...</div>
+<div id="ticker">
+Loading Wisconsin alerts...
+</div>
 </div>
 </div>
 
@@ -123,8 +123,6 @@ Click a county to view alerts.
 </div>
 
 <script>
-
-/* ALL COUNTIES */
 
 const counties = [
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
@@ -184,8 +182,6 @@ return "📢"
 
 }
 
-/* SHOW COUNTY ALERTS */
-
 function showCounty(name){
 
 let alerts = countyAlerts[name]
@@ -228,8 +224,6 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 .then(data => {
 
 let tickerSet = new Set()
-
-/* RESET COUNTY COLORS */
 
 counties.forEach(c => {
 document.getElementById(c).className = "county green"
