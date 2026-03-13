@@ -21,7 +21,7 @@ text-align:center;
 font-size:24px;
 }
 
-/* SPACE ABOVE TICKER */
+/* TICKER POSITION */
 
 #tickerWrapper{
 margin-top:15px;
@@ -46,7 +46,7 @@ animation:scrollTicker 140s linear infinite;
 100%{transform:translateX(-100%)}
 }
 
-/* LAYOUT */
+/* PAGE LAYOUT */
 
 #layout{
 display:flex;
@@ -70,7 +70,7 @@ padding:20px;
 overflow:auto;
 }
 
-/* COUNTY BOX */
+/* COUNTY STYLE */
 
 .county{
 padding:10px;
@@ -107,15 +107,19 @@ font-weight:bold;
 <div id="counties"></div>
 
 <div id="panel">
+
 <h2>Alert Details</h2>
-<div id="alertText">Click a county to view alerts.</div>
+<div id="alertText">
+Click a county to view alerts.
+</div>
+
 </div>
 
 </div>
 
 <script>
 
-/* ALL 72 COUNTIES */
+/* ALL COUNTIES */
 
 const counties = [
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
@@ -133,7 +137,6 @@ const counties = [
 ]
 
 const container = document.getElementById("counties")
-
 let countyAlerts = {}
 
 /* BUILD COUNTY LIST */
@@ -151,6 +154,8 @@ div.onclick = () => showCounty(c)
 container.appendChild(div)
 
 })
+
+/* COLORS */
 
 function getColor(event){
 
@@ -175,6 +180,8 @@ if(event.includes("Watch")) return "👀"
 return "📢"
 
 }
+
+/* SHOW COUNTY ALERTS */
 
 function showCounty(name){
 
@@ -219,6 +226,8 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 
 let tickerSet = new Set()
 
+/* RESET COUNTY COLORS */
+
 counties.forEach(c => {
 document.getElementById(c).className = "county green"
 })
@@ -231,9 +240,11 @@ let desc = alert.properties.description
 
 let areas = alert.properties.areaDesc.split(";")
 
-areas.forEach(a => {
+areas.forEach(area => {
 
-let county = a.trim().replace(" County","")
+let county = area.trim()
+
+if(counties.includes(county)){
 
 if(!countyAlerts[county])
 countyAlerts[county] = []
@@ -251,12 +262,16 @@ box.className = "county " + getColor(event)
 
 tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
 
+}
+
 })
 
 })
 
 document.getElementById("ticker").innerText =
-[...tickerSet].join("   |   ")
+tickerSet.size > 0
+? [...tickerSet].join("   |   ")
+: "No active alerts for Wisconsin"
 
 })
 
