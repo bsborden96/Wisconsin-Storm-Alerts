@@ -1,58 +1,49 @@
 <!DOCTYPE html>
 <html>
+
 <head>
 
-<title>Wisconsin Storm Radar</title>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<title>Wisconsin County Alerts</title>
 
 <style>
 
 body{
-margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
+margin:0;
 }
 
-#ticker{
-background:#111;
-color:#ffcc00;
-padding:8px;
-font-weight:bold;
-}
-
-#navbar{
+header{
 background:#151c2c;
-padding:10px;
-display:flex;
-gap:20px;
-}
-
-#navbar a{
-color:white;
-text-decoration:none;
-font-weight:bold;
-}
-
-#controls{
-padding:10px;
+padding:15px;
+font-size:22px;
 text-align:center;
 }
 
-button{
-padding:10px;
-margin:5px;
-background:#2c3e50;
-border:none;
-color:white;
-border-radius:6px;
-cursor:pointer;
+#container{
+max-width:900px;
+margin:auto;
+padding:20px;
 }
 
-#map{
-height:80vh;
+.county{
+padding:10px;
+border-bottom:1px solid #333;
+display:flex;
+justify-content:space-between;
+background:#1f3b1f;
 }
+
+.alert{
+font-weight:bold;
+}
+
+.red{background:#5a0000;}
+.orange{background:#7a3b00;}
+.yellow{background:#666600;}
+.blue{background:#003c66;}
+.green{background:#1f3b1f;}
 
 </style>
 
@@ -60,92 +51,158 @@ height:80vh;
 
 <body>
 
-<div id="ticker">Wisconsin Storm Radar</div>
+<header>
+Wisconsin County Alerts
+</header>
 
-<div id="navbar">
-<a href="#">Home</a>
-<a href="#">Radar</a>
-<a href="#">Alerts</a>
-</div>
-
-<div id="controls">
-<button onclick="loadRadar()">Reflectivity</button>
-<button onclick="toggleReports()">Storm Reports</button>
-</div>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div id="container"></div>
 
 <script>
 
-// CREATE MAP
-var map = L.map('map').setView([44.5,-89.5],7)
+// COUNTY DATA WITH FIPS
 
-// BASEMAP
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:19
-}).addTo(map)
+const counties = [
+{name:"Adams",fips:"55001"},
+{name:"Ashland",fips:"55003"},
+{name:"Barron",fips:"55005"},
+{name:"Bayfield",fips:"55007"},
+{name:"Brown",fips:"55009"},
+{name:"Buffalo",fips:"55011"},
+{name:"Burnett",fips:"55013"},
+{name:"Calumet",fips:"55015"},
+{name:"Chippewa",fips:"55017"},
+{name:"Clark",fips:"55019"},
+{name:"Columbia",fips:"55021"},
+{name:"Crawford",fips:"55023"},
+{name:"Dane",fips:"55025"},
+{name:"Dodge",fips:"55027"},
+{name:"Door",fips:"55029"},
+{name:"Douglas",fips:"55031"},
+{name:"Dunn",fips:"55033"},
+{name:"Eau Claire",fips:"55035"},
+{name:"Florence",fips:"55037"},
+{name:"Fond du Lac",fips:"55039"},
+{name:"Forest",fips:"55041"},
+{name:"Grant",fips:"55043"},
+{name:"Green",fips:"55045"},
+{name:"Green Lake",fips:"55047"},
+{name:"Iowa",fips:"55049"},
+{name:"Iron",fips:"55051"},
+{name:"Jackson",fips:"55053"},
+{name:"Jefferson",fips:"55055"},
+{name:"Juneau",fips:"55057"},
+{name:"Kenosha",fips:"55059"},
+{name:"Kewaunee",fips:"55061"},
+{name:"La Crosse",fips:"55063"},
+{name:"Lafayette",fips:"55065"},
+{name:"Langlade",fips:"55067"},
+{name:"Lincoln",fips:"55069"},
+{name:"Manitowoc",fips:"55071"},
+{name:"Marathon",fips:"55073"},
+{name:"Marinette",fips:"55075"},
+{name:"Marquette",fips:"55077"},
+{name:"Menominee",fips:"55078"},
+{name:"Milwaukee",fips:"55079"},
+{name:"Monroe",fips:"55081"},
+{name:"Oconto",fips:"55083"},
+{name:"Oneida",fips:"55085"},
+{name:"Outagamie",fips:"55087"},
+{name:"Ozaukee",fips:"55089"},
+{name:"Pepin",fips:"55091"},
+{name:"Pierce",fips:"55093"},
+{name:"Polk",fips:"55095"},
+{name:"Portage",fips:"55097"},
+{name:"Price",fips:"55099"},
+{name:"Racine",fips:"55101"},
+{name:"Richland",fips:"55103"},
+{name:"Rock",fips:"55105"},
+{name:"Rusk",fips:"55107"},
+{name:"Sauk",fips:"55111"},
+{name:"Sawyer",fips:"55113"},
+{name:"Shawano",fips:"55115"},
+{name:"Sheboygan",fips:"55117"},
+{name:"St Croix",fips:"55109"},
+{name:"Taylor",fips:"55119"},
+{name:"Trempealeau",fips:"55121"},
+{name:"Vernon",fips:"55123"},
+{name:"Vilas",fips:"55125"},
+{name:"Walworth",fips:"55127"},
+{name:"Washburn",fips:"55129"},
+{name:"Washington",fips:"55131"},
+{name:"Waukesha",fips:"55133"},
+{name:"Waupaca",fips:"55135"},
+{name:"Waushara",fips:"55137"},
+{name:"Winnebago",fips:"55139"},
+{name:"Wood",fips:"55141"}
+]
 
-var radarLayer = null
+const container=document.getElementById("container")
 
-function loadRadar(){
-
-fetch("https://api.rainviewer.com/public/weather-maps.json")
-.then(res => res.json())
-.then(data => {
-
-var frame = data.radar.past[data.radar.past.length-1].path
-
-if(radarLayer){
-map.removeLayer(radarLayer)
-}
-
-radarLayer = L.tileLayer(
-"https://tilecache.rainviewer.com"+frame+"/256/{z}/{x}/{y}/2/1_1.png",
-{opacity:0.7}
-)
-
-radarLayer.addTo(map)
-
+counties.forEach(c=>{
+let div=document.createElement("div")
+div.className="county green"
+div.id=c.fips
+div.innerHTML=`<span>${c.name} County</span><span class="alert">🟩 No Alerts</span>`
+container.appendChild(div)
 })
 
-}
 
-loadRadar()
+// FETCH NWS ALERTS
 
-// STORM REPORTS
+fetch("https://api.weather.gov/alerts/active?area=WI")
 
-var reportsLayer = null
-
-function toggleReports(){
-
-if(reportsLayer){
-map.removeLayer(reportsLayer)
-reportsLayer = null
-return
-}
-
-fetch("https://mesonet.agron.iastate.edu/geojson/lsr.php?sts=1")
 .then(r=>r.json())
+
 .then(data=>{
 
-reportsLayer = L.geoJSON(data,{
-pointToLayer:function(feature,latlng){
-return L.circleMarker(latlng,{
-radius:6,
-color:"white",
-fillColor:"cyan",
-fillOpacity:0.9
-})
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+let geocodes=alert.properties.geocode.SAME
+
+let emoji="⚠️"
+let color="yellow"
+
+if(event.includes("Tornado")){
+emoji="🌪"
+color="red"
 }
-}).addTo(map)
+
+if(event.includes("Severe Thunderstorm")){
+emoji="⛈"
+color="orange"
+}
+
+if(event.includes("High Wind")){
+emoji="💨"
+color="yellow"
+}
+
+if(event.includes("Winter Storm")){
+emoji="❄️"
+color="blue"
+}
+
+geocodes.forEach(code=>{
+
+let county=document.getElementById(code)
+
+if(county){
+
+county.className="county "+color
+
+county.querySelector(".alert").innerHTML=`${emoji} ${event}`
+
+}
 
 })
 
-}
+})
+
+})
 
 </script>
 
 </body>
+
 </html>
