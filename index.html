@@ -36,7 +36,7 @@ white-space:nowrap;
 display:inline-block;
 padding:8px;
 color:#ffcc00;
-animation:scrollTicker 120s linear infinite;
+animation:scrollTicker 180s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -94,6 +94,8 @@ background:#0a0f1c;
 
 <script>
 
+/* CREATE MAP */
+
 var map = L.map('map',{
 zoomControl:false,
 attributionControl:false
@@ -124,9 +126,9 @@ return "📢"
 
 }
 
-/* LOAD WI COUNTY MAP */
+/* LOAD COUNTY MAP */
 
-fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
+fetch("https://cdn.jsdelivr.net/gh/codeforamerica/click_that_hood/public/data/wisconsin-counties.geojson")
 
 .then(r=>r.json())
 
