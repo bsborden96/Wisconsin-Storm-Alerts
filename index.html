@@ -13,12 +13,24 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
-padding:24px;
+padding:26px;
 font-size:30px;
 font-weight:bold;
 }
+
+/* LAST UPDATED */
+
+.status{
+font-size:16px;
+opacity:0.7;
+margin-top:8px;
+}
+
+/* SECTION */
 
 .section{
 max-width:650px;
@@ -30,29 +42,30 @@ padding:25px;
 
 .locationCard{
 background:#111827;
-padding:28px;
-border-radius:10px;
+padding:35px;
+border-radius:12px;
 margin-top:15px;
 }
 
 .countyName{
-font-size:34px;
+font-size:44px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:20px;
-opacity:0.8;
-margin-top:6px;
+font-size:26px;
+margin-top:8px;
+opacity:0.9;
 }
 
 /* ALERT CARDS */
 
 .card{
 background:#111;
-padding:20px;
+padding:22px;
 margin-top:15px;
-border-radius:8px;
+border-radius:10px;
+font-size:18px;
 }
 
 .tornado{
@@ -67,12 +80,22 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-/* STATUS */
+/* MOBILE OPTIMIZATION */
 
-.status{
-margin-top:20px;
-opacity:0.7;
-font-size:14px;
+@media (max-width:600px){
+
+.countyName{
+font-size:52px;
+}
+
+.cityName{
+font-size:28px;
+}
+
+.card{
+font-size:20px;
+}
+
 }
 
 </style>
@@ -80,7 +103,13 @@ font-size:14px;
 
 <body>
 
-<header>Wisconsin Storm Alerts</header>
+<header>
+
+Wisconsin Storm Alerts
+
+<div id="status" class="status">Starting system...</div>
+
+</header>
 
 <div class="section">
 
@@ -93,12 +122,6 @@ font-size:14px;
 
 <h2>Active Alerts</h2>
 <div id="alerts">Checking alerts...</div>
-
-</div>
-
-<div class="section">
-
-<div id="status" class="status">System starting...</div>
 
 </div>
 
@@ -200,8 +223,7 @@ let now=new Date()
 
 let time=now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
 
-document.getElementById("status").innerText=
-"Last Updated: "+time
+document.getElementById("status").innerText="Last Updated: "+time
 
 }
 
