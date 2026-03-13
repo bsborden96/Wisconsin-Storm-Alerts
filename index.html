@@ -56,14 +56,14 @@ border-radius:6px;
 }
 
 #map{
-max-width:650px;
+max-width:800px;
 margin:auto;
 }
 
 .county{
 fill:#333;
 stroke:#111;
-stroke-width:1;
+stroke-width:0.6;
 cursor:pointer;
 }
 
@@ -113,57 +113,11 @@ margin-top:20px;
 
 <div id="map">
 
-<svg viewBox="0 0 960 1100" width="650">
-
-<path id="Douglas" class="county" d="M147 39 L214 34 L226 63 L203 84 L154 79 Z"/>
-<path id="Bayfield" class="county" d="M214 34 L283 31 L297 59 L226 63 Z"/>
-<path id="Ashland" class="county" d="M283 31 L354 32 L362 63 L297 59 Z"/>
-<path id="Iron" class="county" d="M354 32 L420 40 L420 70 L362 63 Z"/>
-
-<path id="Burnett" class="county" d="M154 79 L203 84 L203 120 L153 120 Z"/>
-<path id="Washburn" class="county" d="M203 84 L226 63 L297 59 L297 120 L203 120 Z"/>
-<path id="Sawyer" class="county" d="M297 59 L362 63 L362 120 L297 120 Z"/>
-<path id="Price" class="county" d="M362 63 L420 70 L420 120 L362 120 Z"/>
-<path id="Vilas" class="county" d="M420 70 L480 75 L480 120 L420 120 Z"/>
-
-<path id="Polk" class="county" d="M153 120 L203 120 L203 160 L153 160 Z"/>
-<path id="Barron" class="county" d="M203 120 L297 120 L297 160 L203 160 Z"/>
-<path id="Rusk" class="county" d="M297 120 L362 120 L362 160 L297 160 Z"/>
-<path id="Taylor" class="county" d="M362 120 L420 120 L420 160 L362 160 Z"/>
-<path id="Oneida" class="county" d="M420 120 L480 120 L480 160 L420 160 Z"/>
-
-<path id="St Croix" class="county" d="M153 160 L203 160 L203 200 L153 200 Z"/>
-<path id="Dunn" class="county" d="M203 160 L297 160 L297 200 L203 200 Z"/>
-<path id="Chippewa" class="county" d="M297 160 L362 160 L362 200 L297 200 Z"/>
-<path id="Clark" class="county" d="M362 160 L420 160 L420 200 L362 200 Z"/>
-<path id="Lincoln" class="county" d="M420 160 L480 160 L480 200 L420 200 Z"/>
-
-<path id="Eau Claire" class="county" d="M203 200 L297 200 L297 240 L203 240 Z"/>
-<path id="Jackson" class="county" d="M297 200 L362 200 L362 240 L297 240 Z"/>
-<path id="Marathon" class="county" d="M362 200 L420 200 L420 240 L362 240 Z"/>
-<path id="Langlade" class="county" d="M420 200 L480 200 L480 240 L420 240 Z"/>
-
-<path id="La Crosse" class="county" d="M203 240 L297 240 L297 280 L203 280 Z"/>
-<path id="Monroe" class="county" d="M297 240 L362 240 L362 280 L297 280 Z"/>
-<path id="Juneau" class="county" d="M362 240 L420 240 L420 280 L362 280 Z"/>
-<path id="Wood" class="county" d="M297 280 L362 280 L362 320 L297 320 Z"/>
-<path id="Portage" class="county" d="M362 280 L420 280 L420 320 L362 320 Z"/>
-
-<path id="Adams" class="county" d="M362 320 L420 320 L420 360 L362 360 Z"/>
-<path id="Sauk" class="county" d="M297 320 L362 320 L362 360 L297 360 Z"/>
-<path id="Columbia" class="county" d="M420 320 L480 320 L480 360 L420 360 Z"/>
-
-<path id="Dane" class="county" d="M297 360 L362 360 L362 400 L297 400 Z"/>
-<path id="Jefferson" class="county" d="M362 360 L420 360 L420 400 L362 400 Z"/>
-
-<path id="Rock" class="county" d="M297 400 L362 400 L362 440 L297 440 Z"/>
-<path id="Walworth" class="county" d="M362 400 L420 400 L420 440 L362 440 Z"/>
-
-<path id="Milwaukee" class="county" d="M480 360 L520 360 L520 400 L480 400 Z"/>
-<path id="Racine" class="county" d="M480 400 L520 400 L520 440 L480 440 Z"/>
-<path id="Kenosha" class="county" d="M480 440 L520 440 L520 480 L480 480 Z"/>
-
-</svg>
+<object id="wiMap"
+type="image/svg+xml"
+data="https://cdn.jsdelivr.net/gh/codeforamerica/click_that_hood/public/data/wisconsin-counties.svg"
+width="800">
+</object>
 
 </div>
 
@@ -179,6 +133,8 @@ margin-top:20px;
 <script>
 
 let countyAlerts={}
+
+const mapObject=document.getElementById("wiMap")
 
 async function loadAlerts(){
 
@@ -233,17 +189,50 @@ ${counties}
 document.getElementById("warnings").innerHTML =
 warningsHTML || "No active warnings."
 
-colorCounties()
-
 }
 
-function colorCounties(){
+mapObject.addEventListener("load",()=>{
 
-document.querySelectorAll(".county").forEach(c=>{
+const svgDoc=mapObject.contentDocument
+
+const counties=svgDoc.querySelectorAll("path")
+
+counties.forEach(c=>{
+
+let countyName=c.getAttribute("name") || c.getAttribute("id")
+
+c.classList.add("county")
+
+c.addEventListener("click",()=>{
+
+let alerts=countyAlerts[countyName]
+
+if(!alerts){
+document.getElementById("details").innerHTML="No alerts for "+countyName+" County."
+return
+}
+
+let html="<b>"+countyName+" County</b><br><br>"
+
+alerts.forEach(a=>{
+html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
+})
+
+document.getElementById("details").innerHTML=html
+
+})
+
+})
+
+setInterval(()=>{
+
+counties.forEach(c=>{
+
+let countyName=c.getAttribute("name") || c.getAttribute("id")
 
 c.classList.remove("green","orange","red","flash")
 
-let alerts=countyAlerts[c.id]
+let alerts=countyAlerts[countyName]
 
 if(!alerts) return
 
@@ -263,28 +252,7 @@ c.classList.add("green")
 
 })
 
-}
-
-document.querySelectorAll(".county").forEach(c=>{
-
-c.addEventListener("click",()=>{
-
-let alerts=countyAlerts[c.id]
-
-if(!alerts){
-document.getElementById("details").innerHTML="No alerts for "+c.id+" County."
-return
-}
-
-let html="<b>"+c.id+" County</b><br><br>"
-
-alerts.forEach(a=>{
-html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
-})
-
-document.getElementById("details").innerHTML=html
-
-})
+},2000)
 
 })
 
