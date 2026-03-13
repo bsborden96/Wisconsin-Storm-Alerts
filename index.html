@@ -12,8 +12,6 @@ background:#0a0f1c;
 color:white;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:16px;
@@ -59,40 +57,32 @@ padding:12px;
 border-radius:6px;
 }
 
-/* COUNTY GRID */
+/* MAP */
 
-#countyGrid{
-display:grid;
-grid-template-columns:repeat(9,1fr);
-gap:6px;
+#map{
 max-width:700px;
 margin:auto;
 }
 
 .county{
-padding:10px;
-border-radius:6px;
-text-align:center;
+fill:#333;
+stroke:#111;
+stroke-width:1;
 cursor:pointer;
-font-weight:bold;
-font-size:13px;
 }
 
-.gray{background:#333}
-.green{background:#1f3b1f}
-.orange{background:#8a4b00}
-.red{background:#7a0000}
-
-/* FLASH TORNADO */
+.green{fill:#1f3b1f}
+.orange{fill:#8a4b00}
+.red{fill:#7a0000}
 
 .flash{
 animation:flash 1s infinite;
 }
 
 @keyframes flash{
-0%{background:#7a0000}
-50%{background:#2a0000}
-100%{background:#7a0000}
+0%{opacity:1}
+50%{opacity:0.5}
+100%{opacity:1}
 }
 
 /* DETAILS */
@@ -133,8 +123,23 @@ margin-top:20px;
 
 <div class="section">
 
-<h2>Wisconsin Counties</h2>
-<div id="countyGrid"></div>
+<h2>Wisconsin Map</h2>
+
+<div id="map">
+
+<!-- Simplified Wisconsin county SVG -->
+<svg viewBox="0 0 600 700">
+
+<rect id="Dane" class="county" x="250" y="450" width="40" height="30"/>
+<rect id="Rock" class="county" x="250" y="500" width="40" height="30"/>
+<rect id="Milwaukee" class="county" x="360" y="470" width="40" height="30"/>
+<rect id="Brown" class="county" x="320" y="250" width="40" height="30"/>
+<rect id="Douglas" class="county" x="120" y="50" width="40" height="30"/>
+<rect id="La Crosse" class="county" x="200" y="400" width="40" height="30"/>
+
+</svg>
+
+</div>
 
 </div>
 
@@ -147,68 +152,15 @@ margin-top:20px;
 
 <script>
 
-/* WISCONSIN COUNTY LAYOUT */
-
-const counties=[
-
-"","","Douglas","Bayfield","","","","","",
-
-"","","Burnett","Washburn","Sawyer","Ashland","Iron","","",
-
-"","Polk","Barron","Rusk","Price","Vilas","","","",
-
-"St Croix","Dunn","Chippewa","Taylor","Oneida","","","","",
-
-"Pierce","Pepin","Eau Claire","Clark","Lincoln","","","","",
-
-"Buffalo","Trempealeau","Jackson","Marathon","Langlade","","","","",
-
-"La Crosse","Monroe","Juneau","Wood","Forest","","","","",
-
-"Vernon","Richland","Adams","Portage","Florence","","","","",
-
-"Crawford","Grant","Sauk","Waushara","","","","","",
-
-"Iowa","Lafayette","Columbia","Marquette","Green Lake","","","","",
-
-"Dane","Green","Dodge","Fond du Lac","","","","","",
-
-"Rock","Jefferson","Washington","Ozaukee","","","","","",
-
-"Walworth","Waukesha","Milwaukee","","","","","","",
-
-"Racine","Kenosha","","","","","","",""
-
-]
-
-const grid=document.getElementById("countyGrid")
-
 let countyAlerts={}
 
-/* BUILD GRID */
+/* CLICK COUNTY */
 
-counties.forEach(c=>{
+document.querySelectorAll(".county").forEach(c=>{
 
-let div=document.createElement("div")
+c.addEventListener("click",()=>{
 
-if(c===""){
-div.style.visibility="hidden"
-grid.appendChild(div)
-return
-}
-
-div.className="county gray"
-div.id=c
-div.innerText=c
-
-div.onclick=()=>showCounty(c)
-
-grid.appendChild(div)
-
-})
-
-function showCounty(name){
-
+let name=c.id
 let alerts=countyAlerts[name]
 
 if(!alerts){
@@ -224,53 +176,9 @@ html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
 
 document.getElementById("details").innerHTML=html
 
-}
-
-function showLocalAlerts(county){
-
-let alerts=countyAlerts[county]
-
-if(!alerts){
-document.getElementById("localAlerts").innerHTML="No alerts."
-return
-}
-
-let html=""
-
-alerts.forEach(a=>{
-html+="<b>"+a.event+"</b><br>"
 })
 
-document.getElementById("localAlerts").innerHTML=html
-
-}
-
-/* GPS COUNTY DETECTION */
-
-function detectLocation(){
-
-if(!navigator.geolocation){
-document.getElementById("userCounty").innerHTML="Location unavailable"
-return
-}
-
-navigator.geolocation.getCurrentPosition(async position=>{
-
-let lat=position.coords.latitude
-let lon=position.coords.longitude
-
-let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let data=await res.json()
-
-let county=data.properties.relativeLocation.properties.city
-
-document.getElementById("userCounty").innerHTML="<b>Your County:</b> "+county
-
-showLocalAlerts(county)
-
 })
-
-}
 
 /* LOAD ALERTS */
 
@@ -284,7 +192,7 @@ let data=await response.json()
 let warningGroups={}
 
 document.querySelectorAll(".county").forEach(c=>{
-c.className="county gray"
+c.setAttribute("class","county")
 })
 
 data.features.forEach(alert=>{
@@ -297,7 +205,9 @@ areas.forEach(a=>{
 
 let county=a.trim()
 
-if(document.getElementById(county)){
+let shape=document.getElementById(county)
+
+if(shape){
 
 if(!countyAlerts[county]) countyAlerts[county]=[]
 
@@ -306,16 +216,14 @@ event:event,
 description:desc
 })
 
-let box=document.getElementById(county)
-
 if(event.includes("Tornado Warning")){
-box.className="county red flash"
+shape.classList.add("red","flash")
 }
 else if(event.includes("Severe Thunderstorm Warning")){
-box.className="county orange"
+shape.classList.add("orange")
 }
 else{
-box.className="county green"
+shape.classList.add("green")
 }
 
 }
@@ -338,20 +246,41 @@ let warningsHTML=""
 
 for(let event in warningGroups){
 
-let countiesList=[...new Set(warningGroups[event])]
-.join(" • ")
+let counties=[...new Set(warningGroups[event])].join(" • ")
 
 warningsHTML+=`
 <div class="warningCard">
 <b>${event}</b><br>
-${countiesList}
+${counties}
 </div>
 `
 
 }
 
-document.getElementById("warnings").innerHTML =
+document.getElementById("warnings").innerHTML=
 warningsHTML || "No active warnings."
+
+}
+
+/* LOCATION DETECTION */
+
+function detectLocation(){
+
+if(!navigator.geolocation) return
+
+navigator.geolocation.getCurrentPosition(async pos=>{
+
+let lat=pos.coords.latitude
+let lon=pos.coords.longitude
+
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
+
+let county=data.properties.relativeLocation.properties.city
+
+document.getElementById("userCounty").innerHTML="<b>Your County:</b> "+county
+
+})
 
 }
 
