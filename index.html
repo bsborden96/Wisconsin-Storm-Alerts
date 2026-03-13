@@ -110,6 +110,27 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
+.searchBox{
+width:70%;
+padding:12px;
+font-size:18px;
+border-radius:6px;
+border:none;
+margin-right:10px;
+}
+
+.button{
+padding:12px 16px;
+font-size:18px;
+border:none;
+border-radius:6px;
+color:white;
+cursor:pointer;
+}
+
+.searchBtn{background:#2563eb;}
+.locBtn{background:#16a34a;}
+
 </style>
 </head>
 
@@ -131,7 +152,17 @@ US Storm Alerts
 
 <div class="section">
 
-<h2>Your Location</h2>
+<input id="countySearch" class="searchBox" placeholder="Search County (Example: Dane County WI)">
+
+<button class="button searchBtn" onclick="searchCounty()">Search</button>
+
+<button class="button locBtn" onclick="detectLocation()">Use My Location</button>
+
+</div>
+
+<div class="section">
+
+<h2>Location</h2>
 <div id="county">Detecting your location...</div>
 
 </div>
@@ -180,6 +211,8 @@ let userCity=""
 let userState=""
 let stationsURL=""
 
+function detectLocation(){
+
 navigator.geolocation.getCurrentPosition(async position=>{
 
 let lat=position.coords.latitude
@@ -206,6 +239,25 @@ loadWeather()
 loadAlerts()
 
 })
+
+}
+
+async function searchCounty(){
+
+let input=document.getElementById("countySearch").value.toLowerCase()
+
+if(!input) return
+
+let county=input.replace(" county","")
+
+userCounty=county
+
+document.getElementById("county").innerHTML=
+"<div class='locationCard'><div class='countyName'>"+county+" County</div><div class='cityName'>Manual Search</div></div>"
+
+loadAlerts()
+
+}
 
 async function loadWeather(){
 
@@ -249,7 +301,7 @@ let event=alert.properties.event
 let desc=alert.properties.description
 let areas=alert.properties.areaDesc
 
-if(areas && areas.includes(userCounty)){
+if(areas && areas.toLowerCase().includes(userCounty)){
 
 let style="card"
 
@@ -269,7 +321,7 @@ html+=`
 })
 
 if(html===""){
-html='<div class="card none">No active alerts for your county.</div>'
+html='<div class="card none">No active alerts for this county.</div>'
 }
 
 document.getElementById("alerts").innerHTML=html
@@ -280,6 +332,8 @@ let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 document.getElementById("status").innerText="Last Updated: "+time
 
 }
+
+detectLocation()
 
 setInterval(loadAlerts,60000)
 setInterval(loadWeather,300000)
