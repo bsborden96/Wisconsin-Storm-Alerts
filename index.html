@@ -191,27 +191,7 @@ let userLat
 let userLon
 let stationsURL=""
 
-/* distance calculation */
-
-function distance(lat1,lon1,lat2,lon2){
-
-let R=6371
-let dLat=(lat2-lat1)*Math.PI/180
-let dLon=(lon2-lon1)*Math.PI/180
-
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-return R*c
-
-}
-
-/* wind direction */
+/* convert wind direction */
 
 function getCardinal(deg){
 
@@ -256,68 +236,72 @@ loadAlerts()
 
 async function loadWeather(){
 
-let stationsRes=await fetch(stationsURL)
-let stations=await stationsRes.json()
+let stationsRes = await fetch(stationsURL)
+let stations = await stationsRes.json()
 
-let closestStation=null
-let minDist=999999
+let bestObs = null
 
-for(let s of stations.features){
+for(let s of stations.features.slice(0,10)){
 
-let lat=s.geometry.coordinates[1]
-let lon=s.geometry.coordinates[0]
+try{
 
-let d=distance(userLat,userLon,lat,lon)
+let obsRes = await fetch(s.id + "/observations/latest")
+let obs = await obsRes.json()
 
-if(d<minDist){
+let wind = obs.properties.windSpeed.value
 
-minDist=d
-closestStation=s.id
+if(wind == null) continue
+
+wind = wind * 2.237
+
+/* skip unrealistic stations */
+
+if(wind > 75) continue
+
+bestObs = obs
+break
+
+}catch{}
 
 }
 
+if(!bestObs){
+console.log("No usable station found")
+return
 }
 
-let obsRes=await fetch(closestStation+"/observations/latest")
-let obs=await obsRes.json()
+let tempC = bestObs.properties.temperature.value
+let dewC = bestObs.properties.dewpoint.value
 
-let tempC=obs.properties.temperature.value
-let dewC=obs.properties.dewpoint.value
+let tempF = tempC ? Math.round((tempC*9/5)+32) : "--"
+let dewF = dewC ? Math.round((dewC*9/5)+32) : "--"
 
-let tempF=tempC ? Math.round((tempC*9/5)+32) : "--"
-let dewF=dewC ? Math.round((dewC*9/5)+32) : "--"
+let humidity = bestObs.properties.relativeHumidity.value
+humidity = humidity ? Math.round(humidity) : "--"
 
-let humidity=obs.properties.relativeHumidity.value
-humidity=humidity ? Math.round(humidity) : "--"
+let windSpeed = bestObs.properties.windSpeed.value
+let windGust = bestObs.properties.windGust.value
 
-let windSpeed=obs.properties.windSpeed.value
-let windGust=obs.properties.windGust.value
+windSpeed = windSpeed ? Math.round(windSpeed*2.237) : 0
+windGust = windGust ? Math.round(windGust*2.237) : 0
 
-windSpeed=windSpeed ? Math.round(windSpeed*2.237) : 0
-windGust=windGust ? Math.round(windGust*2.237) : 0
+let windDir = getCardinal(bestObs.properties.windDirection.value)
 
-/* remove unrealistic spikes */
+let precip = bestObs.properties.precipitationLastHour.value
+let precipIn = precip ? (precip*0.03937).toFixed(2) : "0.00"
 
-if(windSpeed>120) windSpeed=0
-if(windGust>150) windGust=0
+document.getElementById("temp").innerText = tempF + "°F"
+document.getElementById("dew").innerText = dewF + "°F"
+document.getElementById("humidity").innerText = humidity + "%"
+document.getElementById("precip").innerText = precipIn + " in"
 
-let windDir=getCardinal(obs.properties.windDirection.value)
+let windText = windSpeed + " mph " + windDir
 
-let precip=obs.properties.precipitationLastHour.value
-let precipIn=precip ? (precip*0.03937).toFixed(2) : "0.00"
-
-document.getElementById("temp").innerText=tempF+"°F"
-document.getElementById("dew").innerText=dewF+"°F"
-document.getElementById("humidity").innerText=humidity+"%"
-document.getElementById("precip").innerText=precipIn+" in"
-
-let windText=windSpeed+" mph "+windDir
-
-if(windGust>0){
-windText+=" (gust "+windGust+")"
+if(windGust > 0){
+windText += " (gust " + windGust + ")"
 }
 
-document.getElementById("wind").innerText=windText
+document.getElementById("wind").innerText = windText
 
 }
 
