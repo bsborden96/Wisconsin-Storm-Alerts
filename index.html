@@ -5,19 +5,14 @@
 
 <title>Wisconsin Alerts Dashboard</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
-html,body{
-height:100%;
+body{
 margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
 }
-
-/* HEADER */
 
 header{
 background:#151c2c;
@@ -30,21 +25,16 @@ font-size:22px;
 
 #tickerWrapper{
 background:#111;
-border-bottom:2px solid #444;
 overflow:hidden;
+border-bottom:2px solid #444;
 white-space:nowrap;
 }
 
-#tickerTrack{
-display:inline-block;
-white-space:nowrap;
-animation:scrollTicker 40s linear infinite;
-}
-
-#tickerText{
+#ticker{
 display:inline-block;
 padding:8px;
 color:#ffcc00;
+animation:scrollTicker 35s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -56,13 +46,14 @@ color:#ffcc00;
 
 #layout{
 display:flex;
-height:calc(100% - 90px);
+height:calc(100vh - 90px);
 }
 
 #map{
 flex:2;
-height:100%;
-background:#0a0f1c;
+display:flex;
+align-items:center;
+justify-content:center;
 }
 
 #panel{
@@ -71,6 +62,58 @@ background:#111;
 padding:20px;
 overflow:auto;
 border-left:2px solid #333;
+}
+
+/* SVG */
+
+svg{
+width:90%;
+max-width:700px;
+}
+
+/* COUNTIES */
+
+.county{
+fill:#0a0f1c;
+stroke:#777;
+stroke-width:1;
+cursor:pointer;
+transition:0.2s;
+}
+
+.county:hover{
+fill:#333;
+}
+
+/* ALERT COLORS */
+
+.red{fill:#8b0000;}
+.orange{fill:#ff7b00;}
+.blue{fill:#0055aa;}
+.yellow{fill:#999900;}
+.purple{fill:#660099;}
+.teal{fill:#008080;}
+
+.flash{
+animation:flash 1s infinite;
+}
+
+@keyframes flash{
+0%{opacity:1}
+50%{opacity:0.4}
+100%{opacity:1}
+}
+
+/* LEGEND */
+
+#legend{
+position:absolute;
+left:20px;
+bottom:20px;
+background:#111;
+padding:10px;
+border:1px solid #444;
+font-size:14px;
 }
 
 </style>
@@ -82,14 +125,75 @@ border-left:2px solid #333;
 <header>Wisconsin Alerts Dashboard</header>
 
 <div id="tickerWrapper">
-<div id="tickerTrack">
-<div id="tickerText">Loading alerts...</div>
-</div>
+<div id="ticker">Loading alerts...</div>
 </div>
 
 <div id="layout">
 
-<div id="map"></div>
+<div id="map">
+
+<svg viewBox="0 0 700 800">
+
+<!-- DEMO COUNTY GRID (ALL IDs MATCH COUNTIES) -->
+
+<rect id="Douglas" class="county" x="10" y="10" width="80" height="60"/>
+<rect id="Bayfield" class="county" x="100" y="10" width="80" height="60"/>
+<rect id="Ashland" class="county" x="190" y="10" width="80" height="60"/>
+<rect id="Iron" class="county" x="280" y="10" width="80" height="60"/>
+<rect id="Vilas" class="county" x="370" y="10" width="80" height="60"/>
+<rect id="Florence" class="county" x="460" y="10" width="80" height="60"/>
+
+<rect id="Burnett" class="county" x="10" y="80" width="80" height="60"/>
+<rect id="Washburn" class="county" x="100" y="80" width="80" height="60"/>
+<rect id="Sawyer" class="county" x="190" y="80" width="80" height="60"/>
+<rect id="Price" class="county" x="280" y="80" width="80" height="60"/>
+<rect id="Oneida" class="county" x="370" y="80" width="80" height="60"/>
+<rect id="Forest" class="county" x="460" y="80" width="80" height="60"/>
+<rect id="Marinette" class="county" x="550" y="80" width="80" height="60"/>
+
+<rect id="Polk" class="county" x="10" y="150" width="80" height="60"/>
+<rect id="Barron" class="county" x="100" y="150" width="80" height="60"/>
+<rect id="Rusk" class="county" x="190" y="150" width="80" height="60"/>
+<rect id="Taylor" class="county" x="280" y="150" width="80" height="60"/>
+<rect id="Lincoln" class="county" x="370" y="150" width="80" height="60"/>
+<rect id="Langlade" class="county" x="460" y="150" width="80" height="60"/>
+<rect id="Oconto" class="county" x="550" y="150" width="80" height="60"/>
+
+<rect id="St Croix" class="county" x="10" y="220" width="80" height="60"/>
+<rect id="Dunn" class="county" x="100" y="220" width="80" height="60"/>
+<rect id="Chippewa" class="county" x="190" y="220" width="80" height="60"/>
+<rect id="Clark" class="county" x="280" y="220" width="80" height="60"/>
+<rect id="Marathon" class="county" x="370" y="220" width="80" height="60"/>
+<rect id="Shawano" class="county" x="460" y="220" width="80" height="60"/>
+<rect id="Brown" class="county" x="550" y="220" width="80" height="60"/>
+
+<rect id="Pierce" class="county" x="10" y="290" width="80" height="60"/>
+<rect id="Pepin" class="county" x="100" y="290" width="80" height="60"/>
+<rect id="Eau Claire" class="county" x="190" y="290" width="80" height="60"/>
+<rect id="Jackson" class="county" x="280" y="290" width="80" height="60"/>
+<rect id="Wood" class="county" x="370" y="290" width="80" height="60"/>
+<rect id="Portage" class="county" x="460" y="290" width="80" height="60"/>
+<rect id="Waupaca" class="county" x="550" y="290" width="80" height="60"/>
+
+<rect id="Buffalo" class="county" x="10" y="360" width="80" height="60"/>
+<rect id="Trempealeau" class="county" x="100" y="360" width="80" height="60"/>
+<rect id="La Crosse" class="county" x="190" y="360" width="80" height="60"/>
+<rect id="Monroe" class="county" x="280" y="360" width="80" height="60"/>
+<rect id="Juneau" class="county" x="370" y="360" width="80" height="60"/>
+<rect id="Adams" class="county" x="460" y="360" width="80" height="60"/>
+<rect id="Waushara" class="county" x="550" y="360" width="80" height="60"/>
+
+</svg>
+
+<div id="legend">
+🌪 Tornado Warning – Red<br>
+⛈ Severe Thunderstorm – Orange<br>
+❄ Winter Storm – Blue<br>
+👀 Watch – Purple<br>
+📢 Advisory – Teal
+</div>
+
+</div>
 
 <div id="panel">
 <h2>County Alerts</h2>
@@ -98,108 +202,64 @@ border-left:2px solid #333;
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
 <script>
 
-var map = L.map('map',{
-zoomControl:false,
-attributionControl:false
-}).setView([44.5,-89.5],7)
+/* ALERT STORAGE */
 
 let countyAlerts={}
-let countiesLayer
+
+/* COLORS */
 
 function getColor(event){
-
-if(event.includes("Tornado Warning")) return "#8b0000"
-if(event.includes("Severe Thunderstorm Warning")) return "#ff7b00"
-if(event.includes("Winter Storm Warning")) return "#0055aa"
-if(event.includes("Wind Warning")) return "#999900"
-if(event.includes("Watch")) return "#660099"
-return "#008080"
-
+if(event.includes("Tornado Warning")) return "red"
+if(event.includes("Severe Thunderstorm Warning")) return "orange"
+if(event.includes("Winter Storm Warning")) return "blue"
+if(event.includes("Wind Warning")) return "yellow"
+if(event.includes("Watch")) return "purple"
+return "teal"
 }
 
 function getEmoji(event){
-
 if(event.includes("Tornado")) return "🌪"
 if(event.includes("Severe Thunderstorm")) return "⛈"
 if(event.includes("Winter Storm")) return "❄️"
 if(event.includes("Wind")) return "💨"
 if(event.includes("Watch")) return "👀"
 return "📢"
-
 }
 
-/* LOAD WI COUNTY MAP */
+/* COUNTY CLICK */
 
-fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
+document.querySelectorAll(".county").forEach(c=>{
 
-.then(r=>r.json())
+c.addEventListener("click",()=>{
 
-.then(data=>{
-
-countiesLayer = L.geoJSON(data,{
-
-style:{
-color:"#888",
-weight:1,
-fillColor:"#0a0f1c",
-fillOpacity:0.8
-},
-
-onEachFeature:function(feature,layer){
-
-layer.on("click",function(){
-
-let name=feature.properties.name
-let alerts=countyAlerts[name]
+let county=c.id
+let alerts=countyAlerts[county]
 
 if(!alerts){
-
 document.getElementById("alertText").innerHTML=
-"<b>"+name+" County</b><br>No active alerts."
-
+"<b>"+county+" County</b><br>No active alerts."
 return
-
 }
 
-let html="<b>"+name+" County</b><br><br>"
+let html="<b>"+county+" County</b><br><br>"
 
 alerts.forEach(a=>{
-
 html+=`
 <b>${getEmoji(a.event)} ${a.event}</b><br>
 ${a.headline}<br><br>
 ${a.description}<hr>
 `
-
 })
 
 document.getElementById("alertText").innerHTML=html
 
 })
 
-}
-
-}).addTo(map)
-
-/* FIT TO WISCONSIN */
-
-map.fitBounds(countiesLayer.getBounds())
-
-/* FORCE RENDER */
-
-setTimeout(()=>{
-map.invalidateSize()
-},200)
-
-loadAlerts()
-
-setInterval(loadAlerts,60000)
-
 })
+
+/* LOAD ALERTS */
 
 function loadAlerts(){
 
@@ -212,6 +272,10 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 .then(data=>{
 
 let ticker=[]
+
+document.querySelectorAll(".county").forEach(c=>{
+c.className="county"
+})
 
 data.features.forEach(alert=>{
 
@@ -234,43 +298,28 @@ headline:headline,
 description:desc
 })
 
+let shape=document.getElementById(county)
+
+if(shape){
+shape.classList.add(getColor(event))
+if(event.includes("Tornado Warning"))
+shape.classList.add("flash")
+}
+
 ticker.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
 })
 
-/* COLOR COUNTIES */
-
-countiesLayer.eachLayer(layer=>{
-
-let name=layer.feature.properties.name
-
-if(countyAlerts[name]){
-
-layer.setStyle({
-fillColor:getColor(countyAlerts[name][0].event)
-})
-
-}
-
-else{
-
-layer.setStyle({
-fillColor:"#0a0f1c"
-})
-
-}
-
-})
-
-/* UPDATE TICKER */
-
-document.getElementById("tickerText").innerText=ticker.join("   |   ")
+document.getElementById("ticker").innerText=ticker.join("   |   ")
 
 })
 
 }
+
+loadAlerts()
+setInterval(loadAlerts,60000)
 
 </script>
 
