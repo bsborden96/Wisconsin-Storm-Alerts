@@ -38,9 +38,8 @@ color:#ffcc00;
 }
 
 .status{
-font-size:22px;
+font-size:20px;
 margin-top:10px;
-opacity:0.9;
 }
 
 .section{
@@ -51,19 +50,19 @@ padding:25px;
 
 .locationCard{
 background:#111827;
-padding:40px;
+padding:35px;
 border-radius:12px;
 margin-top:15px;
 }
 
 .countyName{
-font-size:56px;
+font-size:50px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:32px;
-margin-top:10px;
+font-size:28px;
+margin-top:8px;
 }
 
 .weatherGrid{
@@ -80,22 +79,22 @@ border-radius:10px;
 }
 
 .weatherTitle{
-font-size:16px;
+font-size:15px;
 opacity:0.8;
 }
 
 .weatherValue{
-font-size:30px;
+font-size:28px;
 font-weight:bold;
 margin-top:5px;
 }
 
 .card{
 background:#111;
-padding:24px;
-margin-top:18px;
+padding:20px;
+margin-top:15px;
 border-radius:10px;
-font-size:20px;
+font-size:18px;
 }
 
 .tornado{background:#7a0000;}
@@ -103,12 +102,11 @@ font-size:20px;
 .none{background:#1f3b1f;}
 
 .searchBox{
-width:70%;
+width:65%;
 padding:12px;
 font-size:18px;
 border-radius:6px;
 border:none;
-margin-right:10px;
 }
 
 .button{
@@ -118,6 +116,7 @@ border:none;
 border-radius:6px;
 color:white;
 cursor:pointer;
+margin-left:8px;
 }
 
 .searchBtn{background:#2563eb;}
@@ -130,7 +129,7 @@ cursor:pointer;
 
 <header>
 US Storm Alerts
-<div id="status" class="status">Loading...</div>
+<div id="status">Loading...</div>
 </header>
 
 <nav>
@@ -140,7 +139,7 @@ US Storm Alerts
 
 <div class="section">
 
-<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County (Example: Dallas TX)">
+<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County">
 
 <button class="button searchBtn" onclick="searchLocation()">Search</button>
 
@@ -149,8 +148,11 @@ US Storm Alerts
 </div>
 
 <div class="section">
+
 <h2>Location</h2>
-<div id="county">Detecting your location...</div>
+
+<div id="locationCard">Detecting location...</div>
+
 </div>
 
 <div class="section">
@@ -165,13 +167,13 @@ US Storm Alerts
 </div>
 
 <div class="weatherCard">
-<div class="weatherTitle">Dew Point</div>
-<div id="dew" class="weatherValue">--</div>
+<div class="weatherTitle">Humidity</div>
+<div id="humidity" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
-<div class="weatherTitle">Humidity</div>
-<div id="humidity" class="weatherValue">--</div>
+<div class="weatherTitle">Dew Point</div>
+<div id="dew" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
@@ -184,20 +186,22 @@ US Storm Alerts
 </div>
 
 <div class="section">
+
 <h2>Active Alerts</h2>
-<div id="alerts">Checking alerts...</div>
+
+<div id="alerts">Loading alerts...</div>
+
 </div>
 
 <script>
 
-let currentLat
-let currentLon
-let stationsURL
+let lat
+let lon
 
-async function loadLocation(lat,lon){
+async function loadLocation(newLat,newLon){
 
-currentLat=lat
-currentLon=lon
+lat=newLat
+lon=newLon
 
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
@@ -205,82 +209,40 @@ let data=await res.json()
 let city=data.properties.relativeLocation.properties.city
 let state=data.properties.relativeLocation.properties.state
 
-stationsURL=data.properties.observationStations
-
 let countyRes=await fetch(data.properties.county)
 let countyData=await countyRes.json()
 
-let countyName=countyData.properties.name
+let county=countyData.properties.name
 
-document.getElementById("county").innerHTML=
-"<div class='locationCard'><div class='countyName'>"+countyName+"</div><div class='cityName'>"+city+", "+state+"</div></div>"
+document.getElementById("locationCard").innerHTML=
+`<div class="locationCard">
+<div class="countyName">${county}</div>
+<div class="cityName">${city}, ${state}</div>
+</div>`
 
-loadWeather()
+loadWeather(data)
 loadAlerts()
 
 }
 
-function detectLocation(){
+async function loadWeather(pointData){
 
-navigator.geolocation.getCurrentPosition(position=>{
+let forecast=await fetch(pointData.properties.forecast)
+let forecastData=await forecast.json()
 
-loadLocation(position.coords.latitude,position.coords.longitude)
+let now=forecastData.properties.periods[0]
 
-})
-
-}
-
-async function searchLocation(){
-
-let query=document.getElementById("searchBox").value
-
-if(!query) return
-
-let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1`)
-let geoData=await geo.json()
-
-if(!geoData.results) return
-
-let lat=geoData.results[0].latitude
-let lon=geoData.results[0].longitude
-
-loadLocation(lat,lon)
-
-}
-
-async function loadWeather(){
-
-let stationsRes=await fetch(stationsURL)
-let stations=await stationsRes.json()
-
-let station=stations.features[0].id
-
-let obsRes=await fetch(station+"/observations/latest")
-let obs=await obsRes.json()
-
-let tempC=obs.properties.temperature.value
-let dewC=obs.properties.dewpoint.value
-
-let tempF=tempC?Math.round((tempC*9/5)+32):"--"
-let dewF=dewC?Math.round((dewC*9/5)+32):"--"
-
-let humidity=obs.properties.relativeHumidity.value
-humidity=humidity?Math.round(humidity):"--"
-
-let precip=obs.properties.precipitationLastHour.value
-let precipIn=precip?(precip*0.03937).toFixed(2):"0.00"
-
-document.getElementById("temp").innerText=tempF+"°F"
-document.getElementById("dew").innerText=dewF+"°F"
-document.getElementById("humidity").innerText=humidity+"%"
-document.getElementById("precip").innerText=precipIn+" in"
+document.getElementById("temp").innerText=now.temperature+"°F"
+document.getElementById("humidity").innerText="--"
+document.getElementById("dew").innerText="--"
+document.getElementById("precip").innerText=now.probabilityOfPrecipitation.value+"%"
 
 }
 
 async function loadAlerts(){
 
-let response=await fetch(`https://api.weather.gov/alerts/active?point=${currentLat},${currentLon}`)
-let data=await response.json()
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let data=await res.json()
 
 let html=""
 
@@ -295,32 +257,52 @@ if(event.includes("Tornado Warning")) style+=" tornado"
 else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
 else style+=" none"
 
-html+=`
-<div class="${style}">
+html+=`<div class="${style}">
 <h3>${event}</h3>
 <p>${desc}</p>
-</div>
-`
+</div>`
 
 })
 
-if(html===""){
-html='<div class="card none">No active alerts for this location.</div>'
-}
+if(html==="") html='<div class="card none">No active alerts</div>'
 
 document.getElementById("alerts").innerHTML=html
 
-let now=new Date()
-let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 
 document.getElementById("status").innerText="Last Updated: "+time
+
+}
+
+function detectLocation(){
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+loadLocation(pos.coords.latitude,pos.coords.longitude)
+
+})
+
+}
+
+async function searchLocation(){
+
+let q=document.getElementById("searchBox").value
+
+let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`)
+let geoData=await geo.json()
+
+if(!geoData.results) return
+
+loadLocation(
+geoData.results[0].latitude,
+geoData.results[0].longitude
+)
 
 }
 
 detectLocation()
 
 setInterval(loadAlerts,60000)
-setInterval(loadWeather,300000)
 
 </script>
 
