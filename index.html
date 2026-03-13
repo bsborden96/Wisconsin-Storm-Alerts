@@ -41,7 +41,7 @@ nav a:hover{
 color:#ffcc00;
 }
 
-/* PANELS */
+/* PAGE SECTIONS */
 
 .section{
 max-width:1000px;
@@ -56,8 +56,8 @@ margin-top:0;
 /* WARNING CARDS */
 
 #warnings{
-display:flex;
-flex-wrap:wrap;
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
 gap:10px;
 }
 
@@ -65,7 +65,6 @@ gap:10px;
 background:#7a0000;
 padding:12px;
 border-radius:6px;
-min-width:220px;
 }
 
 /* COUNTY GRID */
@@ -110,11 +109,6 @@ border-radius:6px;
 margin-top:20px;
 }
 
-select{
-padding:6px;
-margin-bottom:10px;
-}
-
 </style>
 </head>
 
@@ -141,10 +135,12 @@ Loading alerts...
 
 <h2>Your County</h2>
 
-<select id="countySelect"></select>
+<div id="userCounty">
+Detecting your location...
+</div>
 
 <div id="localAlerts">
-Select your county to view alerts.
+Checking alerts...
 </div>
 
 </div>
@@ -185,7 +181,6 @@ const counties=[
 ]
 
 const grid=document.getElementById("countyGrid")
-const countySelect=document.getElementById("countySelect")
 
 let countyAlerts={}
 
@@ -194,22 +189,16 @@ let countyAlerts={}
 counties.forEach(c=>{
 
 let div=document.createElement("div")
+
 div.className="county gray"
 div.id=c
 div.innerText=c
+
 div.onclick=()=>showCounty(c)
 
 grid.appendChild(div)
 
-let option=document.createElement("option")
-option.value=c
-option.text=c+" County"
-
-countySelect.appendChild(option)
-
 })
-
-countySelect.addEventListener("change",updateLocalAlerts)
 
 function showCounty(name){
 
@@ -230,13 +219,12 @@ document.getElementById("details").innerHTML=html
 
 }
 
-function updateLocalAlerts(){
+function showLocalAlerts(county){
 
-let county=countySelect.value
 let alerts=countyAlerts[county]
 
 if(!alerts){
-document.getElementById("localAlerts").innerHTML="No alerts for "+county+" County."
+document.getElementById("localAlerts").innerHTML="No alerts."
 return
 }
 
@@ -250,14 +238,44 @@ document.getElementById("localAlerts").innerHTML=html
 
 }
 
+/* LOCATION DETECTION */
+
+function detectLocation(){
+
+if(!navigator.geolocation){
+document.getElementById("userCounty").innerHTML="Location unavailable"
+return
+}
+
+navigator.geolocation.getCurrentPosition(async position=>{
+
+let lat=position.coords.latitude
+let lon=position.coords.longitude
+
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
+
+let county=data.properties.relativeLocation.properties.city
+
+document.getElementById("userCounty").innerHTML="<b>Your County:</b> "+county
+
+showLocalAlerts(county)
+
+})
+
+}
+
+/* LOAD ALERTS */
+
 async function loadAlerts(){
 
 countyAlerts={}
 
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
+
 let data=await response.json()
 
-let warningsHTML=""
+let warningGroups={}
 
 counties.forEach(c=>{
 document.getElementById(c).className="county gray"
@@ -300,25 +318,40 @@ box.className="county green"
 
 if(event.includes("Warning")){
 
-warningsHTML+=`
-<div class="warningCard">
-${event}<br>
-${alert.properties.areaDesc}
-</div>
-`
+if(!warningGroups[event]){
+warningGroups[event]=[]
+}
+
+warningGroups[event].push(...areas)
 
 }
 
 })
 
+let warningsHTML=""
+
+for(let event in warningGroups){
+
+let countiesList=[...new Set(warningGroups[event])]
+.join(" • ")
+
+warningsHTML+=`
+<div class="warningCard">
+<b>${event}</b><br>
+${countiesList}
+</div>
+`
+
+}
+
 document.getElementById("warnings").innerHTML=
 warningsHTML || "No active warnings."
-
-updateLocalAlerts()
 
 }
 
 loadAlerts()
+detectLocation()
+
 setInterval(loadAlerts,60000)
 
 </script>
