@@ -18,13 +18,14 @@ header{
 background:#151c2c;
 padding:15px;
 text-align:center;
-font-size:24px;
+font-size:26px;
+font-weight:bold;
 }
 
 /* TICKER */
 
 #tickerWrapper{
-margin-top:20px;
+margin-top:10px;
 background:#111;
 border-top:2px solid #444;
 border-bottom:2px solid #444;
@@ -38,46 +39,50 @@ animation:scrollTicker 90s linear infinite;
 }
 
 #ticker{
-display:inline-block;
 padding:10px;
 color:#ffcc00;
 font-weight:bold;
 }
-
-/* SCROLL ANIMATION */
 
 @keyframes scrollTicker{
 0%{transform:translateX(100%)}
 100%{transform:translateX(-100%)}
 }
 
-/* PAGE LAYOUT */
+/* MAIN LAYOUT */
 
-#layout{
+#dashboard{
 display:flex;
-height:calc(100vh - 120px);
+flex-direction:column;
+padding:15px;
+gap:15px;
 }
 
-#counties{
-flex:1;
-padding:20px;
-overflow:auto;
-border-right:2px solid #333;
+/* PANELS */
+
+.panel{
+background:#111;
+padding:15px;
+border-radius:8px;
 }
 
-#panel{
-flex:1;
-padding:20px;
-overflow:auto;
+.panel h2{
+margin-top:0;
 }
 
-/* COUNTY BOX */
+/* COUNTY GRID */
+
+#countyGrid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+gap:8px;
+}
 
 .county{
-padding:10px;
-margin-bottom:6px;
+padding:8px;
 border-radius:6px;
 cursor:pointer;
+text-align:center;
 font-weight:bold;
 }
 
@@ -101,30 +106,32 @@ font-weight:bold;
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
-<div id="ticker">
-Loading Wisconsin alerts...
+<div id="ticker">Loading alerts...</div>
 </div>
 </div>
+
+<div id="dashboard">
+
+<div class="panel">
+<h2>Active Warnings</h2>
+<div id="warnings">Loading warnings...</div>
 </div>
 
-<div id="layout">
+<div class="panel">
+<h2>County Status</h2>
+<div id="countyGrid"></div>
+</div>
 
-<div id="counties"></div>
-
-<div id="panel">
-
+<div class="panel">
 <h2>Alert Details</h2>
-<div id="alertText">
-Click a county to view alerts.
-</div>
-
+<div id="alertText">Click a county to view alerts.</div>
 </div>
 
 </div>
 
 <script>
 
-const counties = [
+const counties=[
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
 "Calumet","Chippewa","Clark","Columbia","Crawford","Dane","Dodge",
 "Door","Douglas","Dunn","Eau Claire","Florence","Fond du Lac",
@@ -139,67 +146,66 @@ const counties = [
 "Winnebago","Wood"
 ]
 
-const container = document.getElementById("counties")
-let countyAlerts = {}
+const grid=document.getElementById("countyGrid")
+let countyAlerts={}
 
-/* BUILD COUNTY LIST */
+/* BUILD GRID */
 
-counties.forEach(c => {
+counties.forEach(c=>{
 
-let div = document.createElement("div")
-div.className = "county green"
-div.id = c
+let div=document.createElement("div")
+div.className="county green"
+div.id=c
+div.innerText=c
 
-div.innerHTML = c + " County"
+div.onclick=()=>showCounty(c)
 
-div.onclick = () => showCounty(c)
-
-container.appendChild(div)
+grid.appendChild(div)
 
 })
 
 function getColor(event){
 
-if(event.includes("Tornado Warning")) return "red"
-if(event.includes("Severe Thunderstorm Warning")) return "orange"
-if(event.includes("Winter Storm Warning")) return "blue"
-if(event.includes("Wind Warning")) return "yellow"
-if(event.includes("Watch")) return "purple"
+if(event.includes("Tornado Warning"))return"red"
+if(event.includes("Severe Thunderstorm Warning"))return"orange"
+if(event.includes("Winter Storm Warning"))return"blue"
+if(event.includes("Wind Warning"))return"yellow"
+if(event.includes("Watch"))return"purple"
 
-return "teal"
+return"teal"
 
 }
 
 function getEmoji(event){
 
-if(event.includes("Tornado")) return "🌪"
-if(event.includes("Severe Thunderstorm")) return "⛈"
-if(event.includes("Winter Storm")) return "❄️"
-if(event.includes("Wind")) return "💨"
-if(event.includes("Watch")) return "👀"
+if(event.includes("Tornado"))return"🌪"
+if(event.includes("Severe Thunderstorm"))return"⛈"
+if(event.includes("Winter Storm"))return"❄️"
+if(event.includes("Wind"))return"💨"
+if(event.includes("Watch"))return"👀"
 
-return "📢"
+return"📢"
 
 }
 
 function showCounty(name){
 
-let alerts = countyAlerts[name]
+let alerts=countyAlerts[name]
 
 if(!alerts){
 
-document.getElementById("alertText").innerHTML =
+document.getElementById("alertText").innerHTML=
 "<b>"+name+" County</b><br>No active alerts."
 
 return
 
 }
 
-let html = "<b>"+name+" County</b><br><br>"
+let html="<b>"+name+" County</b><br><br>"
 
-alerts.forEach(a => {
+alerts.forEach(a=>{
 
-html += `
+html+=`
 <b>${getEmoji(a.event)} ${a.event}</b><br>
 ${a.headline}<br><br>
 ${a.description}<hr>
@@ -207,7 +213,7 @@ ${a.description}<hr>
 
 })
 
-document.getElementById("alertText").innerHTML = html
+document.getElementById("alertText").innerHTML=html
 
 }
 
@@ -215,36 +221,35 @@ document.getElementById("alertText").innerHTML = html
 
 function loadAlerts(){
 
-countyAlerts = {}
+countyAlerts={}
 
 fetch("https://api.weather.gov/alerts/active?area=WI")
+.then(r=>r.json())
+.then(data=>{
 
-.then(r => r.json())
+let tickerSet=new Set()
+let warnings=[]
 
-.then(data => {
-
-let tickerSet = new Set()
-
-counties.forEach(c => {
-document.getElementById(c).className = "county green"
+counties.forEach(c=>{
+document.getElementById(c).className="county green"
 })
 
-data.features.forEach(alert => {
+data.features.forEach(alert=>{
 
-let event = alert.properties.event
-let headline = alert.properties.headline
-let desc = alert.properties.description
+let event=alert.properties.event
+let headline=alert.properties.headline
+let desc=alert.properties.description
 
-let areas = alert.properties.areaDesc.split(";")
+let areas=alert.properties.areaDesc.split(";")
 
-areas.forEach(area => {
+areas.forEach(area=>{
 
-let county = area.trim()
+let county=area.trim()
 
 if(counties.includes(county)){
 
 if(!countyAlerts[county])
-countyAlerts[county] = []
+countyAlerts[county]=[]
 
 countyAlerts[county].push({
 event:event,
@@ -252,12 +257,12 @@ headline:headline,
 description:desc
 })
 
-let box = document.getElementById(county)
-
-if(box)
-box.className = "county " + getColor(event)
+document.getElementById(county).className="county "+getColor(event)
 
 tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
+
+if(event.includes("Warning"))
+warnings.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 }
 
@@ -265,17 +270,17 @@ tickerSet.add(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
-document.getElementById("ticker").innerText =
-tickerSet.size > 0
-? [...tickerSet].join("   |   ")
-: "No active alerts for Wisconsin"
+document.getElementById("ticker").innerText=
+tickerSet.size>0?[...tickerSet].join("   |   "):"No active alerts for Wisconsin"
+
+document.getElementById("warnings").innerHTML=
+warnings.length?warnings.join("<br>"):"No active warnings."
 
 })
 
 }
 
 loadAlerts()
-
 setInterval(loadAlerts,60000)
 
 </script>
