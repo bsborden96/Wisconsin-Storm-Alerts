@@ -114,14 +114,6 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-.reportCard{
-background:#0f172a;
-padding:18px;
-margin-top:12px;
-border-radius:8px;
-font-size:18px;
-}
-
 </style>
 </head>
 
@@ -199,13 +191,7 @@ let userLat
 let userLon
 let stationsURL=""
 
-/* safe value */
-
-function safe(v){
-return v==null ? 0 : v
-}
-
-/* distance calc */
+/* distance calculation */
 
 function distance(lat1,lon1,lat2,lon2){
 
@@ -237,7 +223,7 @@ return dirs[Math.round(deg/45)%8]
 
 }
 
-/* location */
+/* detect location */
 
 navigator.geolocation.getCurrentPosition(async position=>{
 
@@ -266,7 +252,7 @@ loadAlerts()
 
 })
 
-/* weather */
+/* load weather */
 
 async function loadWeather(){
 
@@ -276,7 +262,7 @@ let stations=await stationsRes.json()
 let closestStation=null
 let minDist=999999
 
-stations.features.forEach(s=>{
+for(let s of stations.features){
 
 let lat=s.geometry.coordinates[1]
 let lon=s.geometry.coordinates[0]
@@ -290,27 +276,40 @@ closestStation=s.id
 
 }
 
-})
+}
 
 let obsRes=await fetch(closestStation+"/observations/latest")
 let obs=await obsRes.json()
 
-let tempF=Math.round((safe(obs.properties.temperature.value)*9/5)+32)
-let dewF=Math.round((safe(obs.properties.dewpoint.value)*9/5)+32)
+let tempC=obs.properties.temperature.value
+let dewC=obs.properties.dewpoint.value
 
-let humidity=Math.round(safe(obs.properties.relativeHumidity.value))
+let tempF=tempC ? Math.round((tempC*9/5)+32) : "--"
+let dewF=dewC ? Math.round((dewC*9/5)+32) : "--"
 
-let windSpeed=Math.round(safe(obs.properties.windSpeed.value)*2.237)
-let windGust=Math.round(safe(obs.properties.windGust.value)*2.237)
+let humidity=obs.properties.relativeHumidity.value
+humidity=humidity ? Math.round(humidity) : "--"
+
+let windSpeed=obs.properties.windSpeed.value
+let windGust=obs.properties.windGust.value
+
+windSpeed=windSpeed ? Math.round(windSpeed*2.237) : 0
+windGust=windGust ? Math.round(windGust*2.237) : 0
+
+/* remove unrealistic spikes */
+
+if(windSpeed>120) windSpeed=0
+if(windGust>150) windGust=0
 
 let windDir=getCardinal(obs.properties.windDirection.value)
 
-let precip=(safe(obs.properties.precipitationLastHour.value)*0.03937).toFixed(2)
+let precip=obs.properties.precipitationLastHour.value
+let precipIn=precip ? (precip*0.03937).toFixed(2) : "0.00"
 
 document.getElementById("temp").innerText=tempF+"°F"
 document.getElementById("dew").innerText=dewF+"°F"
 document.getElementById("humidity").innerText=humidity+"%"
-document.getElementById("precip").innerText=precip+" in"
+document.getElementById("precip").innerText=precipIn+" in"
 
 let windText=windSpeed+" mph "+windDir
 
@@ -322,7 +321,7 @@ document.getElementById("wind").innerText=windText
 
 }
 
-/* alerts */
+/* load alerts */
 
 async function loadAlerts(){
 
