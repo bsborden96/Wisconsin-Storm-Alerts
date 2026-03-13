@@ -1,9 +1,11 @@
-1"}
 <!DOCTYPE html>
 <html>
 
 <head>
+
 <title>Wisconsin Storm Alerts</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
@@ -21,38 +23,134 @@ text-align:center;
 font-size:22px;
 }
 
-#ticker{
+#tickerWrapper{
 background:#111;
-padding:10px;
-color:#ffcc00;
+overflow:hidden;
+border-bottom:2px solid #444;
+white-space:nowrap;
 }
 
-#content{
-padding:40px;
-font-size:20px;
-text-align:center;
+#ticker{
+display:inline-block;
+padding:8px;
+color:#ffcc00;
+animation:scrollTicker 180s linear infinite;
+}
+
+@keyframes scrollTicker{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
+}
+
+#layout{
+display:flex;
+height:calc(100vh - 90px);
+}
+
+#map{
+flex:2;
+}
+
+#panel{
+flex:1;
+background:#111;
+padding:20px;
+overflow:auto;
+border-left:2px solid #333;
+}
+
+.leaflet-container{
+background:#0a0f1c;
 }
 
 </style>
+
 </head>
 
 <body>
 
 <header>Wisconsin Storm Alerts</header>
 
-<div id="ticker">Ticker loading...</div>
-
-<div id="content">
-If you can see this text, the page is working.
+<div id="tickerWrapper">
+<div id="ticker">Loading alerts...</div>
 </div>
+
+<div id="layout">
+
+<div id="map"></div>
+
+<div id="panel">
+<h2>Alerts</h2>
+<div id="alertText">Alert information will appear here.</div>
+</div>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
+var map = L.map('map',{zoomControl:false, attributionControl:false})
+.setView([44.5,-89.5],7)
+
+/* Simple blank background */
+
+L.tileLayer(
+"https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+{opacity:0.15}
+).addTo(map)
+
+function getEmoji(event){
+
+if(event.includes("Tornado")) return "🌪"
+if(event.includes("Severe Thunderstorm")) return "⛈"
+if(event.includes("Winter Storm")) return "❄️"
+if(event.includes("Wind")) return "💨"
+if(event.includes("Watch")) return "👀"
+
+return "📢"
+
+}
+
+function loadAlerts(){
+
+fetch("https://api.weather.gov/alerts/active?area=WI")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+let ticker=[]
+
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+let headline=alert.properties.headline
+let desc=alert.properties.description
+
+let areas=alert.properties.areaDesc.split(";")
+
+areas.forEach(a=>{
+
+ticker.push(`${getEmoji(event)} ${event} - ${a.trim()}`)
+
+})
+
+})
+
 document.getElementById("ticker").innerText =
-"Ticker working ✔ — JavaScript is running."
+ticker.join("   |   ")
+
+})
+
+}
+
+loadAlerts()
+
+setInterval(loadAlerts,60000)
 
 </script>
 
 </body>
 
-</ht
+</html>
