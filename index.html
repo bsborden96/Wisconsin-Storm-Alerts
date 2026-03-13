@@ -41,7 +41,7 @@ nav a:hover{
 color:#ffcc00;
 }
 
-/* PAGE SECTIONS */
+/* SECTIONS */
 
 .section{
 max-width:1000px;
@@ -71,8 +71,10 @@ border-radius:6px;
 
 #countyGrid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-gap:8px;
+grid-template-columns:repeat(5,1fr);
+gap:6px;
+max-width:500px;
+margin:auto;
 }
 
 .county{
@@ -83,10 +85,10 @@ cursor:pointer;
 font-weight:bold;
 }
 
-.green{background:#1f3b1f;}
-.orange{background:#8a4b00;}
-.red{background:#7a0000;}
 .gray{background:#333}
+.green{background:#1f3b1f}
+.orange{background:#8a4b00}
+.red{background:#7a0000}
 
 /* FLASH TORNADO */
 
@@ -166,18 +168,35 @@ Click a county to see alert information.
 <script>
 
 const counties=[
-"Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
-"Calumet","Chippewa","Clark","Columbia","Crawford","Dane","Dodge",
-"Door","Douglas","Dunn","Eau Claire","Florence","Fond du Lac",
-"Forest","Grant","Green","Green Lake","Iowa","Iron","Jackson",
-"Jefferson","Juneau","Kenosha","Kewaunee","La Crosse","Lafayette",
-"Langlade","Lincoln","Manitowoc","Marathon","Marinette","Marquette",
-"Menominee","Milwaukee","Monroe","Oconto","Oneida","Outagamie",
-"Ozaukee","Pepin","Pierce","Polk","Portage","Price","Racine",
-"Richland","Rock","Rusk","Sauk","Sawyer","Shawano","Sheboygan",
-"St Croix","Taylor","Trempealeau","Vernon","Vilas","Walworth",
-"Washburn","Washington","Waukesha","Waupaca","Waushara",
-"Winnebago","Wood"
+
+"Douglas","Bayfield","","","",
+
+"Burnett","Washburn","Sawyer","Ashland","Iron",
+
+"Polk","Barron","Rusk","Price","Vilas",
+
+"St Croix","Dunn","Chippewa","Taylor","Oneida",
+
+"Pierce","Pepin","Eau Claire","Clark","Lincoln",
+
+"Buffalo","Trempealeau","Jackson","Marathon","Langlade",
+
+"La Crosse","Monroe","Juneau","Wood","Forest",
+
+"Vernon","Richland","Adams","Portage","Florence",
+
+"Crawford","Grant","Sauk","Waushara","",
+
+"Iowa","Lafayette","Columbia","Marquette","Green Lake",
+
+"Dane","Green","Dodge","Fond du Lac","",
+
+"Rock","Jefferson","Washington","Ozaukee","",
+
+"Walworth","Waukesha","Milwaukee","","",
+
+"Racine","Kenosha","","",""
+
 ]
 
 const grid=document.getElementById("countyGrid")
@@ -189,6 +208,12 @@ let countyAlerts={}
 counties.forEach(c=>{
 
 let div=document.createElement("div")
+
+if(c===""){
+div.style.visibility="hidden"
+grid.appendChild(div)
+return
+}
 
 div.className="county gray"
 div.id=c
@@ -277,8 +302,8 @@ let data=await response.json()
 
 let warningGroups={}
 
-counties.forEach(c=>{
-document.getElementById(c).className="county gray"
+document.querySelectorAll(".county").forEach(c=>{
+c.className="county gray"
 })
 
 data.features.forEach(alert=>{
@@ -291,7 +316,7 @@ areas.forEach(a=>{
 
 let county=a.trim()
 
-if(counties.includes(county)){
+if(document.getElementById(county)){
 
 if(!countyAlerts[county]) countyAlerts[county]=[]
 
