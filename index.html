@@ -140,7 +140,7 @@ US Storm Alerts
 
 <div class="section">
 
-<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County (Example: Madison WI)">
+<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County (Example: Dallas TX)">
 
 <button class="button searchBtn" onclick="searchLocation()">Search</button>
 
@@ -190,11 +190,9 @@ US Storm Alerts
 
 <script>
 
-let stationsURL=""
-let currentLat=""
-let currentLon=""
-
-/* LOAD LOCATION */
+let currentLat
+let currentLon
+let stationsURL
 
 async function loadLocation(lat,lon){
 
@@ -209,8 +207,7 @@ let state=data.properties.relativeLocation.properties.state
 
 stationsURL=data.properties.observationStations
 
-let countyURL=data.properties.county
-let countyRes=await fetch(countyURL)
+let countyRes=await fetch(data.properties.county)
 let countyData=await countyRes.json()
 
 let countyName=countyData.properties.name
@@ -223,8 +220,6 @@ loadAlerts()
 
 }
 
-/* DEVICE LOCATION */
-
 function detectLocation(){
 
 navigator.geolocation.getCurrentPosition(position=>{
@@ -235,15 +230,13 @@ loadLocation(position.coords.latitude,position.coords.longitude)
 
 }
 
-/* SEARCH LOCATION */
-
 async function searchLocation(){
 
 let query=document.getElementById("searchBox").value
 
 if(!query) return
 
-let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=en&format=json`)
+let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1`)
 let geoData=await geo.json()
 
 if(!geoData.results) return
@@ -255,34 +248,15 @@ loadLocation(lat,lon)
 
 }
 
-/* WEATHER USING FIRST VALID STATION */
-
 async function loadWeather(){
 
 let stationsRes=await fetch(stationsURL)
 let stations=await stationsRes.json()
 
-let obs=null
+let station=stations.features[0].id
 
-for(let station of stations.features.slice(0,8)){
-
-try{
-
-let res=await fetch(station.id+"/observations/latest")
-let data=await res.json()
-
-if(data.properties.temperature.value!==null){
-
-obs=data
-break
-
-}
-
-}catch{}
-
-}
-
-if(!obs) return
+let obsRes=await fetch(station+"/observations/latest")
+let obs=await obsRes.json()
 
 let tempC=obs.properties.temperature.value
 let dewC=obs.properties.dewpoint.value
@@ -302,8 +276,6 @@ document.getElementById("humidity").innerText=humidity+"%"
 document.getElementById("precip").innerText=precipIn+" in"
 
 }
-
-/* ALERTS USING POINT API */
 
 async function loadAlerts(){
 
