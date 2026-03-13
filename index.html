@@ -18,6 +18,11 @@ padding:15px;
 text-align:center;
 font-size:26px;
 font-weight:bold;
+transition:0.3s;
+}
+
+header.severe{
+background:#8b0000;
 }
 
 #statusBar{
@@ -27,10 +32,19 @@ font-size:14px;
 color:#ccc;
 }
 
+/* WARNING BANNER */
+
+#warningBanner{
+background:#5a0000;
+padding:10px;
+text-align:center;
+font-weight:bold;
+display:none;
+}
+
 /* TICKER */
 
 #tickerWrapper{
-margin-top:8px;
 background:#111;
 border-top:2px solid #444;
 border-bottom:2px solid #444;
@@ -40,7 +54,7 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 240s linear infinite;
+animation:scrollTicker 180s linear infinite;
 }
 
 #ticker{
@@ -63,12 +77,6 @@ padding:15px;
 border-radius:8px;
 }
 
-.panel h2{
-margin-top:0;
-}
-
-/* COUNTY GRID */
-
 #countyGrid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
@@ -81,6 +89,20 @@ border-radius:6px;
 cursor:pointer;
 text-align:center;
 font-weight:bold;
+position:relative;
+}
+
+.county:hover::after{
+content:attr(data-alerts);
+position:absolute;
+bottom:110%;
+left:50%;
+transform:translateX(-50%);
+background:#000;
+padding:4px 8px;
+font-size:12px;
+border-radius:4px;
+white-space:nowrap;
 }
 
 /* COLORS */
@@ -90,7 +112,6 @@ font-weight:bold;
 .red{background:#8b0000;}
 .blue{background:#003c66;}
 .yellow{background:#666600;}
-.purple{background:#4a0066;}
 .teal{background:#004f4f;}
 
 .flash{
@@ -103,82 +124,24 @@ animation:flashAlert 1s infinite;
 100%{background:#8b0000;}
 }
 
-/* LEGEND */
-
-#legend{
-display:flex;
-gap:15px;
-flex-wrap:wrap;
-font-size:14px;
-}
-
-.legendItem{
-display:flex;
-align-items:center;
-gap:6px;
-}
-
-.legendColor{
-width:16px;
-height:16px;
-border-radius:3px;
-}
-
 </style>
 </head>
 
 <body>
 
-<header>Wisconsin Storm Alerts</header>
+<header id="header">Wisconsin Storm Alerts</header>
 
 <div id="statusBar">
 Alerts: <span id="alertCount">0</span> |
 Last Updated: <span id="lastUpdated">--</span>
 </div>
 
+<div id="warningBanner"></div>
+
 <div id="tickerWrapper">
 <div id="tickerTrack">
 <div id="ticker">Loading Wisconsin alerts...</div>
 </div>
-</div>
-
-<div class="panel">
-<h2>Alert Legend</h2>
-
-<div id="legend">
-
-<div class="legendItem">
-<div class="legendColor" style="background:#8b0000"></div>
-Tornado Warning
-</div>
-
-<div class="legendItem">
-<div class="legendColor" style="background:#7a3b00"></div>
-Severe Thunderstorm Warning
-</div>
-
-<div class="legendItem">
-<div class="legendColor" style="background:#003c66"></div>
-Winter Storm Warning
-</div>
-
-<div class="legendItem">
-<div class="legendColor" style="background:#4a0066"></div>
-Watch
-</div>
-
-<div class="legendItem">
-<div class="legendColor" style="background:#004f4f"></div>
-Advisory
-</div>
-
-<div class="legendItem">
-<div class="legendColor" style="background:#1f3b1f"></div>
-No Alerts
-</div>
-
-</div>
-
 </div>
 
 <div class="panel">
@@ -221,6 +184,7 @@ let div=document.createElement("div")
 div.className="county green"
 div.id=c
 div.innerText=c
+div.dataset.alerts="No alerts"
 div.onclick=()=>showCounty(c)
 grid.appendChild(div)
 })
@@ -249,10 +213,12 @@ let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
 let data=await response.json()
 
 let ticker=[]
+let warnings=[]
 let count=0
 
 counties.forEach(c=>{
 document.getElementById(c).className="county green"
+document.getElementById(c).dataset.alerts="No alerts"
 })
 
 data.features.forEach(alert=>{
@@ -271,6 +237,8 @@ count++
 
 ticker.push(event+" - "+county)
 
+if(event.includes("Warning")) warnings.push(event+" - "+county)
+
 if(!countyAlerts[county]) countyAlerts[county]=[]
 
 countyAlerts[county].push({
@@ -278,12 +246,16 @@ event:event,
 description:desc
 })
 
+let box=document.getElementById(county)
+
+box.dataset.alerts=event
+
 if(event.includes("Tornado Warning")){
-document.getElementById(county).className="county red flash"
+box.className="county red flash"
 }else if(event.includes("Severe Thunderstorm Warning")){
-document.getElementById(county).className="county orange"
+box.className="county orange"
 }else{
-document.getElementById(county).className="county teal"
+box.className="county teal"
 }
 
 }
@@ -296,11 +268,37 @@ document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alert
 document.getElementById("alertCount").innerText=count
 document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
 
+/* WARNING BANNER */
+
+let banner=document.getElementById("warningBanner")
+
+if(warnings.length){
+
+banner.style.display="block"
+banner.innerText="⚠ ACTIVE WARNINGS: "+warnings.join(" | ")
+document.getElementById("header").classList.add("severe")
+
+}else{
+
+banner.style.display="none"
+document.getElementById("header").classList.remove("severe")
+
+}
+
 if(count>previousAlerts){
 document.getElementById("alertSound").play()
 }
 
 previousAlerts=count
+
+/* AUTO TICKER SPEED */
+
+let duration=180
+
+if(count>10) duration=240
+if(count<3) duration=120
+
+document.getElementById("tickerTrack").style.animationDuration=duration+"s"
 
 }
 
