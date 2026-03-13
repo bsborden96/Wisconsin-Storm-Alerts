@@ -98,17 +98,9 @@ border-radius:10px;
 font-size:20px;
 }
 
-.tornado{
-background:#7a0000;
-}
-
-.severe{
-background:#8a4b00;
-}
-
-.none{
-background:#1f3b1f;
-}
+.tornado{background:#7a0000;}
+.severe{background:#8a4b00;}
+.none{background:#1f3b1f;}
 
 .searchBox{
 width:70%;
@@ -137,34 +129,28 @@ cursor:pointer;
 <body>
 
 <header>
-
 US Storm Alerts
 <div id="status" class="status">Loading...</div>
-
 </header>
 
 <nav>
-
 <a href="index.html">Home</a>
 <a href="reports.html">Storm Reports</a>
-
 </nav>
 
 <div class="section">
 
-<input id="countySearch" class="searchBox" placeholder="Search County (Example: Dane County WI)">
+<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County (Example: Madison WI)">
 
-<button class="button searchBtn" onclick="searchCounty()">Search</button>
+<button class="button searchBtn" onclick="searchLocation()">Search</button>
 
 <button class="button locBtn" onclick="detectLocation()">Use My Location</button>
 
 </div>
 
 <div class="section">
-
 <h2>Location</h2>
 <div id="county">Detecting your location...</div>
-
 </div>
 
 <div class="section">
@@ -198,10 +184,8 @@ US Storm Alerts
 </div>
 
 <div class="section">
-
 <h2>Active Alerts</h2>
 <div id="alerts">Checking alerts...</div>
-
 </div>
 
 <script>
@@ -211,19 +195,13 @@ let userCity=""
 let userState=""
 let stationsURL=""
 
-function detectLocation(){
-
-navigator.geolocation.getCurrentPosition(async position=>{
-
-let lat=position.coords.latitude
-let lon=position.coords.longitude
+async function loadLocation(lat,lon){
 
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
 userCity=data.properties.relativeLocation.properties.city
 userState=data.properties.relativeLocation.properties.state
-
 stationsURL=data.properties.observationStations
 
 let countyURL=data.properties.county
@@ -238,24 +216,34 @@ document.getElementById("county").innerHTML=
 loadWeather()
 loadAlerts()
 
+}
+
+function detectLocation(){
+
+navigator.geolocation.getCurrentPosition(position=>{
+
+loadLocation(position.coords.latitude,position.coords.longitude)
+
 })
 
 }
 
-async function searchCounty(){
+async function searchLocation(){
 
-let input=document.getElementById("countySearch").value.toLowerCase()
+let query=document.getElementById("searchBox").value
 
-if(!input) return
+if(!query) return
 
-let county=input.replace(" county","")
+let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=1&language=en&format=json`)
 
-userCounty=county
+let geoData=await geo.json()
 
-document.getElementById("county").innerHTML=
-"<div class='locationCard'><div class='countyName'>"+county+" County</div><div class='cityName'>Manual Search</div></div>"
+if(!geoData.results) return
 
-loadAlerts()
+let lat=geoData.results[0].latitude
+let lon=geoData.results[0].longitude
+
+loadLocation(lat,lon)
 
 }
 
@@ -301,7 +289,7 @@ let event=alert.properties.event
 let desc=alert.properties.description
 let areas=alert.properties.areaDesc
 
-if(areas && areas.toLowerCase().includes(userCounty)){
+if(areas && areas.includes(userCounty)){
 
 let style="card"
 
