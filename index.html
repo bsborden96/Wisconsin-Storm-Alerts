@@ -10,19 +10,54 @@ margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
-text-align:center;
 }
 
 header{
 background:#151c2c;
 padding:16px;
+text-align:center;
 font-size:26px;
 font-weight:bold;
 }
 
+nav{
+background:#0f1424;
+text-align:center;
+padding:10px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
+.section{
+max-width:1100px;
+margin:auto;
+padding:20px;
+}
+
+#warnings{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+gap:10px;
+}
+
+.warningCard{
+background:#7a0000;
+padding:12px;
+border-radius:6px;
+}
+
 #map{
-max-width:700px;
-margin:30px auto;
+max-width:650px;
+margin:auto;
 }
 
 .county{
@@ -32,8 +67,25 @@ stroke-width:1;
 cursor:pointer;
 }
 
-.county:hover{
-fill:#555;
+.green{fill:#1f3b1f}
+.orange{fill:#8a4b00}
+.red{fill:#7a0000}
+
+.flash{
+animation:flash 1s infinite;
+}
+
+@keyframes flash{
+0%{opacity:1}
+50%{opacity:0.4}
+100%{opacity:1}
+}
+
+#details{
+background:#111;
+padding:15px;
+border-radius:6px;
+margin-top:20px;
 }
 
 </style>
@@ -43,33 +95,203 @@ fill:#555;
 
 <header>Wisconsin Storm Alerts</header>
 
-<h2>Wisconsin Map</h2>
+<nav>
+<a href="index.html">Alerts</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
+
+<div class="section">
+
+<h2>Active Warnings</h2>
+<div id="warnings">Loading alerts...</div>
+
+</div>
+
+<div class="section">
+
+<h2>Wisconsin County Map</h2>
 
 <div id="map">
 
-<svg viewBox="0 0 300 400">
+<svg viewBox="0 0 960 1100" width="650">
 
-<!-- Wisconsin outline -->
+<path id="Douglas" class="county" d="M147 39 L214 34 L226 63 L203 84 L154 79 Z"/>
+<path id="Bayfield" class="county" d="M214 34 L283 31 L297 59 L226 63 Z"/>
+<path id="Ashland" class="county" d="M283 31 L354 32 L362 63 L297 59 Z"/>
+<path id="Iron" class="county" d="M354 32 L420 40 L420 70 L362 63 Z"/>
 
-<path d="M80 20 L200 20 L230 60 L230 150 L250 250 L200 350 L100 360 L70 300 L60 200 L70 120 Z"
-fill="#222" stroke="#555" stroke-width="2"/>
+<path id="Burnett" class="county" d="M154 79 L203 84 L203 120 L153 120 Z"/>
+<path id="Washburn" class="county" d="M203 84 L226 63 L297 59 L297 120 L203 120 Z"/>
+<path id="Sawyer" class="county" d="M297 59 L362 63 L362 120 L297 120 Z"/>
+<path id="Price" class="county" d="M362 63 L420 70 L420 120 L362 120 Z"/>
+<path id="Vilas" class="county" d="M420 70 L480 75 L480 120 L420 120 Z"/>
 
-<!-- Example counties -->
+<path id="Polk" class="county" d="M153 120 L203 120 L203 160 L153 160 Z"/>
+<path id="Barron" class="county" d="M203 120 L297 120 L297 160 L203 160 Z"/>
+<path id="Rusk" class="county" d="M297 120 L362 120 L362 160 L297 160 Z"/>
+<path id="Taylor" class="county" d="M362 120 L420 120 L420 160 L362 160 Z"/>
+<path id="Oneida" class="county" d="M420 120 L480 120 L480 160 L420 160 Z"/>
 
-<rect id="Douglas" class="county" x="90" y="40" width="40" height="25"/>
-<rect id="Bayfield" class="county" x="140" y="40" width="40" height="25"/>
+<path id="St Croix" class="county" d="M153 160 L203 160 L203 200 L153 200 Z"/>
+<path id="Dunn" class="county" d="M203 160 L297 160 L297 200 L203 200 Z"/>
+<path id="Chippewa" class="county" d="M297 160 L362 160 L362 200 L297 200 Z"/>
+<path id="Clark" class="county" d="M362 160 L420 160 L420 200 L362 200 Z"/>
+<path id="Lincoln" class="county" d="M420 160 L480 160 L480 200 L420 200 Z"/>
 
-<rect id="Burnett" class="county" x="90" y="80" width="40" height="25"/>
-<rect id="Washburn" class="county" x="140" y="80" width="40" height="25"/>
-<rect id="Sawyer" class="county" x="190" y="80" width="40" height="25"/>
+<path id="Eau Claire" class="county" d="M203 200 L297 200 L297 240 L203 240 Z"/>
+<path id="Jackson" class="county" d="M297 200 L362 200 L362 240 L297 240 Z"/>
+<path id="Marathon" class="county" d="M362 200 L420 200 L420 240 L362 240 Z"/>
+<path id="Langlade" class="county" d="M420 200 L480 200 L480 240 L420 240 Z"/>
 
-<rect id="Polk" class="county" x="90" y="120" width="40" height="25"/>
-<rect id="Barron" class="county" x="140" y="120" width="40" height="25"/>
-<rect id="Rusk" class="county" x="190" y="120" width="40" height="25"/>
+<path id="La Crosse" class="county" d="M203 240 L297 240 L297 280 L203 280 Z"/>
+<path id="Monroe" class="county" d="M297 240 L362 240 L362 280 L297 280 Z"/>
+<path id="Juneau" class="county" d="M362 240 L420 240 L420 280 L362 280 Z"/>
+<path id="Wood" class="county" d="M297 280 L362 280 L362 320 L297 320 Z"/>
+<path id="Portage" class="county" d="M362 280 L420 280 L420 320 L362 320 Z"/>
+
+<path id="Adams" class="county" d="M362 320 L420 320 L420 360 L362 360 Z"/>
+<path id="Sauk" class="county" d="M297 320 L362 320 L362 360 L297 360 Z"/>
+<path id="Columbia" class="county" d="M420 320 L480 320 L480 360 L420 360 Z"/>
+
+<path id="Dane" class="county" d="M297 360 L362 360 L362 400 L297 400 Z"/>
+<path id="Jefferson" class="county" d="M362 360 L420 360 L420 400 L362 400 Z"/>
+
+<path id="Rock" class="county" d="M297 400 L362 400 L362 440 L297 440 Z"/>
+<path id="Walworth" class="county" d="M362 400 L420 400 L420 440 L362 440 Z"/>
+
+<path id="Milwaukee" class="county" d="M480 360 L520 360 L520 400 L480 400 Z"/>
+<path id="Racine" class="county" d="M480 400 L520 400 L520 440 L480 440 Z"/>
+<path id="Kenosha" class="county" d="M480 440 L520 440 L520 480 L480 480 Z"/>
 
 </svg>
 
 </div>
+
+</div>
+
+<div class="section">
+
+<h2>Alert Details</h2>
+<div id="details">Click a county to view alert information.</div>
+
+</div>
+
+<script>
+
+let countyAlerts={}
+
+async function loadAlerts(){
+
+countyAlerts={}
+
+let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
+let data=await response.json()
+
+let warningGroups={}
+
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+let desc=alert.properties.description
+let areas=alert.properties.areaDesc.split(";")
+
+areas.forEach(a=>{
+
+let county=a.trim()
+
+if(!countyAlerts[county]) countyAlerts[county]=[]
+
+countyAlerts[county].push({
+event:event,
+description:desc
+})
+
+})
+
+if(event.includes("Warning")){
+if(!warningGroups[event]) warningGroups[event]=[]
+warningGroups[event].push(...areas)
+}
+
+})
+
+let warningsHTML=""
+
+for(let event in warningGroups){
+
+let counties=[...new Set(warningGroups[event])].join(" • ")
+
+warningsHTML+=`
+<div class="warningCard">
+<b>${event}</b><br>
+${counties}
+</div>
+`
+
+}
+
+document.getElementById("warnings").innerHTML =
+warningsHTML || "No active warnings."
+
+colorCounties()
+
+}
+
+function colorCounties(){
+
+document.querySelectorAll(".county").forEach(c=>{
+
+c.classList.remove("green","orange","red","flash")
+
+let alerts=countyAlerts[c.id]
+
+if(!alerts) return
+
+alerts.forEach(a=>{
+
+if(a.event.includes("Tornado Warning")){
+c.classList.add("red","flash")
+}
+else if(a.event.includes("Severe Thunderstorm Warning")){
+c.classList.add("orange")
+}
+else{
+c.classList.add("green")
+}
+
+})
+
+})
+
+}
+
+document.querySelectorAll(".county").forEach(c=>{
+
+c.addEventListener("click",()=>{
+
+let alerts=countyAlerts[c.id]
+
+if(!alerts){
+document.getElementById("details").innerHTML="No alerts for "+c.id+" County."
+return
+}
+
+let html="<b>"+c.id+" County</b><br><br>"
+
+alerts.forEach(a=>{
+html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
+})
+
+document.getElementById("details").innerHTML=html
+
+})
+
+})
+
+loadAlerts()
+setInterval(loadAlerts,60000)
+
+</script>
 
 </body>
 </html>
