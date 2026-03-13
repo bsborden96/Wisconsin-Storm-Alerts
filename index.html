@@ -16,7 +16,7 @@ text-align:center;
 header{
 background:#151c2c;
 padding:30px;
-font-size:38px;
+font-size:36px;
 font-weight:bold;
 }
 
@@ -29,7 +29,7 @@ nav a{
 color:white;
 text-decoration:none;
 margin:0 15px;
-font-size:20px;
+font-size:18px;
 font-weight:bold;
 }
 
@@ -38,7 +38,7 @@ color:#ffcc00;
 }
 
 .section{
-max-width:650px;
+max-width:700px;
 margin:auto;
 padding:25px;
 }
@@ -51,25 +51,25 @@ margin-top:15px;
 }
 
 .countyName{
-font-size:50px;
+font-size:46px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:28px;
-margin-top:8px;
+font-size:26px;
+margin-top:6px;
 }
 
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:15px;
-margin-top:15px;
+margin-top:20px;
 }
 
 .weatherCard{
 background:#0f172a;
-padding:20px;
+padding:18px;
 border-radius:10px;
 }
 
@@ -86,10 +86,10 @@ margin-top:5px;
 
 .card{
 background:#111;
-padding:20px;
-margin-top:15px;
+padding:18px;
+margin-top:12px;
 border-radius:10px;
-font-size:18px;
+font-size:17px;
 }
 
 .tornado{background:#7a0000;}
@@ -134,9 +134,10 @@ US Storm Alerts
 
 <div class="section">
 
-<input id="searchBox" class="searchBox" placeholder="Search City, Town, or County">
+<input id="searchBox" class="searchBox" placeholder="Search City or Town">
 
 <button class="button searchBtn" onclick="searchLocation()">Search</button>
+
 <button class="button locBtn" onclick="detectLocation()">Use My Location</button>
 
 </div>
@@ -168,8 +169,8 @@ US Storm Alerts
 </div>
 
 <div class="weatherCard">
-<div class="weatherTitle">Precipitation</div>
-<div id="precip" class="weatherValue">--</div>
+<div class="weatherTitle">Wind</div>
+<div id="wind" class="weatherValue">--</div>
 </div>
 
 </div>
@@ -185,25 +186,22 @@ US Storm Alerts
 
 let lat
 let lon
-let stationURL
 
 async function loadLocation(newLat,newLon){
 
 lat=newLat
 lon=newLon
 
-let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let data=await res.json()
+let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let pointData=await point.json()
 
-let city=data.properties.relativeLocation.properties.city
-let state=data.properties.relativeLocation.properties.state
+let city=pointData.properties.relativeLocation.properties.city
+let state=pointData.properties.relativeLocation.properties.state
 
-let countyRes=await fetch(data.properties.county)
+let countyRes=await fetch(pointData.properties.county)
 let countyData=await countyRes.json()
 
 let county=countyData.properties.name
-
-stationURL=data.properties.observationStations
 
 document.getElementById("locationCard").innerHTML=
 `<div class="locationCard">
@@ -218,27 +216,16 @@ loadAlerts()
 
 async function loadWeather(){
 
-let stations=await fetch(stationURL)
-let stationsData=await stations.json()
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 
-let station=stationsData.features[0].id
+let data=await res.json()
 
-let obs=await fetch(station+"/observations/latest")
-let obsData=await obs.json()
+let current=data.current
 
-let p=obsData.properties
-
-let tempF=Math.round((p.temperature.value*9/5)+32)
-let dewF=Math.round((p.dewpoint.value*9/5)+32)
-let humidity=Math.round(p.relativeHumidity.value)
-
-let precip=p.precipitationLastHour.value
-let precipIn=precip?(precip*0.03937).toFixed(2):"0.00"
-
-document.getElementById("temp").innerText=tempF+"°F"
-document.getElementById("dew").innerText=dewF+"°F"
-document.getElementById("humidity").innerText=humidity+"%"
-document.getElementById("precip").innerText=precipIn+" in"
+document.getElementById("temp").innerText=Math.round(current.temperature_2m)+"°F"
+document.getElementById("dew").innerText=Math.round(current.dewpoint_2m)+"°F"
+document.getElementById("humidity").innerText=current.relative_humidity_2m+"%"
+document.getElementById("wind").innerText=Math.round(current.wind_speed_10m)+" mph"
 
 }
 
