@@ -22,7 +22,7 @@ transition:0.3s;
 }
 
 header.severe{
-background:#8b0000;
+background:#7a0000;
 }
 
 nav{
@@ -49,13 +49,34 @@ font-size:14px;
 color:#ccc;
 }
 
+/* WARNING BANNER */
+
 #warningBanner{
-background:#5a0000;
+background:#4a0000;
 padding:10px;
-text-align:center;
-font-weight:bold;
 display:none;
+border-bottom:2px solid #300;
 }
+
+#warningTitle{
+font-weight:bold;
+margin-bottom:8px;
+}
+
+#warningList{
+display:flex;
+flex-wrap:wrap;
+gap:8px;
+}
+
+.warningItem{
+background:#7a0000;
+padding:6px 10px;
+border-radius:6px;
+font-size:14px;
+}
+
+/* TICKER */
 
 #tickerWrapper{
 background:#111;
@@ -81,12 +102,16 @@ font-weight:bold;
 100%{transform:translateX(-100%)}
 }
 
+/* PANELS */
+
 .panel{
 background:#111;
 margin:12px;
 padding:15px;
 border-radius:8px;
 }
+
+/* COUNTY GRID */
 
 #countyGrid{
 display:grid;
@@ -95,7 +120,7 @@ gap:8px;
 }
 
 .county{
-padding:8px;
+padding:10px;
 border-radius:6px;
 cursor:pointer;
 text-align:center;
@@ -116,19 +141,21 @@ border-radius:4px;
 white-space:nowrap;
 }
 
+/* ALERT COLORS */
+
 .green{background:#1f3b1f;}
-.orange{background:#7a3b00;}
-.red{background:#8b0000;}
+.orange{background:#8a4b00;}
 .teal{background:#004f4f;}
 
-.flash{
-animation:flashAlert 1s infinite;
+.red{
+background:#7a0000;
+animation:flashRed 1s infinite;
 }
 
-@keyframes flashAlert{
-0%{background:#8b0000;}
-50%{background:#300000;}
-100%{background:#8b0000;}
+@keyframes flashRed{
+0%{background:#7a0000;}
+50%{background:#2a0000;}
+100%{background:#7a0000;}
 }
 
 #countySelect{
@@ -154,7 +181,10 @@ Alerts: <span id="alertCount">0</span> |
 Last Updated: <span id="lastUpdated">--</span>
 </div>
 
-<div id="warningBanner"></div>
+<div id="warningBanner">
+<div id="warningTitle">⚠ ACTIVE WARNINGS</div>
+<div id="warningList"></div>
+</div>
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
@@ -268,7 +298,6 @@ html+="<b>"+a.event+"</b><br>"
 })
 
 document.getElementById("localAlerts").innerHTML=html
-
 }
 
 async function loadAlerts(){
@@ -317,7 +346,7 @@ let box=document.getElementById(county)
 box.dataset.alerts=event
 
 if(event.includes("Tornado Warning")){
-box.className="county red flash"
+box.className="county red"
 }else if(event.includes("Severe Thunderstorm Warning")){
 box.className="county orange"
 }else{
@@ -331,18 +360,31 @@ box.className="county teal"
 })
 
 document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alerts"
+
 document.getElementById("alertCount").innerText=count
 document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
 
 let banner=document.getElementById("warningBanner")
 
 if(warnings.length){
+
 banner.style.display="block"
-banner.innerText="⚠ ACTIVE WARNINGS: "+warnings.join(" | ")
+
+let listHTML=""
+
+warnings.forEach(w=>{
+listHTML+=`<div class="warningItem">${w}</div>`
+})
+
+document.getElementById("warningList").innerHTML=listHTML
+
 document.getElementById("header").classList.add("severe")
+
 }else{
+
 banner.style.display="none"
 document.getElementById("header").classList.remove("severe")
+
 }
 
 if(count>previousAlerts){
