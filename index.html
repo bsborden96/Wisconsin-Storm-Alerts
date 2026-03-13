@@ -37,11 +37,6 @@ nav a:hover{
 color:#ffcc00;
 }
 
-.status{
-font-size:20px;
-margin-top:10px;
-}
-
 .section{
 max-width:650px;
 margin:auto;
@@ -142,17 +137,13 @@ US Storm Alerts
 <input id="searchBox" class="searchBox" placeholder="Search City, Town, or County">
 
 <button class="button searchBtn" onclick="searchLocation()">Search</button>
-
 <button class="button locBtn" onclick="detectLocation()">Use My Location</button>
 
 </div>
 
 <div class="section">
-
 <h2>Location</h2>
-
 <div id="locationCard">Detecting location...</div>
-
 </div>
 
 <div class="section">
@@ -167,13 +158,13 @@ US Storm Alerts
 </div>
 
 <div class="weatherCard">
-<div class="weatherTitle">Humidity</div>
-<div id="humidity" class="weatherValue">--</div>
+<div class="weatherTitle">Dew Point</div>
+<div id="dew" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
-<div class="weatherTitle">Dew Point</div>
-<div id="dew" class="weatherValue">--</div>
+<div class="weatherTitle">Humidity</div>
+<div id="humidity" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
@@ -186,17 +177,15 @@ US Storm Alerts
 </div>
 
 <div class="section">
-
 <h2>Active Alerts</h2>
-
 <div id="alerts">Loading alerts...</div>
-
 </div>
 
 <script>
 
 let lat
 let lon
+let stationURL
 
 async function loadLocation(newLat,newLon){
 
@@ -214,28 +203,42 @@ let countyData=await countyRes.json()
 
 let county=countyData.properties.name
 
+stationURL=data.properties.observationStations
+
 document.getElementById("locationCard").innerHTML=
 `<div class="locationCard">
 <div class="countyName">${county}</div>
 <div class="cityName">${city}, ${state}</div>
 </div>`
 
-loadWeather(data)
+loadWeather()
 loadAlerts()
 
 }
 
-async function loadWeather(pointData){
+async function loadWeather(){
 
-let forecast=await fetch(pointData.properties.forecast)
-let forecastData=await forecast.json()
+let stations=await fetch(stationURL)
+let stationsData=await stations.json()
 
-let now=forecastData.properties.periods[0]
+let station=stationsData.features[0].id
 
-document.getElementById("temp").innerText=now.temperature+"°F"
-document.getElementById("humidity").innerText="--"
-document.getElementById("dew").innerText="--"
-document.getElementById("precip").innerText=now.probabilityOfPrecipitation.value+"%"
+let obs=await fetch(station+"/observations/latest")
+let obsData=await obs.json()
+
+let p=obsData.properties
+
+let tempF=Math.round((p.temperature.value*9/5)+32)
+let dewF=Math.round((p.dewpoint.value*9/5)+32)
+let humidity=Math.round(p.relativeHumidity.value)
+
+let precip=p.precipitationLastHour.value
+let precipIn=precip?(precip*0.03937).toFixed(2):"0.00"
+
+document.getElementById("temp").innerText=tempF+"°F"
+document.getElementById("dew").innerText=dewF+"°F"
+document.getElementById("humidity").innerText=humidity+"%"
+document.getElementById("precip").innerText=precipIn+" in"
 
 }
 
@@ -269,7 +272,6 @@ if(html==="") html='<div class="card none">No active alerts</div>'
 document.getElementById("alerts").innerHTML=html
 
 let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
-
 document.getElementById("status").innerText="Last Updated: "+time
 
 }
@@ -277,9 +279,7 @@ document.getElementById("status").innerText="Last Updated: "+time
 function detectLocation(){
 
 navigator.geolocation.getCurrentPosition(pos=>{
-
 loadLocation(pos.coords.latitude,pos.coords.longitude)
-
 })
 
 }
@@ -301,8 +301,6 @@ geoData.results[0].longitude
 }
 
 detectLocation()
-
-setInterval(loadAlerts,60000)
 
 </script>
 
