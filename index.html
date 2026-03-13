@@ -25,6 +25,25 @@ header.severe{
 background:#8b0000;
 }
 
+/* NAVIGATION BAR */
+
+nav{
+background:#0f1424;
+text-align:center;
+padding:10px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
 #statusBar{
 text-align:center;
 padding:6px;
@@ -54,7 +73,7 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scrollTicker 180s linear infinite;
+animation:scrollTicker 240s linear infinite;
 }
 
 #ticker{
@@ -130,6 +149,11 @@ animation:flashAlert 1s infinite;
 <body>
 
 <header id="header">Wisconsin Storm Alerts</header>
+
+<nav>
+<a href="index.html">Alerts</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
 
 <div id="statusBar">
 Alerts: <span id="alertCount">0</span> |
@@ -268,21 +292,15 @@ document.getElementById("ticker").innerText=ticker.join(" | ")||"No active alert
 document.getElementById("alertCount").innerText=count
 document.getElementById("lastUpdated").innerText=new Date().toLocaleTimeString()
 
-/* WARNING BANNER */
-
 let banner=document.getElementById("warningBanner")
 
 if(warnings.length){
-
 banner.style.display="block"
 banner.innerText="⚠ ACTIVE WARNINGS: "+warnings.join(" | ")
 document.getElementById("header").classList.add("severe")
-
 }else{
-
 banner.style.display="none"
 document.getElementById("header").classList.remove("severe")
-
 }
 
 if(count>previousAlerts){
@@ -290,15 +308,6 @@ document.getElementById("alertSound").play()
 }
 
 previousAlerts=count
-
-/* AUTO TICKER SPEED */
-
-let duration=180
-
-if(count>10) duration=240
-if(count<3) duration=120
-
-document.getElementById("tickerTrack").style.animationDuration=duration+"s"
 
 }
 
