@@ -13,8 +13,6 @@ color:white;
 text-align:center;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:30px;
@@ -22,23 +20,17 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* LAST UPDATED */
-
 .status{
 font-size:22px;
 margin-top:10px;
 opacity:0.9;
 }
 
-/* SECTION */
-
 .section{
 max-width:650px;
 margin:auto;
 padding:25px;
 }
-
-/* LOCATION CARD */
 
 .locationCard{
 background:#111827;
@@ -56,6 +48,17 @@ font-weight:bold;
 font-size:32px;
 margin-top:10px;
 opacity:0.9;
+}
+
+/* WEATHER CARD */
+
+.weatherCard{
+background:#0f172a;
+padding:30px;
+border-radius:12px;
+margin-top:15px;
+font-size:22px;
+line-height:1.7;
 }
 
 /* ALERT CARDS */
@@ -80,29 +83,12 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-/* MOBILE OPTIMIZATION */
-
 @media (max-width:600px){
 
-header{
-font-size:44px;
-}
-
-.status{
-font-size:26px;
-}
-
-.countyName{
-font-size:64px;
-}
-
-.cityName{
-font-size:36px;
-}
-
-.card{
-font-size:22px;
-}
+header{font-size:44px;}
+.status{font-size:26px;}
+.countyName{font-size:64px;}
+.cityName{font-size:36px;}
 
 }
 
@@ -114,7 +100,6 @@ font-size:22px;
 <header>
 
 Wisconsin Storm Alerts
-
 <div id="status" class="status">Starting system...</div>
 
 </header>
@@ -123,6 +108,13 @@ Wisconsin Storm Alerts
 
 <h2>Your Location</h2>
 <div id="county">Detecting your location...</div>
+
+</div>
+
+<div class="section">
+
+<h2>Current Conditions</h2>
+<div id="weather" class="weatherCard">Loading weather...</div>
 
 </div>
 
@@ -137,15 +129,11 @@ Wisconsin Storm Alerts
 
 let userCounty=""
 let userCity=""
+let forecastURL=""
 
 /* DETECT LOCATION */
 
 async function detectLocation(){
-
-if(!navigator.geolocation){
-document.getElementById("county").innerText="Location unavailable"
-return
-}
 
 navigator.geolocation.getCurrentPosition(async position=>{
 
@@ -157,6 +145,8 @@ let data=await res.json()
 
 userCity=data.properties.relativeLocation.properties.city
 
+forecastURL=data.properties.observationStations
+
 let countyURL=data.properties.county
 
 let countyRes=await fetch(countyURL)
@@ -167,9 +157,57 @@ userCounty=countyData.properties.name.replace(" County","")
 document.getElementById("county").innerHTML=
 "<div class='locationCard'><div class='countyName'>"+userCounty+" County</div><div class='cityName'>"+userCity+"</div></div>"
 
+loadWeather()
+
 loadAlerts()
 
 })
+
+}
+
+/* LOAD WEATHER */
+
+async function loadWeather(){
+
+let stationsRes=await fetch(forecastURL)
+let stations=await stationsRes.json()
+
+let stationURL=stations.features[0].id
+
+let obsRes=await fetch(stationURL+"/observations/latest")
+let obs=await obsRes.json()
+
+let tempC=obs.properties.temperature.value
+let dewC=obs.properties.dewpoint.value
+
+let tempF=Math.round((tempC*9/5)+32)
+let dewF=Math.round((dewC*9/5)+32)
+
+let humidity=obs.properties.relativeHumidity.value
+
+let windSpeed=obs.properties.windSpeed.value
+if(windSpeed) windSpeed=Math.round(windSpeed*2.237)
+
+let windDir=obs.properties.windDirection.value
+
+let precip=obs.properties.precipitationLastHour.value
+
+let precipIn=0
+if(precip) precipIn=(precip*0.03937).toFixed(2)
+
+document.getElementById("weather").innerHTML=`
+
+🌡 Temperature: ${tempF}°F<br>
+
+🌬 Wind: ${windSpeed||0} mph ${windDir||""}<br>
+
+💧 Humidity: ${humidity||0}%<br>
+
+🌫 Dew Point: ${dewF}°F<br>
+
+🌧 Precipitation: ${precipIn} in
+
+`
 
 }
 
@@ -192,15 +230,9 @@ if(areas.includes(userCounty)){
 
 let style="card"
 
-if(event.includes("Tornado Warning")){
-style+=" tornado"
-}
-else if(event.includes("Severe Thunderstorm Warning")){
-style+=" severe"
-}
-else{
-style+=" none"
-}
+if(event.includes("Tornado Warning")) style+=" tornado"
+else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+else style+=" none"
 
 html+=`
 <div class="${style}">
@@ -228,7 +260,6 @@ updateTime()
 function updateTime(){
 
 let now=new Date()
-
 let time=now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})
 
 document.getElementById("status").innerText="Last Updated: "+time
@@ -238,6 +269,8 @@ document.getElementById("status").innerText="Last Updated: "+time
 detectLocation()
 
 setInterval(loadAlerts,60000)
+
+setInterval(loadWeather,300000)
 
 </script>
 
