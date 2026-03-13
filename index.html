@@ -190,33 +190,42 @@ US Storm Alerts
 
 <script>
 
-let userCounty=""
 let userCity=""
 let userState=""
 let stationsURL=""
+let currentLat=""
+let currentLon=""
+
+/* load location info */
 
 async function loadLocation(lat,lon){
+
+currentLat=lat
+currentLon=lon
 
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
 userCity=data.properties.relativeLocation.properties.city
 userState=data.properties.relativeLocation.properties.state
+
 stationsURL=data.properties.observationStations
 
 let countyURL=data.properties.county
 let countyRes=await fetch(countyURL)
 let countyData=await countyRes.json()
 
-userCounty=countyData.properties.name.replace(" County","")
+let countyName=countyData.properties.name
 
 document.getElementById("county").innerHTML=
-"<div class='locationCard'><div class='countyName'>"+userCounty+" County</div><div class='cityName'>"+userCity+", "+userState+"</div></div>"
+"<div class='locationCard'><div class='countyName'>"+countyName+"</div><div class='cityName'>"+userCity+", "+userState+"</div></div>"
 
 loadWeather()
 loadAlerts()
 
 }
+
+/* use device location */
 
 function detectLocation(){
 
@@ -227,6 +236,8 @@ loadLocation(position.coords.latitude,position.coords.longitude)
 })
 
 }
+
+/* search city or town */
 
 async function searchLocation(){
 
@@ -246,6 +257,8 @@ let lon=geoData.results[0].longitude
 loadLocation(lat,lon)
 
 }
+
+/* weather observations */
 
 async function loadWeather(){
 
@@ -276,9 +289,16 @@ document.getElementById("precip").innerText=precipIn+" in"
 
 }
 
+/* load alerts correctly using NWS zone */
+
 async function loadAlerts(){
 
-let response=await fetch("https://api.weather.gov/alerts/active")
+let zoneRes=await fetch(`https://api.weather.gov/points/${currentLat},${currentLon}`)
+let zoneData=await zoneRes.json()
+
+let zone=zoneData.properties.forecastZone.split("/").pop()
+
+let response=await fetch(`https://api.weather.gov/alerts/active?zone=${zone}`)
 let data=await response.json()
 
 let html=""
@@ -287,46 +307,7 @@ data.features.forEach(alert=>{
 
 let event=alert.properties.event
 let desc=alert.properties.description
-let areas=alert.properties.areaDesc
-
-if(areas && areas.includes(userCounty)){
 
 let style="card"
 
-if(event.includes("Tornado Warning")) style+=" tornado"
-else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
-else style+=" none"
-
-html+=`
-<div class="${style}">
-<h3>${event}</h3>
-<p>${desc}</p>
-</div>
-`
-
-}
-
-})
-
-if(html===""){
-html='<div class="card none">No active alerts for this county.</div>'
-}
-
-document.getElementById("alerts").innerHTML=html
-
-let now=new Date()
-let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
-
-document.getElementById("status").innerText="Last Updated: "+time
-
-}
-
-detectLocation()
-
-setInterval(loadAlerts,60000)
-setInterval(loadWeather,300000)
-
-</script>
-
-</body>
-</html>
+if(event.includes("Tornado Warning")) style
