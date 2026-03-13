@@ -43,7 +43,7 @@ padding:10px;
 text-align:center;
 }
 
-button,select{
+button{
 padding:8px;
 margin:5px;
 background:#2c3e50;
@@ -80,16 +80,9 @@ Loading Wisconsin alerts...
 
 <div id="controls">
 
-<select id="radarSite">
-<option value="KMKX">Milwaukee Radar (KMKX)</option>
-<option value="KGRB">Green Bay Radar (KGRB)</option>
-<option value="KARX">La Crosse Radar (KARX)</option>
-<option value="KDLH">Duluth Radar (KDLH)</option>
-</select>
-
-<button onclick="setRadar('N0Q')">Reflectivity</button>
-<button onclick="setRadar('N0U')">Velocity</button>
-<button onclick="setRadar('N0C')">Correlation</button>
+<button onclick="setRadar('reflectivity')">Reflectivity</button>
+<button onclick="setRadar('velocity')">Velocity</button>
+<button onclick="setRadar('correlation')">Correlation</button>
 
 <button onclick="toggleReports()">Storm Reports</button>
 
@@ -108,39 +101,35 @@ attribution:'© OpenStreetMap'
 }).addTo(map)
 
 var radarLayer
-var currentProduct="N0Q"
 
-function setRadar(product){
-
-currentProduct = product
-loadRadar()
-
-}
-
-function loadRadar(){
-
-let site = document.getElementById("radarSite").value
+function setRadar(type){
 
 if(radarLayer){
 map.removeLayer(radarLayer)
 }
 
-let url = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::"+site+"-"+currentProduct+"/{z}/{x}/{y}.png"
+if(type==="reflectivity"){
 
-radarLayer = L.tileLayer(url,{
-opacity:0.75,
-attribution:"NOAA NEXRAD"
-})
+radarLayer = L.tileLayer(
+'https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png',
+{opacity:0.7}
+)
+
+}
+
+else{
+
+alert("Velocity and Correlation radar require a dedicated radar server and will be added later.")
+
+return
+
+}
 
 radarLayer.addTo(map)
 
 }
 
-document.getElementById("radarSite").addEventListener("change",loadRadar)
-
-loadRadar()
-
-
+setRadar("reflectivity")
 
 
 // ALERT TICKER
@@ -154,7 +143,6 @@ let alerts=data.features.map(a=>a.properties.event+" - "+a.properties.areaDesc)
 document.getElementById("ticker").innerText=alerts.join("   |   ")
 
 })
-
 
 
 
@@ -186,7 +174,6 @@ fillOpacity:0.25
 })
 
 })
-
 
 
 
