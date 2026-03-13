@@ -3,24 +3,26 @@
 
 <head>
 
-<title>Wisconsin Alerts Dashboard</title>
+<title>Wisconsin Weather Alerts</title>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
 body{
+margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
-margin:0;
 }
+
+/* HEADER */
 
 header{
 background:#151c2c;
 padding:15px;
-font-size:22px;
 text-align:center;
+font-size:22px;
 }
 
 /* TICKER */
@@ -29,83 +31,54 @@ text-align:center;
 background:#111;
 border-bottom:2px solid #444;
 overflow:hidden;
+white-space:nowrap;
 }
 
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:tickerScroll 30s linear infinite;
+animation:scrollTicker 35s linear infinite;
 }
 
-#ticker{
-color:#ffcc00;
-padding:8px;
+#tickerText{
 display:inline-block;
+padding:8px;
+color:#ffcc00;
 }
 
-@keyframes tickerScroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
+@keyframes scrollTicker{
+0%{transform:translateX(0)}
+100%{transform:translateX(-50%)}
 }
 
 /* LAYOUT */
 
-#main{
+#layout{
 display:flex;
-flex-wrap:wrap;
+height:calc(100vh - 90px);
 }
 
 #map{
-height:500px;
-flex:1;
-min-width:400px;
+flex:2;
 }
 
-#container{
+#panel{
 flex:1;
-min-width:350px;
-max-height:500px;
-overflow:auto;
+background:#111;
 padding:20px;
+overflow:auto;
+border-left:2px solid #333;
 }
 
-/* COUNTY LIST */
+/* COUNTY COLORS */
 
-.county{
-padding:10px;
-border-bottom:1px solid #333;
-background:#1f3b1f;
-}
-
-.countyName{
-font-weight:bold;
-}
-
-.alert{
-margin-left:10px;
-}
-
-/* COLORS */
-
-.red{background:#5a0000;}
-.orange{background:#7a3b00;}
-.yellow{background:#666600;}
-.blue{background:#003c66;}
-.purple{background:#4a0066;}
-.teal{background:#004f4f;}
-.green{background:#1f3b1f;}
-
-/* FLASHING TORNADO */
-
-.flash{
-animation:flashRed 1s infinite;
-}
-
-@keyframes flashRed{
-0%{background:#5a0000;}
-50%{background:#a00000;}
-100%{background:#5a0000;}
-}
+.green{fill:#1f3b1f;}
+.red{fill:#8b0000;}
+.orange{fill:#ff7b00;}
+.blue{fill:#0055aa;}
+.yellow{fill:#999900;}
+.purple{fill:#660099;}
+.teal{fill:#008080;}
 
 </style>
 
@@ -113,19 +86,23 @@ animation:flashRed 1s infinite;
 
 <body>
 
-<header>Wisconsin Alerts Dashboard</header>
+<header>Wisconsin Weather Alerts</header>
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
-<div id="ticker">Loading alerts...</div>
+<div id="tickerText">Loading alerts...</div>
+<div id="tickerTextClone"></div>
 </div>
 </div>
 
-<div id="main">
+<div id="layout">
 
 <div id="map"></div>
 
-<div id="container"></div>
+<div id="panel">
+<h2>Alert Details</h2>
+<div id="alertText">Click a county to view alerts.</div>
+</div>
 
 </div>
 
@@ -141,69 +118,18 @@ L.tileLayer(
 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 ).addTo(map)
 
-/* LOAD WI COUNTY GEOJSON */
+let countyAlerts={}
 
-var countyLayer
-
-fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
-
-.then(r=>r.json())
-
-.then(data=>{
-
-countyLayer = L.geoJSON(data,{
-style:{
-color:"#888",
-weight:1,
-fillColor:"#1f3b1f",
-fillOpacity:0.7
-}
-}).addTo(map)
-
-})
-
-/* COUNTY LIST */
-
-const counties=[
-"Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
-"Calumet","Chippewa","Clark","Columbia","Crawford","Dane","Dodge",
-"Door","Douglas","Dunn","Eau Claire","Florence","Fond du Lac",
-"Forest","Grant","Green","Green Lake","Iowa","Iron","Jackson",
-"Jefferson","Juneau","Kenosha","Kewaunee","La Crosse","Lafayette",
-"Langlade","Lincoln","Manitowoc","Marathon","Marinette","Marquette",
-"Menominee","Milwaukee","Monroe","Oconto","Oneida","Outagamie",
-"Ozaukee","Pepin","Pierce","Polk","Portage","Price","Racine",
-"Richland","Rock","Rusk","Sauk","Sawyer","Shawano","Sheboygan",
-"St Croix","Taylor","Trempealeau","Vernon","Vilas","Walworth",
-"Washburn","Washington","Waukesha","Waupaca","Waushara",
-"Winnebago","Wood"
-]
-
-const container=document.getElementById("container")
-
-counties.forEach(c=>{
-
-let div=document.createElement("div")
-div.className="county green"
-div.id=c
-
-div.innerHTML=`
-<div class="countyName">${c} County</div>
-<div class="alerts"></div>
-`
-
-container.appendChild(div)
-
-})
+/* COLORS */
 
 function getColor(event){
 
-if(event.includes("Tornado Warning")) return "red"
-if(event.includes("Severe Thunderstorm Warning")) return "orange"
-if(event.includes("Winter Storm Warning")) return "blue"
-if(event.includes("Wind Warning")) return "yellow"
-if(event.includes("Watch")) return "purple"
-return "teal"
+if(event.includes("Tornado Warning")) return "#8b0000"
+if(event.includes("Severe Thunderstorm Warning")) return "#ff7b00"
+if(event.includes("Winter Storm Warning")) return "#0055aa"
+if(event.includes("Wind Warning")) return "#999900"
+if(event.includes("Watch")) return "#660099"
+return "#008080"
 
 }
 
@@ -218,15 +144,70 @@ return "📢"
 
 }
 
+/* COUNTY MAP */
+
+var countiesLayer
+
+fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+countiesLayer = L.geoJSON(data,{
+
+style:function(){
+return{
+color:"#888",
+weight:1,
+fillColor:"#1f3b1f",
+fillOpacity:0.7
+}
+},
+
+onEachFeature:function(feature,layer){
+
+layer.on("click",function(){
+
+let name=feature.properties.name
+let alerts=countyAlerts[name]
+
+if(!alerts){
+
+document.getElementById("alertText").innerHTML=
+"<b>"+name+" County</b><br>No active alerts."
+
+return
+
+}
+
+let html="<b>"+name+" County</b><br><br>"
+
+alerts.forEach(a=>{
+
+html+=`
+<b>${getEmoji(a.event)} ${a.event}</b><br>
+${a.headline}<br><br>
+${a.description}<hr>
+`
+
+})
+
+document.getElementById("alertText").innerHTML=html
+
+})
+
+}
+
+}).addTo(map)
+
+})
+
+/* LOAD ALERTS */
+
 function loadAlerts(){
 
-/* RESET */
-
-counties.forEach(c=>{
-let county=document.getElementById(c)
-county.className="county green"
-county.querySelector(".alerts").innerHTML=""
-})
+countyAlerts={}
 
 fetch("https://api.weather.gov/alerts/active?area=WI")
 
@@ -234,58 +215,65 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 
 .then(data=>{
 
-let tickerSet=new Set()
+let ticker=[]
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-let areas=alert.properties.areaDesc.split(";")
+let headline=alert.properties.headline
+let desc=alert.properties.description
 
-let color=getColor(event)
-let emoji=getEmoji(event)
+let areas=alert.properties.areaDesc.split(";")
 
 areas.forEach(a=>{
 
-let countyName=a.trim().replace(" County","")
+let county=a.trim().replace(" County","")
 
-let county=document.getElementById(countyName)
+if(!countyAlerts[county])
+countyAlerts[county]=[]
 
-if(county){
+countyAlerts[county].push({
+event:event,
+headline:headline,
+description:desc
+})
 
-let alertText=`${emoji} ${event}`
-
-let existing=[...county.querySelectorAll(".alert")].map(e=>e.innerText)
-
-if(!existing.includes(alertText)){
-
-county.className="county "+color
-
-if(event.includes("Tornado Warning"))
-county.classList.add("flash")
-
-county.querySelector(".alerts").innerHTML+=
-`<div class="alert">${alertText}</div>`
-
-tickerSet.add(`${emoji} ${event} - ${countyName} County`)
-
-}
-
-}
+ticker.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
 })
 
-let tickerText=[...tickerSet].join("   |   ")
+/* MAP COLORS */
 
-document.getElementById("ticker").innerText=tickerText
+countiesLayer.eachLayer(layer=>{
 
-/* ADJUST SPEED */
+let name=layer.feature.properties.name
 
-let speed=Math.max(15,tickerText.length/6)
+if(countyAlerts[name]){
 
-document.getElementById("tickerTrack").style.animation=
-`tickerScroll ${speed}s linear infinite`
+layer.setStyle({
+fillColor:getColor(countyAlerts[name][0].event),
+fillOpacity:0.8
+})
+
+}
+else{
+
+layer.setStyle({
+fillColor:"#1f3b1f"
+})
+
+}
+
+})
+
+/* UPDATE TICKER */
+
+let tickerText=ticker.join("   |   ")
+
+document.getElementById("tickerText").innerText=tickerText
+document.getElementById("tickerTextClone").innerText=tickerText
 
 })
 
