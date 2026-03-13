@@ -13,8 +13,6 @@ color:white;
 text-align:center;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:30px;
@@ -28,15 +26,11 @@ margin-top:10px;
 opacity:0.9;
 }
 
-/* SECTION */
-
 .section{
 max-width:650px;
 margin:auto;
 padding:25px;
 }
-
-/* LOCATION */
 
 .locationCard{
 background:#111827;
@@ -107,11 +101,232 @@ background:#8a4b00;
 background:#1f3b1f;
 }
 
-/* MOBILE */
-
 @media (max-width:600px){
 
 header{font-size:44px;}
 .status{font-size:26px;}
 .countyName{font-size:64px;}
-.cityName{
+.cityName{font-size:36px;}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+
+US Storm Alerts
+<div id="status" class="status">Loading...</div>
+
+</header>
+
+<div class="section">
+
+<h2>Your Location</h2>
+<div id="county">Detecting your location...</div>
+
+</div>
+
+<div class="section">
+
+<h2>Current Conditions</h2>
+
+<div class="weatherGrid">
+
+<div class="weatherCard">
+<div class="weatherTitle">Temperature</div>
+<div id="temp" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Dew Point</div>
+<div id="dew" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Humidity</div>
+<div id="humidity" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+<div class="weatherTitle">Precipitation</div>
+<div id="precip" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard windCard">
+<div class="weatherTitle">Wind</div>
+<div id="wind" class="weatherValue">--</div>
+</div>
+
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>Active Alerts</h2>
+<div id="alerts">Checking alerts...</div>
+
+</div>
+
+<script>
+
+let userCounty=""
+let userCity=""
+let userState=""
+let stationsURL=""
+
+/* SAFE VALUE */
+
+function safe(v){
+return v==null ? 0 : v
+}
+
+/* CARDINAL WIND */
+
+function getCardinal(deg){
+
+if(deg==null) return ""
+
+const dirs=["N","NE","E","SE","S","SW","W","NW"]
+
+return dirs[Math.round(deg/45)%8]
+
+}
+
+/* LOCATION */
+
+async function detectLocation(){
+
+navigator.geolocation.getCurrentPosition(async position=>{
+
+let lat=position.coords.latitude
+let lon=position.coords.longitude
+
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
+
+userCity=data.properties.relativeLocation.properties.city
+userState=data.properties.relativeLocation.properties.state
+
+stationsURL=data.properties.observationStations
+
+let countyURL=data.properties.county
+
+let countyRes=await fetch(countyURL)
+let countyData=await countyRes.json()
+
+userCounty=countyData.properties.name.replace(" County","")
+
+document.getElementById("county").innerHTML=
+"<div class='locationCard'><div class='countyName'>"+userCounty+" County</div><div class='cityName'>"+userCity+", "+userState+"</div></div>"
+
+loadWeather()
+loadAlerts()
+
+})
+
+}
+
+/* WEATHER */
+
+async function loadWeather(){
+
+let stationsRes=await fetch(stationsURL)
+let stations=await stationsRes.json()
+
+let station=stations.features[0].id
+
+let obsRes=await fetch(station+"/observations/latest")
+let obs=await obsRes.json()
+
+let tempC=safe(obs.properties.temperature.value)
+let dewC=safe(obs.properties.dewpoint.value)
+
+let tempF=Math.round((tempC*9/5)+32)
+let dewF=Math.round((dewC*9/5)+32)
+
+let humidity=Math.round(safe(obs.properties.relativeHumidity.value))
+
+let windSpeed=safe(obs.properties.windSpeed.value)
+windSpeed=Math.round(windSpeed*2.237)
+
+let windDir=getCardinal(obs.properties.windDirection.value)
+
+let precip=safe(obs.properties.precipitationLastHour.value)
+let precipIn=(precip*0.03937).toFixed(2)
+
+document.getElementById("temp").innerText=tempF+"°F"
+document.getElementById("dew").innerText=dewF+"°F"
+document.getElementById("humidity").innerText=humidity+"%"
+document.getElementById("precip").innerText=precipIn+" in"
+document.getElementById("wind").innerText=windSpeed+" mph "+windDir
+
+}
+
+/* ALERTS */
+
+async function loadAlerts(){
+
+let response=await fetch("https://api.weather.gov/alerts/active")
+let data=await response.json()
+
+let html=""
+
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+let desc=alert.properties.description
+let areas=alert.properties.areaDesc
+
+if(areas && areas.includes(userCounty)){
+
+let style="card"
+
+if(event.includes("Tornado Warning")) style+=" tornado"
+else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+else style+=" none"
+
+html+=`
+<div class="${style}">
+<h3>${event}</h3>
+<p>${desc}</p>
+</div>
+`
+
+}
+
+})
+
+if(html===""){
+html='<div class="card none">No active alerts for your county.</div>'
+}
+
+document.getElementById("alerts").innerHTML=html
+
+updateTime()
+
+}
+
+/* TIME */
+
+function updateTime(){
+
+let now=new Date()
+let time=now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+
+document.getElementById("status").innerText="Last Updated: "+time
+
+}
+
+detectLocation()
+
+setInterval(loadAlerts,60000)
+setInterval(loadWeather,300000)
+
+</script>
+
+</body>
+</html>
