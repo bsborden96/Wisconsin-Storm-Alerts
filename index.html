@@ -15,18 +15,18 @@ text-align:center;
 
 header{
 background:#151c2c;
-padding:20px;
+padding:22px;
 font-size:28px;
 font-weight:bold;
 }
 
 .section{
-max-width:600px;
+max-width:650px;
 margin:auto;
 padding:25px;
 }
 
-.alertCard{
+.card{
 background:#111;
 padding:20px;
 margin-top:15px;
@@ -41,6 +41,10 @@ background:#7a0000;
 background:#8a4b00;
 }
 
+.none{
+background:#1f3b1f;
+}
+
 </style>
 </head>
 
@@ -50,18 +54,15 @@ background:#8a4b00;
 
 <div class="section">
 
-<h2>Your Location</h2>
-<div id="county">Detecting your location...</div>
+<h2>Your County</h2>
+<div id="county" class="card">Detecting your location...</div>
 
 </div>
 
 <div class="section">
 
 <h2>Active Alerts</h2>
-
-<div id="alerts">
-Checking alerts...
-</div>
+<div id="alerts">Checking alerts...</div>
 
 </div>
 
@@ -69,7 +70,9 @@ Checking alerts...
 
 let userCounty=""
 
-function detectLocation(){
+/* DETECT LOCATION */
+
+async function detectLocation(){
 
 if(!navigator.geolocation){
 document.getElementById("county").innerText="Location unavailable"
@@ -84,15 +87,23 @@ let lon=position.coords.longitude
 let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let data=await res.json()
 
-userCounty=data.properties.relativeLocation.properties.city
+let countyURL=data.properties.county
 
-document.getElementById("county").innerHTML="<b>"+userCounty+" County</b>"
+let countyRes=await fetch(countyURL)
+let countyData=await countyRes.json()
+
+userCounty=countyData.properties.name.replace(" County","")
+
+document.getElementById("county").innerHTML=
+"<b>"+userCounty+" County</b>"
 
 loadAlerts()
 
 })
 
 }
+
+/* LOAD ALERTS */
 
 async function loadAlerts(){
 
@@ -109,13 +120,16 @@ let areas=alert.properties.areaDesc
 
 if(areas.includes(userCounty)){
 
-let style="alertCard"
+let style="card"
 
 if(event.includes("Tornado Warning")){
 style+=" tornado"
 }
 else if(event.includes("Severe Thunderstorm Warning")){
 style+=" severe"
+}
+else{
+style+=" none"
 }
 
 html+=`
@@ -130,7 +144,7 @@ html+=`
 })
 
 if(html===""){
-html="No active alerts for your county."
+html='<div class="card none">No active alerts for your county.</div>'
 }
 
 document.getElementById("alerts").innerHTML=html
