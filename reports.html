@@ -45,14 +45,17 @@ border-radius:8px;
 }
 
 .report{
-padding:12px;
+padding:10px;
 border-bottom:1px solid #333;
 }
 
 .time{
 color:#aaa;
 font-size:12px;
-margin-bottom:4px;
+}
+
+.type{
+font-weight:bold;
 }
 
 </style>
@@ -84,36 +87,42 @@ async function loadReports(){
 
 try{
 
-let response = await fetch("https://api.weather.gov/products/types/LSR")
+let response = await fetch(
+"https://mesonet.agron.iastate.edu/cgi-bin/request/gis/lsr.py?state=WI&fmt=geojson&hours=12"
+)
 
 let data = await response.json()
 
-let reportsHTML = ""
+let reportsHTML=""
 
-for(let i=0;i<10;i++){
+data.features.slice(0,20).forEach(report=>{
 
-let productURL = data["@graph"][i].id
+let type=report.properties.typetext
+let city=report.properties.city
+let county=report.properties.county
+let magnitude=report.properties.magnitude||""
+let time=new Date(report.properties.valid).toLocaleString()
 
-let reportResponse = await fetch(productURL)
-
-let reportData = await reportResponse.json()
-
-let text = reportData.productText
-
-reportsHTML += `
+reportsHTML+=`
 <div class="report">
-<div class="time">${new Date(reportData.issuanceTime).toLocaleString()}</div>
-<pre>${text}</pre>
+<div class="type">${type}</div>
+${city}, ${county} County<br>
+${magnitude}<br>
+<div class="time">${time}</div>
 </div>
 `
 
+})
+
+if(reportsHTML===""){
+reportsHTML="No recent storm reports."
 }
 
-document.getElementById("reports").innerHTML = reportsHTML
+document.getElementById("reports").innerHTML=reportsHTML
 
 }catch{
 
-document.getElementById("reports").innerHTML =
+document.getElementById("reports").innerHTML=
 "Unable to load storm reports."
 
 }
