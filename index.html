@@ -25,27 +25,19 @@ text-align:center;
 
 #tickerWrapper{
 background:#111;
-overflow:hidden;
 border-bottom:2px solid #444;
+overflow:hidden;
+}
+
+#tickerTrack{
+display:inline-block;
+white-space:nowrap;
 }
 
 #ticker{
-white-space:nowrap;
 color:#ffcc00;
 padding:8px 0;
 display:inline-block;
-animation:none;
-}
-
-/* ticker animation starts after alerts load */
-
-.scroll{
-animation:tickerScroll 140s linear infinite;
-}
-
-@keyframes tickerScroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
 }
 
 /* DIVIDER */
@@ -110,7 +102,9 @@ Wisconsin County Alerts
 </header>
 
 <div id="tickerWrapper">
+<div id="tickerTrack">
 <div id="ticker">Loading alerts...</div>
+</div>
 </div>
 
 <div class="divider"></div>
@@ -154,8 +148,6 @@ container.appendChild(div)
 })
 
 function loadAlerts(){
-
-// reset counties
 
 counties.forEach(c=>{
 let county=document.getElementById(c)
@@ -242,17 +234,35 @@ tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 
 })
 
-// update ticker
+let tickerText=[...tickerSet].join("   |   ")
 
 let ticker=document.getElementById("ticker")
+let track=document.getElementById("tickerTrack")
 
-ticker.innerText=[...tickerSet].join("   |   ")
+ticker.innerText=tickerText
 
-ticker.classList.remove("scroll")
-void ticker.offsetWidth
-ticker.classList.add("scroll")
+// dynamic speed calculation
+
+let length=tickerText.length
+
+let duration=Math.max(10, length * 0.4)
+
+track.style.animation=`tickerScroll ${duration}s linear infinite`
 
 })
+
+// create animation dynamically
+
+const style=document.createElement('style')
+
+style.innerHTML=`
+@keyframes tickerScroll{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
+}
+`
+
+document.head.appendChild(style)
 
 }
 
