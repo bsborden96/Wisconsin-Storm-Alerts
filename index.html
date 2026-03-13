@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Wisconsin Storm Alerts</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+}
+
+#ticker{
+background:#111;
+color:#ffcc00;
+padding:8px;
+font-weight:bold;
+overflow:hidden;
+white-space:nowrap;
+}
+
+#navbar{
+background:#151c2c;
+padding:10px;
+display:flex;
+gap:20px;
+}
+
+#navbar a{
+color:white;
+text-decoration:none;
+font-weight:bold;
+}
+
+#controls{
+padding:10px;
+text-align:center;
+}
+
+button{
+padding:10px;
+margin:5px;
+background:#2c3e50;
+border:none;
+color:white;
+cursor:pointer;
+border-radius:5px;
+}
+
+button:hover{
+background:#e74c3c;
+}
+
+#map{
+height:70vh;
+}
+
+#discord{
+text-align:center;
+padding:20px;
+}
+
+.discordbtn{
+background:#5865F2;
+padding:15px;
+border-radius:8px;
+color:white;
+text-decoration:none;
+font-weight:bold;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div id="ticker">
+Loading alerts...
+</div>
+
+<div id="navbar">
+<a href="#">Home</a>
+<a href="#">Radar</a>
+<a href="#">Alerts</a>
+<a href="#">About</a>
+</div>
+
+<div id="controls">
+
+<button onclick="setRadar('reflectivity')">Reflectivity</button>
+<button onclick="setRadar('velocity')">Velocity</button>
+<button onclick="setRadar('correlation')">Correlation Coefficient</button>
+
+</div>
+
+<div id="map"></div>
+
+<div id="discord">
+
+<a class="discordbtn" href="YOUR_DISCORD_LINK">
+Join Our Discord Alerts
+</a>
+
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+
+var map = L.map('map').setView([44.5,-89.5],7);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+attribution:'Map data © OpenStreetMap'
+}).addTo(map);
+
+var radarLayer;
+
+function setRadar(type){
+
+if(radarLayer){
+map.removeLayer(radarLayer)
+}
+
+let url=""
+
+if(type==="reflectivity"){
+url='https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png'
+}
+
+if(type==="velocity"){
+url='https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/2_1.png'
+}
+
+if(type==="correlation"){
+url='https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/3_1.png'
+}
+
+radarLayer = L.tileLayer(url,{opacity:0.7})
+
+radarLayer.addTo(map)
+
+}
+
+setRadar("reflectivity")
+
+
+// ALERT TICKER
+
+fetch("https://api.weather.gov/alerts/active?area=WI")
+.then(response => response.json())
+.then(data => {
+
+let alerts = data.features.map(a => a.properties.event + " - " + a.properties.areaDesc)
+
+document.getElementById("ticker").innerText = alerts.join("   |   ")
+
+})
+
+</script>
+
+</body>
+
+</html>
