@@ -21,14 +21,36 @@ font-size:22px;
 text-align:center;
 }
 
-#ticker{
+/* TICKER */
+
+#tickerWrapper{
 background:#111;
-color:#ffcc00;
-padding:8px;
-font-weight:bold;
-white-space:nowrap;
+border-bottom:2px solid #444;
 overflow:hidden;
 }
+
+#ticker{
+color:#ffcc00;
+padding:8px;
+white-space:nowrap;
+display:inline-block;
+animation:scrollTicker 35s linear infinite;
+}
+
+@keyframes scrollTicker{
+0% {transform:translateX(100%)}
+100% {transform:translateX(-100%)}
+}
+
+/* PAGE BREAK */
+
+.divider{
+height:15px;
+background:#0a0f1c;
+border-bottom:1px solid #333;
+}
+
+/* COUNTY LIST */
 
 #container{
 max-width:900px;
@@ -50,6 +72,8 @@ font-weight:bold;
 margin-left:10px;
 }
 
+/* COLORS */
+
 .red{background:#5a0000;}
 .orange{background:#7a3b00;}
 .yellow{background:#666600;}
@@ -66,13 +90,17 @@ margin-left:10px;
 Wisconsin County Alerts
 </header>
 
+<div id="tickerWrapper">
 <div id="ticker">Loading alerts...</div>
+</div>
+
+<div class="divider"></div>
 
 <div id="container"></div>
 
 <script>
 
-// Counties alphabetical
+// COUNTY LIST
 
 const counties = [
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
@@ -125,7 +153,7 @@ fetch("https://api.weather.gov/alerts/active?area=WI")
 
 .then(data=>{
 
-let ticker=[]
+let tickerSet = new Set()
 
 data.features.forEach(alert=>{
 
@@ -163,12 +191,22 @@ let county=document.getElementById(countyName)
 
 if(county){
 
+let alertText=`${emoji} ${event}`
+
+// prevent duplicates
+
+let existing=[...county.querySelectorAll(".alert")].map(e=>e.innerText)
+
+if(!existing.includes(alertText)){
+
 county.className="county "+color
 
 county.querySelector(".alerts").innerHTML+=
-`<div class="alert">${emoji} ${event}</div>`
+`<div class="alert">${alertText}</div>`
 
-ticker.push(`${emoji} ${event} - ${countyName} County`)
+tickerSet.add(`${emoji} ${event} - ${countyName} County`)
+
+}
 
 }
 
@@ -176,9 +214,9 @@ ticker.push(`${emoji} ${event} - ${countyName} County`)
 
 })
 
-// ticker
+// update ticker
 
-document.getElementById("ticker").innerText=ticker.join(" | ")
+document.getElementById("ticker").innerText=[...tickerSet].join("   |   ")
 
 })
 
@@ -186,7 +224,7 @@ document.getElementById("ticker").innerText=ticker.join(" | ")
 
 loadAlerts()
 
-// auto refresh every minute
+// refresh every minute
 
 setInterval(loadAlerts,60000)
 
