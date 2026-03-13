@@ -60,7 +60,7 @@ border-radius:6px;
 /* MAP */
 
 #map{
-max-width:700px;
+max-width:750px;
 margin:auto;
 }
 
@@ -123,52 +123,9 @@ margin-top:20px;
 
 <div id="map">
 
-<!-- Simplified Wisconsin county layout -->
-<svg viewBox="0 0 500 600">
-
-<!-- NORTH -->
-
-<rect id="Douglas" class="county" x="120" y="40" width="70" height="40"/>
-<rect id="Bayfield" class="county" x="200" y="40" width="70" height="40"/>
-
-<rect id="Burnett" class="county" x="120" y="100" width="70" height="40"/>
-<rect id="Washburn" class="county" x="200" y="100" width="70" height="40"/>
-<rect id="Sawyer" class="county" x="280" y="100" width="70" height="40"/>
-
-<rect id="Polk" class="county" x="120" y="160" width="70" height="40"/>
-<rect id="Barron" class="county" x="200" y="160" width="70" height="40"/>
-<rect id="Rusk" class="county" x="280" y="160" width="70" height="40"/>
-
-<!-- CENTRAL -->
-
-<rect id="Chippewa" class="county" x="200" y="220" width="70" height="40"/>
-<rect id="Clark" class="county" x="280" y="220" width="70" height="40"/>
-<rect id="Marathon" class="county" x="360" y="220" width="70" height="40"/>
-
-<rect id="Wood" class="county" x="280" y="280" width="70" height="40"/>
-
-<!-- SOUTH CENTRAL -->
-
-<rect id="Sauk" class="county" x="200" y="340" width="70" height="40"/>
-<rect id="Columbia" class="county" x="280" y="340" width="70" height="40"/>
-
-<rect id="Dane" class="county" x="200" y="400" width="70" height="40"/>
-<rect id="Jefferson" class="county" x="280" y="400" width="70" height="40"/>
-
-<!-- SOUTH -->
-
-<rect id="Rock" class="county" x="200" y="460" width="70" height="40"/>
-<rect id="Walworth" class="county" x="280" y="460" width="70" height="40"/>
-
-<!-- EAST -->
-
-<rect id="Fond du Lac" class="county" x="360" y="340" width="70" height="40"/>
-<rect id="Washington" class="county" x="360" y="400" width="70" height="40"/>
-<rect id="Milwaukee" class="county" x="360" y="460" width="70" height="40"/>
-<rect id="Racine" class="county" x="360" y="520" width="70" height="40"/>
-<rect id="Kenosha" class="county" x="360" y="560" width="70" height="40"/>
-
-</svg>
+<object id="wiMap" type="image/svg+xml"
+data="https://upload.wikimedia.org/wikipedia/commons/5/5c/Wisconsin_counties_named.svg">
+</object>
 
 </div>
 
@@ -188,7 +145,7 @@ Click a county to view alert information.
 
 let countyAlerts={}
 
-/* LOAD ALERTS */
+const mapObject=document.getElementById("wiMap")
 
 async function loadAlerts(){
 
@@ -230,8 +187,6 @@ warningGroups[event].push(...areas)
 
 })
 
-/* BUILD WARNING CARDS */
-
 let warningsHTML=""
 
 for(let event in warningGroups){
@@ -250,20 +205,50 @@ ${counties}
 document.getElementById("warnings").innerHTML =
 warningsHTML || "No active warnings."
 
-colorCounties()
-
 }
 
-/* COLOR COUNTIES */
+mapObject.addEventListener("load",()=>{
 
-function colorCounties(){
+const svgDoc=mapObject.contentDocument
 
-document.querySelectorAll(".county").forEach(c=>{
+const counties=svgDoc.querySelectorAll("path")
+
+counties.forEach(c=>{
+
+let countyName=c.getAttribute("inkscape:label") || c.getAttribute("id")
+
+c.classList.add("county")
+
+c.addEventListener("click",()=>{
+
+let alerts=countyAlerts[countyName]
+
+if(!alerts){
+document.getElementById("details").innerHTML="No alerts for "+countyName+" County."
+return
+}
+
+let html="<b>"+countyName+" County</b><br><br>"
+
+alerts.forEach(a=>{
+html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
+})
+
+document.getElementById("details").innerHTML=html
+
+})
+
+})
+
+setInterval(()=>{
+
+counties.forEach(c=>{
+
+let countyName=c.getAttribute("inkscape:label") || c.getAttribute("id")
 
 c.classList.remove("green","orange","red","flash")
 
-let county=c.id
-let alerts=countyAlerts[county]
+let alerts=countyAlerts[countyName]
 
 if(!alerts) return
 
@@ -283,35 +268,12 @@ c.classList.add("green")
 
 })
 
-}
-
-/* CLICK COUNTY */
-
-document.querySelectorAll(".county").forEach(c=>{
-
-c.addEventListener("click",()=>{
-
-let county=c.id
-let alerts=countyAlerts[county]
-
-if(!alerts){
-document.getElementById("details").innerHTML="No alerts for "+county+" County."
-return
-}
-
-let html="<b>"+county+" County</b><br><br>"
-
-alerts.forEach(a=>{
-html+="<b>"+a.event+"</b><br>"+a.description+"<hr>"
-})
-
-document.getElementById("details").innerHTML=html
-
-})
+},2000)
 
 })
 
 loadAlerts()
+
 setInterval(loadAlerts,60000)
 
 </script>
