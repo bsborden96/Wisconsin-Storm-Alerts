@@ -3,7 +3,9 @@
 
 <head>
 
-<title>Wisconsin County Alerts</title>
+<title>Wisconsin Alerts Dashboard</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
@@ -32,28 +34,42 @@ overflow:hidden;
 #tickerTrack{
 display:inline-block;
 white-space:nowrap;
+animation:tickerScroll 30s linear infinite;
 }
 
 #ticker{
 color:#ffcc00;
-padding:8px 0;
+padding:8px;
 display:inline-block;
 }
 
-/* DIVIDER */
+@keyframes tickerScroll{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
+}
 
-.divider{
-height:12px;
-border-bottom:1px solid #333;
+/* LAYOUT */
+
+#main{
+display:flex;
+flex-wrap:wrap;
+}
+
+#map{
+height:500px;
+flex:1;
+min-width:400px;
+}
+
+#container{
+flex:1;
+min-width:350px;
+max-height:500px;
+overflow:auto;
+padding:20px;
 }
 
 /* COUNTY LIST */
-
-#container{
-max-width:900px;
-margin:auto;
-padding:20px;
-}
 
 .county{
 padding:10px;
@@ -69,7 +85,7 @@ font-weight:bold;
 margin-left:10px;
 }
 
-/* ALERT COLORS */
+/* COLORS */
 
 .red{background:#5a0000;}
 .orange{background:#7a3b00;}
@@ -97,9 +113,7 @@ animation:flashRed 1s infinite;
 
 <body>
 
-<header>
-Wisconsin County Alerts
-</header>
+<header>Wisconsin Alerts Dashboard</header>
 
 <div id="tickerWrapper">
 <div id="tickerTrack">
@@ -107,15 +121,50 @@ Wisconsin County Alerts
 </div>
 </div>
 
-<div class="divider"></div>
+<div id="main">
+
+<div id="map"></div>
 
 <div id="container"></div>
 
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 
-// COUNTY LIST
+/* MAP */
 
-const counties = [
+var map = L.map('map').setView([44.5,-89.5],7)
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(map)
+
+/* LOAD WI COUNTY GEOJSON */
+
+var countyLayer
+
+fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
+
+.then(r=>r.json())
+
+.then(data=>{
+
+countyLayer = L.geoJSON(data,{
+style:{
+color:"#888",
+weight:1,
+fillColor:"#1f3b1f",
+fillOpacity:0.7
+}
+}).addTo(map)
+
+})
+
+/* COUNTY LIST */
+
+const counties=[
 "Adams","Ashland","Barron","Bayfield","Brown","Buffalo","Burnett",
 "Calumet","Chippewa","Clark","Columbia","Crawford","Dane","Dodge",
 "Door","Douglas","Dunn","Eau Claire","Florence","Fond du Lac",
@@ -147,7 +196,31 @@ container.appendChild(div)
 
 })
 
+function getColor(event){
+
+if(event.includes("Tornado Warning")) return "red"
+if(event.includes("Severe Thunderstorm Warning")) return "orange"
+if(event.includes("Winter Storm Warning")) return "blue"
+if(event.includes("Wind Warning")) return "yellow"
+if(event.includes("Watch")) return "purple"
+return "teal"
+
+}
+
+function getEmoji(event){
+
+if(event.includes("Tornado")) return "🌪"
+if(event.includes("Severe Thunderstorm")) return "⛈"
+if(event.includes("Winter Storm")) return "❄️"
+if(event.includes("Wind")) return "💨"
+if(event.includes("Watch")) return "👀"
+return "📢"
+
+}
+
 function loadAlerts(){
+
+/* RESET */
 
 counties.forEach(c=>{
 let county=document.getElementById(c)
@@ -168,40 +241,8 @@ data.features.forEach(alert=>{
 let event=alert.properties.event
 let areas=alert.properties.areaDesc.split(";")
 
-let emoji="⚠️"
-let color="teal"
-let flash=false
-
-if(event.includes("Tornado Warning")){
-emoji="🌪"
-color="red"
-flash=true
-}
-
-else if(event.includes("Severe Thunderstorm Warning")){
-emoji="⛈"
-color="orange"
-}
-
-else if(event.includes("Winter Storm Warning")){
-emoji="❄️"
-color="blue"
-}
-
-else if(event.includes("Wind Warning")){
-emoji="💨"
-color="yellow"
-}
-
-else if(event.includes("Watch")){
-emoji="👀"
-color="purple"
-}
-
-else if(event.includes("Advisory")){
-emoji="📢"
-color="teal"
-}
+let color=getColor(event)
+let emoji=getEmoji(event)
 
 areas.forEach(a=>{
 
@@ -219,7 +260,8 @@ if(!existing.includes(alertText)){
 
 county.className="county "+color
 
-if(flash) county.classList.add("flash")
+if(event.includes("Tornado Warning"))
+county.classList.add("flash")
 
 county.querySelector(".alerts").innerHTML+=
 `<div class="alert">${alertText}</div>`
@@ -236,33 +278,16 @@ tickerSet.add(`${emoji} ${event} - ${countyName} County`)
 
 let tickerText=[...tickerSet].join("   |   ")
 
-let ticker=document.getElementById("ticker")
-let track=document.getElementById("tickerTrack")
+document.getElementById("ticker").innerText=tickerText
 
-ticker.innerText=tickerText
+/* ADJUST SPEED */
 
-// dynamic speed calculation
+let speed=Math.max(15,tickerText.length/6)
 
-let length=tickerText.length
-
-let duration=Math.max(10, length * 0.4)
-
-track.style.animation=`tickerScroll ${duration}s linear infinite`
+document.getElementById("tickerTrack").style.animation=
+`tickerScroll ${speed}s linear infinite`
 
 })
-
-// create animation dynamically
-
-const style=document.createElement('style')
-
-style.innerHTML=`
-@keyframes tickerScroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
-`
-
-document.head.appendChild(style)
 
 }
 
