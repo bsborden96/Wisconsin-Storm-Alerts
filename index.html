@@ -34,21 +34,16 @@ overflow:hidden;
 white-space:nowrap;
 }
 
-#tickerTrack{
-display:inline-block;
-white-space:nowrap;
-animation:scrollTicker 35s linear infinite;
-}
-
-#tickerText{
+#ticker{
 display:inline-block;
 padding:8px;
 color:#ffcc00;
+animation:scrollTicker 40s linear infinite;
 }
 
 @keyframes scrollTicker{
-0%{transform:translateX(0)}
-100%{transform:translateX(-50%)}
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
 }
 
 /* LAYOUT */
@@ -70,16 +65,6 @@ overflow:auto;
 border-left:2px solid #333;
 }
 
-/* COUNTY COLORS */
-
-.green{fill:#1f3b1f;}
-.red{fill:#8b0000;}
-.orange{fill:#ff7b00;}
-.blue{fill:#0055aa;}
-.yellow{fill:#999900;}
-.purple{fill:#660099;}
-.teal{fill:#008080;}
-
 </style>
 
 </head>
@@ -89,10 +74,7 @@ border-left:2px solid #333;
 <header>Wisconsin Weather Alerts</header>
 
 <div id="tickerWrapper">
-<div id="tickerTrack">
-<div id="tickerText">Loading alerts...</div>
-<div id="tickerTextClone"></div>
-</div>
+<div id="ticker">Loading alerts...</div>
 </div>
 
 <div id="layout">
@@ -110,8 +92,6 @@ border-left:2px solid #333;
 
 <script>
 
-/* MAP */
-
 var map = L.map('map').setView([44.5,-89.5],7)
 
 L.tileLayer(
@@ -119,8 +99,7 @@ L.tileLayer(
 ).addTo(map)
 
 let countyAlerts={}
-
-/* COLORS */
+let countiesLayer
 
 function getColor(event){
 
@@ -144,9 +123,7 @@ return "📢"
 
 }
 
-/* COUNTY MAP */
-
-var countiesLayer
+/* LOAD COUNTY MAP */
 
 fetch("https://raw.githubusercontent.com/codeforamerica/click_that_hood/master/public/data/wisconsin-counties.geojson")
 
@@ -201,9 +178,12 @@ document.getElementById("alertText").innerHTML=html
 
 }).addTo(map)
 
-})
+/* LOAD ALERTS AFTER MAP IS READY */
 
-/* LOAD ALERTS */
+loadAlerts()
+setInterval(loadAlerts,60000)
+
+})
 
 function loadAlerts(){
 
@@ -244,7 +224,7 @@ ticker.push(`${getEmoji(event)} ${event} - ${county} County`)
 
 })
 
-/* MAP COLORS */
+/* COLOR COUNTIES */
 
 countiesLayer.eachLayer(layer=>{
 
@@ -258,6 +238,7 @@ fillOpacity:0.8
 })
 
 }
+
 else{
 
 layer.setStyle({
@@ -270,18 +251,11 @@ fillColor:"#1f3b1f"
 
 /* UPDATE TICKER */
 
-let tickerText=ticker.join("   |   ")
-
-document.getElementById("tickerText").innerText=tickerText
-document.getElementById("tickerTextClone").innerText=tickerText
+document.getElementById("ticker").innerText=ticker.join("   |   ")
 
 })
 
 }
-
-loadAlerts()
-
-setInterval(loadAlerts,60000)
 
 </script>
 
