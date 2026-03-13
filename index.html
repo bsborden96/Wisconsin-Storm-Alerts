@@ -12,8 +12,6 @@ background:#0a0f1c;
 color:white;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:16px;
@@ -66,22 +64,20 @@ max-width:700px;
 margin:auto;
 }
 
-/* DETAILS */
-
-#details{
-background:#111;
-padding:15px;
-border-radius:6px;
-margin-top:20px;
+.county{
+fill:#333;
+stroke:#111;
+stroke-width:1;
+cursor:pointer;
 }
 
-/* COUNTY COLORS */
+/* ALERT COLORS */
 
 .green{fill:#1f3b1f!important}
 .orange{fill:#8a4b00!important}
 .red{fill:#7a0000!important}
 
-/* FLASH TORNADO */
+/* FLASH */
 
 .flash{
 animation:flash 1s infinite;
@@ -89,8 +85,17 @@ animation:flash 1s infinite;
 
 @keyframes flash{
 0%{opacity:1}
-50%{opacity:0.5}
+50%{opacity:0.4}
 100%{opacity:1}
+}
+
+/* DETAILS */
+
+#details{
+background:#111;
+padding:15px;
+border-radius:6px;
+margin-top:20px;
 }
 
 </style>
@@ -118,11 +123,52 @@ animation:flash 1s infinite;
 
 <div id="map">
 
-<object id="wiMap"
-type="image/svg+xml"
-data="https://upload.wikimedia.org/wikipedia/commons/2/22/Wisconsin_counties_map.svg"
-width="700">
-</object>
+<!-- Simplified Wisconsin county layout -->
+<svg viewBox="0 0 500 600">
+
+<!-- NORTH -->
+
+<rect id="Douglas" class="county" x="120" y="40" width="70" height="40"/>
+<rect id="Bayfield" class="county" x="200" y="40" width="70" height="40"/>
+
+<rect id="Burnett" class="county" x="120" y="100" width="70" height="40"/>
+<rect id="Washburn" class="county" x="200" y="100" width="70" height="40"/>
+<rect id="Sawyer" class="county" x="280" y="100" width="70" height="40"/>
+
+<rect id="Polk" class="county" x="120" y="160" width="70" height="40"/>
+<rect id="Barron" class="county" x="200" y="160" width="70" height="40"/>
+<rect id="Rusk" class="county" x="280" y="160" width="70" height="40"/>
+
+<!-- CENTRAL -->
+
+<rect id="Chippewa" class="county" x="200" y="220" width="70" height="40"/>
+<rect id="Clark" class="county" x="280" y="220" width="70" height="40"/>
+<rect id="Marathon" class="county" x="360" y="220" width="70" height="40"/>
+
+<rect id="Wood" class="county" x="280" y="280" width="70" height="40"/>
+
+<!-- SOUTH CENTRAL -->
+
+<rect id="Sauk" class="county" x="200" y="340" width="70" height="40"/>
+<rect id="Columbia" class="county" x="280" y="340" width="70" height="40"/>
+
+<rect id="Dane" class="county" x="200" y="400" width="70" height="40"/>
+<rect id="Jefferson" class="county" x="280" y="400" width="70" height="40"/>
+
+<!-- SOUTH -->
+
+<rect id="Rock" class="county" x="200" y="460" width="70" height="40"/>
+<rect id="Walworth" class="county" x="280" y="460" width="70" height="40"/>
+
+<!-- EAST -->
+
+<rect id="Fond du Lac" class="county" x="360" y="340" width="70" height="40"/>
+<rect id="Washington" class="county" x="360" y="400" width="70" height="40"/>
+<rect id="Milwaukee" class="county" x="360" y="460" width="70" height="40"/>
+<rect id="Racine" class="county" x="360" y="520" width="70" height="40"/>
+<rect id="Kenosha" class="county" x="360" y="560" width="70" height="40"/>
+
+</svg>
 
 </div>
 
@@ -142,16 +188,13 @@ Click a county to view alert information.
 
 let countyAlerts={}
 
-const mapObject=document.getElementById("wiMap")
-
-/* LOAD ALERT DATA */
+/* LOAD ALERTS */
 
 async function loadAlerts(){
 
 countyAlerts={}
 
 let response=await fetch("https://api.weather.gov/alerts/active?area=WI")
-
 let data=await response.json()
 
 let warningGroups={}
@@ -204,25 +247,51 @@ ${counties}
 
 }
 
-document.getElementById("warnings").innerHTML=
+document.getElementById("warnings").innerHTML =
 warningsHTML || "No active warnings."
+
+colorCounties()
 
 }
 
-/* COLOR COUNTIES ON MAP */
+/* COLOR COUNTIES */
 
-mapObject.addEventListener("load",()=>{
+function colorCounties(){
 
-const svgDoc=mapObject.contentDocument
+document.querySelectorAll(".county").forEach(c=>{
 
-svgDoc.querySelectorAll("path").forEach(p=>{
+c.classList.remove("green","orange","red","flash")
 
-let county=p.getAttribute("id")
+let county=c.id
+let alerts=countyAlerts[county]
 
-p.style.cursor="pointer"
+if(!alerts) return
 
-p.addEventListener("click",()=>{
+alerts.forEach(a=>{
 
+if(a.event.includes("Tornado Warning")){
+c.classList.add("red","flash")
+}
+else if(a.event.includes("Severe Thunderstorm Warning")){
+c.classList.add("orange")
+}
+else{
+c.classList.add("green")
+}
+
+})
+
+})
+
+}
+
+/* CLICK COUNTY */
+
+document.querySelectorAll(".county").forEach(c=>{
+
+c.addEventListener("click",()=>{
+
+let county=c.id
 let alerts=countyAlerts[county]
 
 if(!alerts){
@@ -242,42 +311,7 @@ document.getElementById("details").innerHTML=html
 
 })
 
-/* APPLY ALERT COLORS */
-
-setInterval(()=>{
-
-svgDoc.querySelectorAll("path").forEach(p=>{
-
-let county=p.getAttribute("id")
-
-p.classList.remove("green","orange","red","flash")
-
-let alerts=countyAlerts[county]
-
-if(!alerts) return
-
-alerts.forEach(a=>{
-
-if(a.event.includes("Tornado Warning")){
-p.classList.add("red","flash")
-}
-else if(a.event.includes("Severe Thunderstorm Warning")){
-p.classList.add("orange")
-}
-else{
-p.classList.add("green")
-}
-
-})
-
-})
-
-},2000)
-
-})
-
 loadAlerts()
-
 setInterval(loadAlerts,60000)
 
 </script>
