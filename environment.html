@@ -61,9 +61,15 @@ opacity:.8;
 }
 
 .value{
-font-size:36px;
+font-size:34px;
 font-weight:bold;
 margin-top:6px;
+}
+
+.risk{
+margin-top:25px;
+font-size:28px;
+font-weight:bold;
 }
 
 </style>
@@ -88,15 +94,29 @@ Storm Environment
 <div class="grid">
 
 <div class="card">
-<div class="label">CAPE</div>
-<div id="cape" class="value">Loading...</div>
+<div class="label">Temperature</div>
+<div id="temp" class="value">Loading...</div>
 </div>
 
 <div class="card">
-<div class="label">Lifted Index</div>
-<div id="li" class="value">Loading...</div>
+<div class="label">Humidity</div>
+<div id="humidity" class="value">Loading...</div>
 </div>
 
+<div class="card">
+<div class="label">Wind Speed</div>
+<div id="wind" class="value">Loading...</div>
+</div>
+
+<div class="card">
+<div class="label">Pressure</div>
+<div id="pressure" class="value">Loading...</div>
+</div>
+
+</div>
+
+<div id="risk" class="risk">
+Analyzing storm environment...
 </div>
 
 </div>
@@ -110,33 +130,31 @@ async function loadEnvironment(){
 
 try{
 
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let pointData=await point.json()
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl`)
+let data=await res.json()
 
-let gridURL=pointData.properties.forecastGridData
+let c=data.current
 
-let grid=await fetch(gridURL)
-let gridData=await grid.json()
+document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
+document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
+document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
+document.getElementById("pressure").innerText=Math.round(c.pressure_msl)+" mb"
 
-let cape=gridData.properties.convectiveAvailablePotentialEnergy?.values?.[0]?.value
-let li=gridData.properties.liftedIndex?.values?.[0]?.value
+let risk="LOW"
 
-if(cape!=null){
-document.getElementById("cape").innerText=Math.round(cape)+" J/kg"
-}else{
-document.getElementById("cape").innerText="Unavailable"
+if(c.temperature_2m>75 && c.relative_humidity_2m>60 && c.wind_speed_10m>20){
+risk="MODERATE"
 }
 
-if(li!=null){
-document.getElementById("li").innerText=Math.round(li)
-}else{
-document.getElementById("li").innerText="Unavailable"
+if(c.temperature_2m>80 && c.relative_humidity_2m>65 && c.wind_speed_10m>30){
+risk="HIGH"
 }
+
+document.getElementById("risk").innerText="Storm Potential: "+risk
 
 }catch{
 
-document.getElementById("cape").innerText="Unavailable"
-document.getElementById("li").innerText="Unavailable"
+document.getElementById("risk").innerText="Unable to load environment data"
 
 }
 
