@@ -65,7 +65,7 @@ background:#1f3b1f;
 <body>
 
 <header>
-🌪 Local Tornado Tracker
+🌪 Tornado Tracker
 </header>
 
 <nav>
@@ -78,28 +78,18 @@ background:#1f3b1f;
 <div class="section">
 
 <div id="tracker" class="card">
-Checking for tornado warnings near you...
+Checking tornado warnings...
 </div>
 
 </div>
 
 <script>
 
-let lat
-let lon
-
-function getDirection(deg){
-
-const dirs=["N","NE","E","SE","S","SW","W","NW"]
-return dirs[Math.round(deg/45)%8]
-
-}
-
 async function checkTornado(){
 
 try{
 
-let res=await fetch(`https://api.weather.gov/alerts/active?event=Tornado Warning`)
+let res=await fetch("https://api.weather.gov/alerts/active?event=Tornado%20Warning")
 let data=await res.json()
 
 if(data.features.length===0){
@@ -112,25 +102,36 @@ return
 
 }
 
-let alert=data.features[0].properties
-
-let motion=alert.parameters?.stormMotionDirection?.[0] || "Unknown"
-let speed=alert.parameters?.stormMotionSpeed?.[0] || "Unknown"
-
-let dir=getDirection(motion)
+let warning=data.features[0].properties
 
 document.getElementById("tracker").className="card warning"
 
 document.getElementById("tracker").innerHTML=`
 
-<h2>Tornado Warning Detected</h2>
+<h2>Tornado Warning Active</h2>
 
-Storm Motion: ${dir} at ${speed} mph
+Location: ${warning.areaDesc}
 
-Stay alert and monitor warnings.
+Issued by: ${warning.senderName}
+
+Stay alert and monitor local warnings.
 
 `
 
 }catch{
 
-document.getElementById("tracker").innerHTML
+document.getElementById("tracker").innerHTML=
+"Unable to load tornado data."
+
+}
+
+}
+
+checkTornado()
+
+setInterval(checkTornado,60000)
+
+</script>
+
+</body>
+</html>
