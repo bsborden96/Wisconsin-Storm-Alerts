@@ -4,78 +4,24 @@
 <title>Storm Tracker</title>
 
 <style>
+body{margin:0;font-family:Arial;background:#0a0f1c;color:white;text-align:center;}
+header{background:#151c2c;padding:30px;font-size:34px;font-weight:bold;}
 
-body{
-margin:0;
-font-family:Arial;
-background:#0a0f1c;
-color:white;
-text-align:center;
-}
+nav{background:#0f1424;padding:14px;text-align:left;}
 
-header{
-background:#151c2c;
-padding:30px;
-font-size:34px;
-font-weight:bold;
-}
+.menu-button{font-size:24px;font-weight:bold;cursor:pointer;color:white;}
 
-/* MENU */
+.menu-panel{display:none;background:#111827;margin-top:10px;border-radius:8px;overflow:hidden;}
 
-nav{
-background:#0f1424;
-padding:14px;
-text-align:left;
-}
+.menu-panel a{display:block;padding:18px;font-size:20px;color:white;text-decoration:none;border-bottom:1px solid #1f2937;}
 
-.menu-button{
-font-size:24px;
-font-weight:bold;
-cursor:pointer;
-color:white;
-}
+.menu-panel a:hover{background:#1f2937;}
 
-.menu-panel{
-display:none;
-background:#111827;
-margin-top:10px;
-border-radius:8px;
-overflow:hidden;
-}
+.menu-group{padding:12px;font-weight:bold;font-size:18px;background:#0f172a;}
 
-.menu-panel a{
-display:block;
-padding:18px;
-font-size:20px;
-color:white;
-text-decoration:none;
-border-bottom:1px solid #1f2937;
-}
+.section{max-width:800px;margin:auto;padding:30px;}
 
-.menu-panel a:hover{
-background:#1f2937;
-}
-
-.menu-group{
-padding:12px;
-font-weight:bold;
-font-size:18px;
-background:#0f172a;
-}
-
-.section{
-max-width:800px;
-margin:auto;
-padding:30px;
-}
-
-.card{
-background:#111827;
-padding:25px;
-border-radius:10px;
-margin-top:15px;
-}
-
+.card{background:#111827;padding:25px;border-radius:10px;margin-top:15px;}
 </style>
 </head>
 
@@ -84,11 +30,9 @@ margin-top:15px;
 <header>Storm Tracker</header>
 
 <nav>
-
 <div class="menu-button" onclick="toggleMenu()">☰ Menu</div>
 
 <div id="menuPanel" class="menu-panel">
-
 <a href="index.html">Home</a>
 
 <div class="menu-group">Storm Tools</div>
@@ -100,32 +44,23 @@ margin-top:15px;
 <div class="menu-group">Alerts</div>
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
-
 </div>
-
 </nav>
 
 <div class="section">
-
-<div class="card">
-Storm tracking tools appear here.
-</div>
-
+<div id="stormBox" class="card">Checking nearby storms...</div>
 </div>
 
 <script>
 
 function toggleMenu(){
-
 let panel=document.getElementById("menuPanel")
-
-if(panel.style.display==="block"){
-panel.style.display="none"
-}else{
-panel.style.display="block"
+panel.style.display=panel.style.display==="block"?"none":"block"
 }
 
-}
+navigator.geolocation.getCurrentPosition(pos=>{
+document.getElementById("stormBox").innerHTML="Location detected. Storm tracking active."
+})
 
 </script>
 
