@@ -70,7 +70,7 @@ Storm Arrival Predictor
 <nav>
 <a href="index.html">Home</a>
 <a href="tornado.html">Tornado Tracker</a>
-<a href="arrival.html">Storm Arrival</a>
+<a href="tracking.html">Storm Arrival</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
 <a href="reports.html">Storm Reports</a>
@@ -79,7 +79,7 @@ Storm Arrival Predictor
 <div class="section">
 
 <div id="stormBox" class="card">
-Checking nearby warnings...
+Checking nearby storms...
 </div>
 
 </div>
@@ -108,6 +108,36 @@ return R*c
 
 }
 
+function centerOfPolygon(coords){
+
+let latSum=0
+let lonSum=0
+
+coords.forEach(p=>{
+lonSum+=p[0]
+latSum+=p[1]
+})
+
+return {
+lat:latSum/coords.length,
+lon:lonSum/coords.length
+}
+
+}
+
+function directionFromUser(userLat,userLon,stormLat,stormLon){
+
+let dLat=stormLat-userLat
+let dLon=stormLon-userLon
+
+if(Math.abs(dLat)>Math.abs(dLon)){
+return dLat>0?"N":"S"
+}else{
+return dLon>0?"E":"W"
+}
+
+}
+
 async function checkStorm(){
 
 try{
@@ -123,6 +153,7 @@ a.properties.event.includes("Tornado")
 if(storms.length===0){
 
 document.getElementById("stormBox").className="card safe"
+
 document.getElementById("stormBox").innerText=
 "No severe storms detected nearby."
 
@@ -132,17 +163,18 @@ return
 
 let storm=storms[0]
 
-let coords=storm.geometry.coordinates[0][0]
+let polygon=storm.geometry.coordinates[0]
 
-let stormLat=coords[1]
-let stormLon=coords[0]
+let center=centerOfPolygon(polygon)
 
-let dist=distance(lat,lon,stormLat,stormLon)
+let dist=distance(lat,lon,center.lat,center.lon)
 
 let speed=storm.properties.parameters?.stormMotionSpeed?.[0] || 40
 let dir=storm.properties.parameters?.stormMotionDirection?.[0] || "Unknown"
 
 let arrival=Math.round((dist/speed)*60)
+
+let direction=directionFromUser(lat,lon,center.lat,center.lon)
 
 document.getElementById("stormBox").className="card warning"
 
@@ -150,8 +182,10 @@ document.getElementById("stormBox").innerHTML=`
 
 <h2>${storm.properties.event}</h2>
 
-Distance: ${Math.round(dist)} miles<br>
-Storm Motion: ${dir}° at ${speed} mph<br>
+Storm detected ${Math.round(dist)} miles ${direction} of you<br><br>
+
+Storm Motion: ${dir}° at ${speed} mph<br><br>
+
 Estimated Arrival: ${arrival} minutes
 
 `
