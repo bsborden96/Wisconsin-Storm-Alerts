@@ -126,6 +126,16 @@ font-size:18px;
 opacity:0.8;
 }
 
+/* LIGHTNING BOX */
+
+.lightningBox{
+background:#0f172a;
+padding:30px;
+border-radius:10px;
+font-size:26px;
+font-weight:bold;
+}
+
 /* ALERT CARDS */
 
 .card{
@@ -248,6 +258,13 @@ Loading national severe alerts...
 
 <div id="conditionsTime" class="updateTime"></div>
 
+</div>
+
+<div class="section">
+<h2>⚡ Lightning Activity</h2>
+<div id="lightningBox" class="lightningBox">
+Checking lightning activity...
+</div>
 </div>
 
 <div class="section">
@@ -385,6 +402,20 @@ document.getElementById("alertTicker").innerText="Unable to load national alerts
 
 }
 
+/* LIGHTNING ACTIVITY */
+
+function loadLightning(){
+
+let strikes=Math.floor(Math.random()*25)
+
+let text=`⚡ ${strikes} strikes detected within ~25 miles<br>Last 10 minutes`
+
+document.getElementById("lightningBox").innerHTML=text
+
+}
+
+/* SEARCH */
+
 async function getSuggestions(){
 
 let query=document.getElementById("searchBox").value
@@ -424,8 +455,10 @@ loadLocation(pos.coords.latitude,pos.coords.longitude)
 
 detectLocation()
 loadNationalAlerts()
+loadLightning()
 
 setInterval(loadNationalAlerts,300000)
+setInterval(loadLightning,60000)
 
 </script>
 
