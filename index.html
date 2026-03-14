@@ -15,8 +15,8 @@ text-align:center;
 
 header{
 background:#151c2c;
-padding:28px;
-font-size:36px;
+padding:32px;
+font-size:40px;
 font-weight:bold;
 }
 
@@ -26,13 +26,13 @@ font-weight:bold;
 background:#7a0000;
 overflow:hidden;
 white-space:nowrap;
-padding:10px 0;
+padding:12px 0;
 }
 
 .ticker{
 display:inline-block;
 white-space:nowrap;
-font-size:18px;
+font-size:22px;
 animation:scrollTicker 60s linear infinite;
 }
 
@@ -44,16 +44,16 @@ animation:scrollTicker 60s linear infinite;
 /* SEARCH */
 
 .searchBox{
-margin:25px auto;
-max-width:550px;
+margin:30px auto;
+max-width:600px;
 position:relative;
 }
 
 .searchBox input{
 width:100%;
-padding:12px;
-font-size:18px;
-border-radius:6px;
+padding:14px;
+font-size:22px;
+border-radius:8px;
 border:none;
 }
 
@@ -62,13 +62,14 @@ position:absolute;
 background:#1f2937;
 width:100%;
 text-align:left;
-border-radius:6px;
-max-height:200px;
+border-radius:8px;
+max-height:220px;
 overflow-y:auto;
+font-size:20px;
 }
 
 .suggestions div{
-padding:10px;
+padding:12px;
 cursor:pointer;
 }
 
@@ -79,58 +80,62 @@ background:#374151;
 /* CONTENT */
 
 .section{
-max-width:900px;
+max-width:1000px;
 margin:auto;
-padding:25px;
+padding:30px;
 }
 
 .locationCard{
 background:#111827;
-padding:30px;
-border-radius:12px;
+padding:36px;
+border-radius:14px;
 }
 
 .countyName{
-font-size:46px;
+font-size:52px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:24px;
+font-size:30px;
 margin-top:6px;
 }
+
+/* WEATHER GRID */
 
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
-gap:16px;
-margin-top:20px;
+gap:22px;
+margin-top:30px;
 }
 
 .weatherCard{
 background:#0f172a;
-padding:20px;
-border-radius:10px;
+padding:28px;
+border-radius:12px;
 }
 
 .weatherTitle{
-font-size:15px;
+font-size:22px;
 opacity:.8;
 }
 
 .weatherValue{
-font-size:32px;
+font-size:52px;
 font-weight:bold;
+margin-top:6px;
 }
 
 /* ALERT COLORS */
 
 .card{
 background:#111;
-padding:16px;
-margin-top:12px;
-border-radius:10px;
+padding:22px;
+margin-top:16px;
+border-radius:12px;
 cursor:pointer;
+font-size:22px;
 }
 
 .tornado{background:#7a0000}
@@ -139,8 +144,8 @@ cursor:pointer;
 
 .alertDetail{
 display:none;
-margin-top:10px;
-font-size:15px;
+margin-top:12px;
+font-size:20px;
 text-align:left;
 }
 
@@ -161,7 +166,9 @@ text-align:left;
 </div>
 
 <div class="section">
-<div id="lastUpdated">Last Updated: --</div>
+<div id="lastUpdated" style="font-size:22px;">
+Last Updated: --
+</div>
 </div>
 
 <div class="section">
@@ -172,7 +179,7 @@ Detecting location...
 
 <div class="section">
 
-<h2>Current Conditions</h2>
+<h2 style="font-size:34px;">Current Conditions</h2>
 
 <div class="weatherGrid">
 
@@ -202,7 +209,7 @@ Detecting location...
 
 <div class="section">
 
-<h2>Active Alerts</h2>
+<h2 style="font-size:34px;">Active Alerts</h2>
 
 <div id="alerts">Loading alerts...</div>
 
@@ -353,13 +360,19 @@ let res=await fetch(`https://api.weather.gov/alerts/active`)
 let data=await res.json()
 
 let text=""
+let count=0
 
 data.features.forEach(a=>{
 let e=a.properties.event
 if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
 text+=`⚠ ${e} — ${a.properties.areaDesc} • `
+count++
 }
 })
+
+if(count===0){
+text="No active tornado or severe thunderstorm warnings in the United States"
+}
 
 ticker.innerText=text
 
