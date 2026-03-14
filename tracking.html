@@ -5,18 +5,18 @@ let lon
 
 function distance(lat1,lon1,lat2,lon2){
 
-const R=3958.8
+const R = 3958.8
 
-const dLat=(lat2-lat1)*Math.PI/180
-const dLon=(lon2-lon1)*Math.PI/180
+const dLat = (lat2-lat1)*Math.PI/180
+const dLon = (lon2-lon1)*Math.PI/180
 
-const a=
+const a =
 Math.sin(dLat/2)*Math.sin(dLat/2)+
 Math.cos(lat1*Math.PI/180)*
 Math.cos(lat2*Math.PI/180)*
 Math.sin(dLon/2)*Math.sin(dLon/2)
 
-const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+const c = 2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 
 return R*c
 
@@ -24,30 +24,30 @@ return R*c
 
 function centerOfPolygon(coords){
 
-let latSum=0
-let lonSum=0
+let latSum = 0
+let lonSum = 0
 
 coords.forEach(p=>{
-lonSum+=p[0]
-latSum+=p[1]
+lonSum += p[0]
+latSum += p[1]
 })
 
 return {
-lat:latSum/coords.length,
-lon:lonSum/coords.length
+lat: latSum / coords.length,
+lon: lonSum / coords.length
 }
 
 }
 
 function directionFromUser(userLat,userLon,stormLat,stormLon){
 
-let dLat=stormLat-userLat
-let dLon=stormLon-userLon
+let dLat = stormLat-userLat
+let dLon = stormLon-userLon
 
-if(Math.abs(dLat)>Math.abs(dLon)){
-return dLat>0?"N":"S"
+if(Math.abs(dLat) > Math.abs(dLon)){
+return dLat > 0 ? "N" : "S"
 }else{
-return dLon>0?"E":"W"
+return dLon > 0 ? "E" : "W"
 }
 
 }
@@ -56,59 +56,60 @@ async function checkStorm(){
 
 try{
 
-let res=await fetch("https://api.weather.gov/alerts/active")
-let data=await res.json()
+let res = await fetch("https://api.weather.gov/alerts/active")
+let data = await res.json()
 
-let storms=data.features.filter(a=>
-a.properties.event.includes("Severe") ||
-a.properties.event.includes("Tornado")
+let storms = data.features.filter(a =>
+(a.properties.event.includes("Severe") ||
+a.properties.event.includes("Tornado")) &&
+a.geometry &&
+a.geometry.coordinates
 )
 
-if(storms.length===0){
+if(storms.length === 0){
 
-document.getElementById("stormBox").className="card safe"
-document.getElementById("stormBox").innerText="No severe storms detected nearby."
+document.getElementById("stormBox").innerText =
+"No severe storms detected nearby."
 
 return
 
 }
 
-let stormList=[]
+let stormList = []
 
 storms.forEach(storm=>{
 
-let polygon=storm.geometry.coordinates[0]
+let polygon = storm.geometry.coordinates[0]
 
-let center=centerOfPolygon(polygon)
+let center = centerOfPolygon(polygon)
 
-let dist=distance(lat,lon,center.lat,center.lon)
+let dist = distance(lat,lon,center.lat,center.lon)
 
-let speed=storm.properties.parameters?.stormMotionSpeed?.[0] || 40
+let speed = storm.properties.parameters?.stormMotionSpeed?.[0] || 40
+let dir = storm.properties.parameters?.stormMotionDirection?.[0] || "Unknown"
 
-let dir=storm.properties.parameters?.stormMotionDirection?.[0] || "Unknown"
+let arrival = Math.round((dist/speed)*60)
 
-let arrival=Math.round((dist/speed)*60)
-
-let direction=directionFromUser(lat,lon,center.lat,center.lon)
+let direction = directionFromUser(lat,lon,center.lat,center.lon)
 
 stormList.push({
-event:storm.properties.event,
-distance:dist,
-direction:direction,
-speed:speed,
-dir:dir,
-arrival:arrival
+event: storm.properties.event,
+distance: dist,
+direction: direction,
+speed: speed,
+dir: dir,
+arrival: arrival
 })
 
 })
 
 stormList.sort((a,b)=>a.distance-b.distance)
 
-let html=""
+let html = ""
 
 stormList.slice(0,5).forEach(s=>{
 
-html+=`
+html += `
 <div class="card warning">
 
 <h2>${s.event}</h2>
@@ -124,12 +125,12 @@ Estimated Arrival: ${s.arrival} minutes
 
 })
 
-document.getElementById("stormBox").className=""
-document.getElementById("stormBox").innerHTML=html
+document.getElementById("stormBox").innerHTML = html
 
-}catch{
+}catch(e){
 
-document.getElementById("stormBox").innerText="Unable to load storm data."
+document.getElementById("stormBox").innerText =
+"Storm tracker error loading data."
 
 }
 
@@ -137,8 +138,8 @@ document.getElementById("stormBox").innerText="Unable to load storm data."
 
 navigator.geolocation.getCurrentPosition(pos=>{
 
-lat=pos.coords.latitude
-lon=pos.coords.longitude
+lat = pos.coords.latitude
+lon = pos.coords.longitude
 
 checkStorm()
 
