@@ -20,8 +20,6 @@ font-size:40px;
 font-weight:bold;
 }
 
-/* TICKER */
-
 .ticker-wrap{
 width:100%;
 background:#7f1d1d;
@@ -44,8 +42,6 @@ padding-left:100%;
 100%{transform:translateX(-100%)}
 }
 
-/* NAV */
-
 nav{
 background:#0f1424;
 padding:14px;
@@ -63,19 +59,11 @@ nav a:hover{
 color:#ffcc00;
 }
 
-/* PAGE */
-
 .section{
 max-width:700px;
 margin:auto;
 padding:28px;
 }
-
-.section h2{
-font-size:32px;
-}
-
-/* LOCATION */
 
 .locationCard{
 background:#111827;
@@ -93,8 +81,6 @@ font-weight:bold;
 font-size:38px;
 margin-top:8px;
 }
-
-/* WEATHER */
 
 .weatherGrid{
 display:grid;
@@ -126,8 +112,6 @@ font-size:18px;
 opacity:0.8;
 }
 
-/* ALERT CARDS */
-
 .card{
 background:#111;
 padding:20px;
@@ -139,8 +123,6 @@ font-size:18px;
 .tornado{background:#7a0000;}
 .severe{background:#8a4b00;}
 .none{background:#1f3b1f;}
-
-/* SEARCH */
 
 .searchBox{
 width:65%;
@@ -162,7 +144,6 @@ text-align:left;
 padding:12px;
 cursor:pointer;
 border-bottom:1px solid #334155;
-font-size:18px;
 }
 
 .suggestion:hover{
@@ -206,7 +187,6 @@ Loading national severe alerts...
 <div class="section">
 
 <input id="searchBox" class="searchBox" placeholder="Search City or Town" oninput="getSuggestions()">
-
 <button class="button locBtn" onclick="detectLocation()">Use My Location</button>
 
 <div id="suggestions" class="suggestions"></div>
@@ -262,6 +242,8 @@ let lon
 
 async function loadLocation(newLat,newLon){
 
+try{
+
 lat=newLat
 lon=newLon
 
@@ -285,14 +267,20 @@ document.getElementById("locationCard").innerHTML=
 loadWeather()
 loadAlerts()
 
+}catch{
+
+document.getElementById("locationCard").innerHTML=
+"<div class='locationCard'>Location unavailable</div>"
+
+}
+
 }
 
 async function loadWeather(){
 
-let res=await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`
-)
+try{
 
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let data=await res.json()
 
 let c=data.current
@@ -305,9 +293,13 @@ document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 document.getElementById("conditionsTime").innerText="Conditions Updated: "+time
 
+}catch{}
+
 }
 
 async function loadAlerts(){
+
+try{
 
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
@@ -339,6 +331,8 @@ document.getElementById("alerts").innerHTML=html
 let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 document.getElementById("status").innerText="Alerts Updated: "+time
 
+}catch{}
+
 }
 
 async function loadNationalAlerts(){
@@ -364,9 +358,6 @@ alerts.push(`⚡ ${event} — ${area}`)
 else if(event==="Flash Flood Warning"){
 alerts.push(`🌊 ${event} — ${area}`)
 }
-else if(event==="Blizzard Warning"){
-alerts.push(`❄ ${event} — ${area}`)
-}
 
 })
 
@@ -386,3 +377,44 @@ document.getElementById("alertTicker").innerText="Unable to load national alerts
 }
 
 async function getSuggestions(){
+
+let query=document.getElementById("searchBox").value
+
+if(query.length<2){
+document.getElementById("suggestions").innerHTML=""
+return
+}
+
+let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=8`)
+let geoData=await geo.json()
+
+let html=""
+
+geoData.results.forEach(place=>{
+html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude})">${place.name}, ${place.admin1}</div>`
+})
+
+document.getElementById("suggestions").innerHTML=html
+
+}
+
+function selectLocation(lat2,lon2){
+document.getElementById("suggestions").innerHTML=""
+loadLocation(lat2,lon2)
+}
+
+function detectLocation(){
+navigator.geolocation.getCurrentPosition(pos=>{
+loadLocation(pos.coords.latitude,pos.coords.longitude)
+})
+}
+
+detectLocation()
+loadNationalAlerts()
+
+setInterval(loadNationalAlerts,300000)
+
+</script>
+
+</body>
+</html>
