@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Radar Viewer</title>
+<title>Live Radar</title>
 
 <style>
 
@@ -43,25 +43,6 @@ margin:auto;
 padding:20px;
 }
 
-.controls{
-margin-top:10px;
-}
-
-button{
-padding:10px 16px;
-margin:6px;
-border:none;
-border-radius:6px;
-background:#2563eb;
-color:white;
-font-size:16px;
-cursor:pointer;
-}
-
-button:hover{
-background:#1d4ed8;
-}
-
 .mapContainer{
 width:100%;
 height:80vh;
@@ -88,17 +69,13 @@ Live Radar
 
 <div class="section">
 
-<div class="controls">
-
-<button onclick="setRadar('reflectivity')">Reflectivity</button>
-<button onclick="setRadar('velocity')">Velocity</button>
-<button onclick="setRadar('cc')">Correlation Coefficient</button>
-
-</div>
-
 <div class="mapContainer">
 
-<iframe id="radarMap" width="100%" height="100%" frameborder="0"></iframe>
+<iframe id="radarFrame"
+width="100%"
+height="100%"
+frameborder="0">
+</iframe>
 
 </div>
 
@@ -106,41 +83,16 @@ Live Radar
 
 <script>
 
-let lat
-let lon
-let radarType="reflectivity"
+function loadRadar(lat,lon){
 
-function loadRadar(){
+document.getElementById("radarFrame").src =
+`https://www.rainviewer.com/map.html?loc=${lat},${lon},7&oFa=1&oC=1&oU=0&oCS=1&oF=0&oAP=1&c=1&o=83&lm=1&layer=radar`
 
-let url=""
-
-if(radarType==="reflectivity"){
-url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=reflectivity`
-}
-
-if(radarType==="velocity"){
-url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=velocity`
-}
-
-if(radarType==="cc"){
-url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=correlationCoefficient`
-}
-
-document.getElementById("radarMap").src=url
-
-}
-
-function setRadar(type){
-radarType=type
-loadRadar()
 }
 
 navigator.geolocation.getCurrentPosition(pos=>{
 
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-
-loadRadar()
+loadRadar(pos.coords.latitude,pos.coords.longitude)
 
 })
 
