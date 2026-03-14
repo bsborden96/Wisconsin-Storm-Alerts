@@ -20,53 +20,31 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* MENU */
+/* NAV BAR */
 
 nav{
 background:#0f1424;
-padding:14px;
-text-align:left;
+padding:16px;
+display:flex;
+justify-content:center;
+gap:30px;
 }
 
-.menu-button{
-font-size:24px;
-font-weight:bold;
-cursor:pointer;
-color:white;
-}
-
-.menu-panel{
-display:none;
-background:#111827;
-margin-top:10px;
-border-radius:8px;
-overflow:hidden;
-}
-
-.menu-panel a{
-display:block;
-padding:18px;
-font-size:20px;
+nav a{
 color:white;
 text-decoration:none;
-border-bottom:1px solid #1f2937;
-}
-
-.menu-panel a:hover{
-background:#1f2937;
-}
-
-.menu-group{
-padding:12px;
+font-size:20px;
 font-weight:bold;
-font-size:18px;
-background:#0f172a;
+}
+
+nav a:hover{
+color:#60a5fa;
 }
 
 /* CONTENT */
 
 .section{
-max-width:800px;
+max-width:900px;
 margin:auto;
 padding:25px;
 }
@@ -78,12 +56,12 @@ border-radius:12px;
 }
 
 .countyName{
-font-size:50px;
+font-size:48px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:28px;
+font-size:26px;
 margin-top:6px;
 }
 
@@ -101,15 +79,17 @@ border-radius:10px;
 }
 
 .weatherTitle{
-font-size:18px;
+font-size:16px;
 opacity:.8;
 }
 
 .weatherValue{
-font-size:36px;
+font-size:34px;
 font-weight:bold;
 margin-top:5px;
 }
+
+/* ALERTS */
 
 .card{
 background:#111;
@@ -117,6 +97,18 @@ padding:18px;
 margin-top:12px;
 border-radius:10px;
 font-size:18px;
+}
+
+.tornado{
+background:#7a0000;
+}
+
+.severe{
+background:#8a4b00;
+}
+
+.none{
+background:#1f3b1f;
 }
 
 </style>
@@ -130,30 +122,30 @@ US Storm Alerts
 
 <nav>
 
-<div class="menu-button" onclick="toggleMenu()">☰ Menu</div>
-
-<div id="menuPanel" class="menu-panel">
-
 <a href="index.html">Home</a>
-
-<div class="menu-group">Storm Tools</div>
 <a href="tornado.html">Tornado Tracker</a>
 <a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
-
-<div class="menu-group">Alerts</div>
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
-
-</div>
 
 </nav>
 
 <div class="section">
+
+<div id="lastUpdated">
+Last Updated: --
+</div>
+
+</div>
+
+<div class="section">
+
 <div id="locationCard" class="locationCard">
 Detecting location...
 </div>
+
 </div>
 
 <div class="section">
@@ -195,19 +187,6 @@ Detecting location...
 </div>
 
 <script>
-
-/* MENU */
-
-function toggleMenu(){
-
-let panel=document.getElementById("menuPanel")
-
-panel.style.display =
-panel.style.display==="block" ? "none" : "block"
-
-}
-
-/* LOCATION */
 
 let lat
 let lon
@@ -251,13 +230,11 @@ document.getElementById("locationCard").innerHTML="Location unavailable"
 
 }
 
-/* WEATHER */
-
 async function loadWeather(){
 
 try{
 
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 
 let data=await res.json()
 
@@ -267,10 +244,7 @@ document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
 document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
 document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 
-let dir=c.wind_direction_10m
-let speed=Math.round(c.wind_speed_10m)
-
-document.getElementById("wind").innerText=speed+" mph"
+document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }catch{
 
@@ -279,8 +253,6 @@ document.getElementById("wind").innerText="Unavailable"
 }
 
 }
-
-/* ALERTS */
 
 async function loadAlerts(){
 
@@ -295,8 +267,14 @@ data.features.forEach(alert=>{
 
 let event=alert.properties.event
 
+let style="card"
+
+if(event.includes("Tornado Warning")) style+=" tornado"
+else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+else style+=" none"
+
 html+=`
-<div class="card">
+<div class="${style}">
 <b>${event}</b><br>
 ${alert.properties.areaDesc}
 </div>
@@ -304,9 +282,12 @@ ${alert.properties.areaDesc}
 
 })
 
-if(html==="") html='<div class="card">No active alerts</div>'
+if(html==="") html='<div class="card none">No active alerts</div>'
 
 document.getElementById("alerts").innerHTML=html
+
+document.getElementById("lastUpdated").innerText =
+"Last Updated: " + new Date().toLocaleTimeString()
 
 }catch{
 
