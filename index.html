@@ -20,30 +20,6 @@ font-size:36px;
 font-weight:bold;
 }
 
-/* ALERT TICKER */
-
-.ticker-wrap{
-width:100%;
-background:#7f1d1d;
-overflow:hidden;
-padding:8px 0;
-}
-
-.ticker{
-display:inline-block;
-white-space:nowrap;
-animation:tickerScroll 45s linear infinite;
-font-size:18px;
-font-weight:bold;
-}
-
-@keyframes tickerScroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
-
-/* NAV */
-
 nav{
 background:#0f1424;
 padding:12px;
@@ -60,8 +36,6 @@ font-weight:bold;
 nav a:hover{
 color:#ffcc00;
 }
-
-/* PAGE */
 
 .section{
 max-width:700px;
@@ -85,8 +59,6 @@ font-weight:bold;
 font-size:26px;
 margin-top:6px;
 }
-
-/* WEATHER */
 
 .weatherGrid{
 display:grid;
@@ -112,8 +84,6 @@ font-weight:bold;
 margin-top:5px;
 }
 
-/* ALERT CARDS */
-
 .card{
 background:#111;
 padding:18px;
@@ -125,8 +95,6 @@ font-size:17px;
 .tornado{background:#7a0000;}
 .severe{background:#8a4b00;}
 .none{background:#1f3b1f;}
-
-/* SEARCH */
 
 .searchBox{
 width:65%;
@@ -175,12 +143,6 @@ margin-left:8px;
 US Storm Alerts
 <div id="status">Loading...</div>
 </header>
-
-<div class="ticker-wrap">
-<div id="alertTicker" class="ticker">
-Loading national severe alerts...
-</div>
-</div>
 
 <nav>
 <a href="index.html">Home</a>
@@ -243,8 +205,6 @@ Loading national severe alerts...
 let lat
 let lon
 
-/* LOCATION LOAD */
-
 async function loadLocation(newLat,newLon){
 
 lat=newLat
@@ -272,8 +232,6 @@ loadAlerts()
 
 }
 
-/* WEATHER */
-
 async function loadWeather(){
 
 let res=await fetch(
@@ -290,8 +248,6 @@ document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
-
-/* LOCAL ALERTS */
 
 async function loadAlerts(){
 
@@ -326,50 +282,6 @@ let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
 document.getElementById("status").innerText="Last Updated: "+time
 
 }
-
-/* NATIONAL TICKER */
-
-async function loadNationalAlerts(){
-
-let res=await fetch("https://api.weather.gov/alerts/active")
-let data=await res.json()
-
-let severeTypes=[
-"Tornado Warning",
-"Severe Thunderstorm Warning",
-"Flash Flood Warning",
-"Blizzard Warning",
-"Hurricane Warning"
-]
-
-let alerts=[]
-
-data.features.forEach(alert=>{
-
-let event=alert.properties.event
-let area=alert.properties.areaDesc
-
-if(severeTypes.includes(event)){
-alerts.push(`${event} — ${area}`)
-}
-
-})
-
-if(alerts.length===0){
-
-document.getElementById("alertTicker").innerText=
-"No major severe weather alerts active across the United States."
-
-return
-
-}
-
-document.getElementById("alertTicker").innerText=
-alerts.join("  •  ")
-
-}
-
-/* SEARCH */
 
 async function getSuggestions(){
 
@@ -412,12 +324,7 @@ loadLocation(pos.coords.latitude,pos.coords.longitude)
 
 }
 
-/* START */
-
 detectLocation()
-loadNationalAlerts()
-
-setInterval(loadNationalAlerts,300000)
 
 </script>
 
