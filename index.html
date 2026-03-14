@@ -20,33 +20,29 @@ font-size:36px;
 font-weight:bold;
 }
 
-/* NATIONAL TICKER */
+/* NATIONAL ALERT TICKER */
 
 .ticker-wrap{
 width:100%;
-background:#111827;
+background:#7f1d1d;
 overflow:hidden;
-border-bottom:2px solid #7f1d1d;
+height:40px;
+display:flex;
+align-items:center;
 }
 
 .ticker{
-display:inline-block;
 white-space:nowrap;
-animation:tickerScroll 60s linear infinite;
+animation:tickerScroll 90s linear infinite;
 font-size:18px;
 font-weight:bold;
-padding:8px 0;
+padding-left:100%;
 }
 
 @keyframes tickerScroll{
-0%{transform:translateX(100%)}
+0%{transform:translateX(0)}
 100%{transform:translateX(-100%)}
 }
-
-.tornadoAlert{color:#ff4d4d;}
-.severeAlert{color:#ffa500;}
-.floodAlert{color:#3b82f6;}
-.winterAlert{color:#60a5fa;}
 
 /* NAV */
 
@@ -249,8 +245,6 @@ Loading national severe alerts...
 let lat
 let lon
 
-/* LOCATION LOAD */
-
 async function loadLocation(newLat,newLon){
 
 lat=newLat
@@ -278,8 +272,6 @@ loadAlerts()
 
 }
 
-/* WEATHER */
-
 async function loadWeather(){
 
 let res=await fetch(
@@ -296,8 +288,6 @@ document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
-
-/* LOCAL ALERTS */
 
 async function loadAlerts(){
 
@@ -333,7 +323,7 @@ document.getElementById("status").innerText="Last Updated: "+time
 
 }
 
-/* NATIONAL SEVERE ALERT TICKER */
+/* NATIONAL ALERT TICKER */
 
 async function loadNationalAlerts(){
 
@@ -388,8 +378,6 @@ document.getElementById("alertTicker").innerText=
 
 }
 
-/* SEARCH */
-
 async function getSuggestions(){
 
 let query=document.getElementById("searchBox").value
@@ -430,8 +418,6 @@ loadLocation(pos.coords.latitude,pos.coords.longitude)
 })
 
 }
-
-/* START */
 
 detectLocation()
 loadNationalAlerts()
