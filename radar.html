@@ -3,8 +3,6 @@
 <head>
 <title>Live Radar</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
 body{
@@ -39,28 +37,18 @@ nav a:hover{
 color:#ffcc00;
 }
 
-#map{
-height:85vh;
+.section{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.radarContainer{
 width:100%;
-}
-
-.controls{
-margin:10px;
-}
-
-button{
-padding:10px 16px;
-margin:5px;
-border:none;
-border-radius:6px;
-background:#2563eb;
-color:white;
-font-size:16px;
-cursor:pointer;
-}
-
-button:hover{
-background:#1d4ed8;
+height:85vh;
+border-radius:10px;
+overflow:hidden;
+margin-top:20px;
 }
 
 </style>
@@ -79,104 +67,20 @@ Live Radar
 <a href="reports.html">Storm Reports</a>
 </nav>
 
-<div class="controls">
+<div class="section">
 
-<button onclick="setRadar('reflectivity')">Reflectivity</button>
-<button onclick="setRadar('velocity')">Velocity</button>
+<div class="radarContainer">
+
+<iframe
+src="https://weather.cod.edu/satrad/nexrad/index.php?type=N0Q&radar=MKX&loop=1"
+width="100%"
+height="100%"
+frameborder="0">
+</iframe>
 
 </div>
 
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-
-let map
-let radarLayer
-let velocityLayer
-let nearestRadar="KMKX"
-
-const radars=[
-{code:"KMKX",lat:42.967,lon:-88.550},
-{code:"KLOT",lat:41.604,lon:-88.084},
-{code:"KGRB",lat:44.498,lon:-88.111},
-{code:"KARX",lat:43.823,lon:-91.191},
-{code:"KDMX",lat:41.731,lon:-93.722}
-]
-
-function findNearestRadar(lat,lon){
-
-let min=999
-radars.forEach(r=>{
-
-let d=Math.sqrt(
-Math.pow(lat-r.lat,2)+
-Math.pow(lon-r.lon,2)
-)
-
-if(d<min){
-min=d
-nearestRadar=r.code
-}
-
-})
-
-}
-
-function initMap(lat,lon){
-
-findNearestRadar(lat,lon)
-
-map=L.map('map').setView([lat,lon],7)
-
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-).addTo(map)
-
-setRadar("reflectivity")
-
-}
-
-function setRadar(type){
-
-if(radarLayer) map.removeLayer(radarLayer)
-if(velocityLayer) map.removeLayer(velocityLayer)
-
-if(type==="reflectivity"){
-
-radarLayer=L.tileLayer(
-'https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q/{z}/{x}/{y}.png',
-{opacity:0.7}
-)
-
-radarLayer.addTo(map)
-
-}
-
-if(type==="velocity"){
-
-let img=`https://mesonet.agron.iastate.edu/data/nexrad/n0u/${nearestRadar}_0.png`
-
-velocityLayer=L.imageOverlay(
-img,
-[[24,-125],[50,-66]],
-{opacity:0.75}
-)
-
-velocityLayer.addTo(map)
-
-}
-
-}
-
-navigator.geolocation.getCurrentPosition(pos=>{
-
-initMap(pos.coords.latitude,pos.coords.longitude)
-
-})
-
-</script>
+</div>
 
 </body>
 </html>
