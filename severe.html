@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Severe Weather Alerts</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#7f1d1d;
+padding:30px;
+font-size:36px;
+font-weight:bold;
+}
+
+nav{
+background:#0f1424;
+padding:14px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 12px;
+font-size:20px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
+.section{
+max-width:900px;
+margin:auto;
+padding:30px;
+}
+
+.card{
+padding:25px;
+border-radius:10px;
+margin-top:20px;
+text-align:left;
+}
+
+.tornado{
+background:#7a0000;
+}
+
+.severe{
+background:#8a4b00;
+}
+
+.emergency{
+background:#4c0000;
+font-size:22px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+Severe Weather Alerts
+</header>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="environment.html">Storm Environment</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="reports.html">Storm Reports</a>
+<a href="severe.html">Severe Alerts</a>
+</nav>
+
+<div class="section">
+<div id="alertBox">
+Loading severe alerts...
+</div>
+</div>
+
+<script>
+
+async function loadAlerts(){
+
+try{
+
+let res=await fetch("https://api.weather.gov/alerts/active")
+let data=await res.json()
+
+let alerts=data.features.filter(alert=>
+
+alert.properties.event==="Tornado Warning" ||
+alert.properties.event==="Tornado Watch" ||
+alert.properties.event==="Severe Thunderstorm Warning" ||
+alert.properties.event==="Severe Thunderstorm Watch"
+
+)
+
+if(alerts.length===0){
+
+document.getElementById("alertBox").innerHTML=
+"<div class='card'>No severe alerts currently active.</div>"
+
+return
+
+}
+
+let html=""
+
+alerts.forEach(alert=>{
+
+let event=alert.properties.event
+
+let style="card severe"
+
+if(event.includes("Tornado")){
+style="card tornado"
+}
+
+if(alert.properties.description.includes("TORNADO EMERGENCY")){
+style="card emergency"
+}
+
+html+=`
+<div class="${style}">
+
+<b>${event}</b><br><br>
+
+Area: ${alert.properties.areaDesc}<br><br>
+
+Expires: ${alert.properties.expires}
+
+</div>
+`
+
+})
+
+document.getElementById("alertBox").innerHTML=html
+
+}catch{
+
+document.getElementById("alertBox").innerHTML=
+"<div class='card'>Unable to load alerts.</div>"
+
+}
+
+}
+
+loadAlerts()
+
+setInterval(loadAlerts,60000)
+
+</script>
+
+</body>
+</html>
