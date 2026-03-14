@@ -1,135 +1,87 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Local Tornado Tracker</title>
+<title>Tornado Tracker</title>
 
 <style>
 
-body{
-margin:0;
-font-family:Arial;
-background:#0a0f1c;
+body{margin:0;font-family:Arial;background:#0a0f1c;color:white;text-align:center;}
+header{background:#7a0000;padding:30px;font-size:34px;font-weight:bold;}
+
+nav{background:#0f1424;padding:16px;display:flex;justify-content:center;gap:30px;flex-wrap:wrap;}
+nav a{color:white;text-decoration:none;font-size:20px;font-weight:bold;}
+
+.dropdown{position:relative;}
+.dropbtn{background:#0f1424;color:white;border:none;font-size:20px;padding:12px 16px;cursor:pointer;}
+
+.dropdown-content{
+display:none;
+position:absolute;
+background:#1f2937;
+min-width:230px;
+border-radius:8px;
+}
+
+.dropdown-content a{
 color:white;
-text-align:center;
-}
-
-header{
-background:#7f1d1d;
-padding:28px;
-font-size:36px;
-font-weight:bold;
-}
-
-nav{
-background:#0f1424;
-padding:14px;
-}
-
-nav a{
-color:white;
+padding:18px;
+display:block;
 text-decoration:none;
-margin:0 15px;
-font-size:22px;
-font-weight:bold;
 }
 
-nav a:hover{
-color:#ffcc00;
-}
-
-.section{
-max-width:700px;
-margin:auto;
-padding:30px;
-}
-
-.card{
-background:#111827;
-padding:30px;
-border-radius:12px;
-margin-top:20px;
-font-size:22px;
-}
-
-.warning{
-background:#7a0000;
-}
-
-.safe{
-background:#1f3b1f;
-}
+.section{max-width:800px;margin:auto;padding:30px;}
 
 </style>
 </head>
 
 <body>
 
-<header>
-🌪 Tornado Tracker
-</header>
+<header>Tornado Tracker</header>
 
 <nav>
+
 <a href="index.html">Home</a>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('toolsMenu')">Storm Tools ▼</button>
+<div id="toolsMenu" class="dropdown-content">
 <a href="tornado.html">Tornado Tracker</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
+</div>
+</div>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('alertsMenu')">Alerts ▼</button>
+<div id="alertsMenu" class="dropdown-content">
 <a href="reports.html">Storm Reports</a>
+<a href="severe.html">Severe Alerts</a>
+</div>
+</div>
+
 </nav>
 
 <div class="section">
 
-<div id="tracker" class="card">
-Checking tornado warnings...
-</div>
+<h2>Checking for Tornado Warnings Near You</h2>
 
 </div>
 
 <script>
 
-async function checkTornado(){
+function toggleMenu(menuId){
 
-try{
+let menu=document.getElementById(menuId)
+let menus=document.querySelectorAll(".dropdown-content")
 
-let res=await fetch("https://api.weather.gov/alerts/active?event=Tornado%20Warning")
-let data=await res.json()
+menus.forEach(m=>{
+if(m.id!==menuId){m.style.display="none"}
+})
 
-if(data.features.length===0){
-
-document.getElementById("tracker").className="card safe"
-document.getElementById("tracker").innerHTML=
-"✔ No active tornado warnings in the United States"
-
-return
+menu.style.display=menu.style.display==="block"?"none":"block"
 
 }
-
-let warning=data.features[0].properties
-
-document.getElementById("tracker").className="card warning"
-
-document.getElementById("tracker").innerHTML=`
-
-<h2>Tornado Warning Active</h2>
-
-Location: ${warning.areaDesc}
-
-Issued by: ${warning.senderName}
-
-Stay alert and monitor local warnings.
-
-`
-
-}catch{
-
-document.getElementById("tracker").innerHTML=
-"Unable to load tornado data."
-
-}
-
-}
-
-checkTornado()
-
-setInterval(checkTornado,60000)
 
 </script>
 
