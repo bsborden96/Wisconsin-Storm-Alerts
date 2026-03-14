@@ -20,105 +20,70 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* TICKER */
-
-.ticker-wrap{
-width:100%;
-background:#7f1d1d;
-overflow:hidden;
-height:45px;
-display:flex;
-align-items:center;
-}
-
-.ticker{
-white-space:nowrap;
-animation:tickerScroll 60s linear infinite;
-font-size:22px;
-font-weight:bold;
-padding-left:100%;
-}
-
-@keyframes tickerScroll{
-0%{transform:translateX(0)}
-100%{transform:translateX(-100%)}
-}
-
-/* NAVIGATION */
+/* MENU */
 
 nav{
 background:#0f1424;
-padding:16px;
-display:flex;
-justify-content:center;
-gap:30px;
-flex-wrap:wrap;
+padding:14px;
+text-align:left;
 }
 
-nav a{
-color:white;
-text-decoration:none;
-font-size:20px;
-font-weight:bold;
-}
-
-.dropdown{
-position:relative;
-}
-
-.dropbtn{
-background:#0f1424;
-color:white;
-border:none;
-font-size:20px;
+.menu-button{
+font-size:24px;
 font-weight:bold;
 cursor:pointer;
-padding:12px 16px;
-}
-
-.dropdown-content{
-display:none;
-position:absolute;
-background:#1f2937;
-min-width:230px;
-border-radius:8px;
-z-index:1000;
-}
-
-.dropdown-content a{
 color:white;
-padding:18px;
-text-decoration:none;
-display:block;
-font-size:20px;
 }
 
-.dropdown-content a:hover{
-background:#374151;
+.menu-panel{
+display:none;
+background:#111827;
+margin-top:10px;
+border-radius:8px;
+overflow:hidden;
+}
+
+.menu-panel a{
+display:block;
+padding:18px;
+font-size:20px;
+color:white;
+text-decoration:none;
+border-bottom:1px solid #1f2937;
+}
+
+.menu-panel a:hover{
+background:#1f2937;
+}
+
+.menu-group{
+padding:12px;
+font-weight:bold;
+font-size:18px;
+background:#0f172a;
 }
 
 /* CONTENT */
 
 .section{
-max-width:700px;
+max-width:800px;
 margin:auto;
 padding:25px;
 }
 
 .locationCard{
 background:#111827;
-padding:35px;
+padding:30px;
 border-radius:12px;
-margin-top:15px;
 }
 
 .countyName{
-font-size:56px;
+font-size:50px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:34px;
+font-size:28px;
 margin-top:6px;
 }
 
@@ -141,42 +106,18 @@ opacity:.8;
 }
 
 .weatherValue{
-font-size:42px;
+font-size:36px;
 font-weight:bold;
 margin-top:5px;
 }
 
 .card{
 background:#111;
-padding:20px;
+padding:18px;
 margin-top:12px;
 border-radius:10px;
 font-size:18px;
 }
-
-.tornado{background:#7a0000;}
-.severe{background:#8a4b00;}
-.none{background:#1f3b1f;}
-
-.searchBox{
-width:70%;
-padding:14px;
-font-size:18px;
-border-radius:6px;
-border:none;
-}
-
-.button{
-padding:12px 16px;
-font-size:18px;
-border:none;
-border-radius:6px;
-color:white;
-cursor:pointer;
-margin-left:8px;
-}
-
-.locBtn{background:#16a34a;}
 
 </style>
 </head>
@@ -187,46 +128,32 @@ margin-left:8px;
 US Storm Alerts
 </header>
 
-<div class="ticker-wrap">
-<div id="alertTicker" class="ticker">
-Loading national severe alerts...
-</div>
-</div>
-
 <nav>
+
+<div class="menu-button" onclick="toggleMenu()">☰ Menu</div>
+
+<div id="menuPanel" class="menu-panel">
 
 <a href="index.html">Home</a>
 
-<div class="dropdown">
-<button class="dropbtn" onclick="toggleMenu('toolsMenu')">Storm Tools ▼</button>
-<div id="toolsMenu" class="dropdown-content">
+<div class="menu-group">Storm Tools</div>
 <a href="tornado.html">Tornado Tracker</a>
 <a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
-</div>
-</div>
 
-<div class="dropdown">
-<button class="dropbtn" onclick="toggleMenu('alertsMenu')">Alerts ▼</button>
-<div id="alertsMenu" class="dropdown-content">
+<div class="menu-group">Alerts</div>
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
-</div>
+
 </div>
 
 </nav>
 
 <div class="section">
-
-<input id="searchBox" class="searchBox" placeholder="Search City or Town">
-<button class="button locBtn" onclick="detectLocation()">Use My Location</button>
-
+<div id="locationCard" class="locationCard">
+Detecting location...
 </div>
-
-<div class="section">
-<h2>Location</h2>
-<div id="locationCard">Detecting location...</div>
 </div>
 
 <div class="section">
@@ -250,30 +177,33 @@ Loading national severe alerts...
 <div id="humidity" class="weatherValue">--</div>
 </div>
 
+<div class="weatherCard">
+<div class="weatherTitle">Wind</div>
+<div id="wind" class="weatherValue">--</div>
+</div>
+
 </div>
 
 </div>
 
 <div class="section">
+
 <h2>Active Alerts</h2>
+
 <div id="alerts">Loading alerts...</div>
+
 </div>
 
 <script>
 
 /* MENU */
 
-function toggleMenu(menuId){
+function toggleMenu(){
 
-let menu=document.getElementById(menuId)
+let panel=document.getElementById("menuPanel")
 
-let menus=document.querySelectorAll(".dropdown-content")
-
-menus.forEach(m=>{
-if(m.id!==menuId){m.style.display="none"}
-})
-
-menu.style.display=menu.style.display==="block"?"none":"block"
+panel.style.display =
+panel.style.display==="block" ? "none" : "block"
 
 }
 
@@ -282,20 +212,20 @@ menu.style.display=menu.style.display==="block"?"none":"block"
 let lat
 let lon
 
-function detectLocation(){
-
 navigator.geolocation.getCurrentPosition(pos=>{
 
 lat=pos.coords.latitude
 lon=pos.coords.longitude
 
 loadLocation()
+loadWeather()
+loadAlerts()
 
 })
 
-}
-
 async function loadLocation(){
+
+try{
 
 let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let pointData=await point.json()
@@ -309,13 +239,15 @@ let countyData=await countyRes.json()
 let county=countyData.properties.name
 
 document.getElementById("locationCard").innerHTML=
-`<div class="locationCard">
-<div class="countyName">${county} County</div>
-<div class="cityName">${city}, ${state}</div>
-</div>`
 
-loadWeather()
-loadAlerts()
+`<div class="countyName">${county} County</div>
+<div class="cityName">${city}, ${state}</div>`
+
+}catch{
+
+document.getElementById("locationCard").innerHTML="Location unavailable"
+
+}
 
 }
 
@@ -323,7 +255,10 @@ loadAlerts()
 
 async function loadWeather(){
 
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m&temperature_unit=fahrenheit`)
+try{
+
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+
 let data=await res.json()
 
 let c=data.current
@@ -332,11 +267,24 @@ document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
 document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
 document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 
+let dir=c.wind_direction_10m
+let speed=Math.round(c.wind_speed_10m)
+
+document.getElementById("wind").innerText=speed+" mph"
+
+}catch{
+
+document.getElementById("wind").innerText="Unavailable"
+
+}
+
 }
 
 /* ALERTS */
 
 async function loadAlerts(){
+
+try{
 
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
@@ -346,63 +294,27 @@ let html=""
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-let desc=alert.properties.description
 
-let style="card"
-
-if(event.includes("Tornado Warning")) style+=" tornado"
-else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
-else style+=" none"
-
-html+=`<div class="${style}">
-<h3>${event}</h3>
-<p>${desc}</p>
-</div>`
+html+=`
+<div class="card">
+<b>${event}</b><br>
+${alert.properties.areaDesc}
+</div>
+`
 
 })
 
-if(html==="") html='<div class="card none">No active alerts</div>'
+if(html==="") html='<div class="card">No active alerts</div>'
 
 document.getElementById("alerts").innerHTML=html
 
-}
+}catch{
 
-/* NATIONAL TICKER */
-
-async function loadNationalAlerts(){
-
-let res=await fetch("https://api.weather.gov/alerts/active")
-let data=await res.json()
-
-let alerts=[]
-
-data.features.forEach(alert=>{
-
-let event=alert.properties.event
-let area=alert.properties.areaDesc
-
-if(event==="Tornado Warning"){
-alerts.unshift(`🌪 ${event} — ${area}`)
-}
-
-else if(event==="Severe Thunderstorm Warning"){
-alerts.push(`⚡ ${event} — ${area}`)
-}
-
-})
-
-if(alerts.length===0){
-document.getElementById("alertTicker").innerText="No major severe alerts across the United States."
-return
-}
-
-document.getElementById("alertTicker").innerText=alerts.join(" • ")
+document.getElementById("alerts").innerHTML="Unable to load alerts."
 
 }
 
-detectLocation()
-loadNationalAlerts()
-setInterval(loadNationalAlerts,300000)
+}
 
 </script>
 
