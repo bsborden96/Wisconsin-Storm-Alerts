@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Local Tornado Tracker</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#7f1d1d;
+padding:28px;
+font-size:36px;
+font-weight:bold;
+}
+
+nav{
+background:#0f1424;
+padding:14px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-size:22px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
+.section{
+max-width:700px;
+margin:auto;
+padding:30px;
+}
+
+.card{
+background:#111827;
+padding:30px;
+border-radius:12px;
+margin-top:20px;
+font-size:22px;
+}
+
+.warning{
+background:#7a0000;
+}
+
+.safe{
+background:#1f3b1f;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+🌪 Local Tornado Tracker
+</header>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="tornado.html">Tornado Tracker</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
+
+<div class="section">
+
+<div id="tracker" class="card">
+Checking for tornado warnings near you...
+</div>
+
+</div>
+
+<script>
+
+let lat
+let lon
+
+function getDirection(deg){
+
+const dirs=["N","NE","E","SE","S","SW","W","NW"]
+return dirs[Math.round(deg/45)%8]
+
+}
+
+async function checkTornado(){
+
+try{
+
+let res=await fetch(`https://api.weather.gov/alerts/active?event=Tornado Warning`)
+let data=await res.json()
+
+if(data.features.length===0){
+
+document.getElementById("tracker").className="card safe"
+document.getElementById("tracker").innerHTML=
+"✔ No active tornado warnings in the United States"
+
+return
+
+}
+
+let alert=data.features[0].properties
+
+let motion=alert.parameters?.stormMotionDirection?.[0] || "Unknown"
+let speed=alert.parameters?.stormMotionSpeed?.[0] || "Unknown"
+
+let dir=getDirection(motion)
+
+document.getElementById("tracker").className="card warning"
+
+document.getElementById("tracker").innerHTML=`
+
+<h2>Tornado Warning Detected</h2>
+
+Storm Motion: ${dir} at ${speed} mph
+
+Stay alert and monitor warnings.
+
+`
+
+}catch{
+
+document.getElementById("tracker").innerHTML
