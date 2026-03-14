@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>SPC Severe Weather Outlook</title>
+<title>SPC Severe Weather Outlooks</title>
 
 <style>
 
@@ -38,7 +38,7 @@ color:#ffcc00;
 }
 
 .section{
-max-width:1100px;
+max-width:1000px;
 margin:auto;
 padding:30px;
 }
@@ -50,11 +50,11 @@ padding:20px;
 margin-top:25px;
 }
 
-iframe{
+.map{
 width:100%;
-height:600px;
-border:none;
-border-radius:8px;
+max-width:900px;
+border-radius:10px;
+margin-top:10px;
 }
 
 </style>
@@ -76,18 +76,18 @@ SPC Severe Weather Outlooks
 <div class="section">
 
 <div class="card">
-<h2>Day 1 Outlook</h2>
-<iframe src="https://www.spc.noaa.gov/products/outlook/day1otlk.html"></iframe>
+<h2>Day 1 Severe Outlook</h2>
+<img class="map" src="https://www.spc.noaa.gov/products/outlook/day1otlk_1200.gif">
 </div>
 
 <div class="card">
-<h2>Day 2 Outlook</h2>
-<iframe src="https://www.spc.noaa.gov/products/outlook/day2otlk.html"></iframe>
+<h2>Day 2 Severe Outlook</h2>
+<img class="map" src="https://www.spc.noaa.gov/products/outlook/day2otlk_0600.gif">
 </div>
 
 <div class="card">
-<h2>Day 3 Outlook</h2>
-<iframe src="https://www.spc.noaa.gov/products/outlook/day3otlk.html"></iframe>
+<h2>Day 3 Severe Outlook</h2>
+<img class="map" src="https://www.spc.noaa.gov/products/outlook/day3otlk_0730.gif">
 </div>
 
 </div>
