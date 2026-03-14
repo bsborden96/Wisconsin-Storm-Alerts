@@ -45,18 +45,60 @@ padding-left:100%;
 nav{
 background:#0f1424;
 padding:14px;
+display:flex;
+justify-content:center;
+gap:30px;
+align-items:center;
 }
 
 nav a{
 color:white;
 text-decoration:none;
-margin:0 12px;
-font-size:20px;
+font-size:18px;
 font-weight:bold;
 }
 
 nav a:hover{
 color:#ffcc00;
+}
+
+.dropdown{
+position:relative;
+display:inline-block;
+}
+
+.dropbtn{
+background:#0f1424;
+color:white;
+border:none;
+font-size:18px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.dropdown-content{
+display:none;
+position:absolute;
+background:#1f2937;
+min-width:200px;
+border-radius:6px;
+overflow:hidden;
+z-index:1;
+}
+
+.dropdown-content a{
+color:white;
+padding:12px;
+text-decoration:none;
+display:block;
+}
+
+.dropdown-content a:hover{
+background:#374151;
+}
+
+.dropdown:hover .dropdown-content{
+display:block;
 }
 
 .section{
@@ -173,13 +215,27 @@ Loading national severe alerts...
 </div>
 
 <nav>
+
 <a href="index.html">Home</a>
+
+<div class="dropdown">
+<button class="dropbtn">Storm Tools ▼</button>
+<div class="dropdown-content">
 <a href="tornado.html">Tornado Tracker</a>
 <a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
+</div>
+</div>
+
+<div class="dropdown">
+<button class="dropbtn">Alerts ▼</button>
+<div class="dropdown-content">
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
+</div>
+</div>
+
 </nav>
 
 <div class="section">
@@ -217,11 +273,6 @@ Loading national severe alerts...
 <div id="humidity" class="weatherValue">--</div>
 </div>
 
-<div class="weatherCard">
-<div class="weatherTitle">Wind</div>
-<div id="wind" class="weatherValue">--</div>
-</div>
-
 </div>
 
 </div>
@@ -237,8 +288,6 @@ let lat
 let lon
 
 async function loadLocation(newLat,newLon){
-
-try{
 
 lat=newLat
 lon=newLon
@@ -263,19 +312,11 @@ document.getElementById("locationCard").innerHTML=
 loadWeather()
 loadAlerts()
 
-}catch{
-
-document.getElementById("locationCard").innerHTML="<div class='locationCard'>Location unavailable</div>"
-
-}
-
 }
 
 async function loadWeather(){
 
-try{
-
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m&temperature_unit=fahrenheit`)
 let data=await res.json()
 
 let c=data.current
@@ -283,15 +324,10 @@ let c=data.current
 document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
 document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
 document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
-document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
-
-}catch{}
 
 }
 
 async function loadAlerts(){
-
-try{
 
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
@@ -320,13 +356,9 @@ if(html==="") html='<div class="card none">No active alerts</div>'
 
 document.getElementById("alerts").innerHTML=html
 
-}catch{}
-
 }
 
 async function loadNationalAlerts(){
-
-try{
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
@@ -354,35 +386,6 @@ return
 
 document.getElementById("alertTicker").innerText=alerts.join(" • ")
 
-}catch{}
-
-}
-
-async function getSuggestions(){
-
-let query=document.getElementById("searchBox").value
-
-if(query.length<2){
-document.getElementById("suggestions").innerHTML=""
-return
-}
-
-let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=8`)
-let geoData=await geo.json()
-
-let html=""
-
-geoData.results.forEach(place=>{
-html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude})">${place.name}, ${place.admin1}</div>`
-})
-
-document.getElementById("suggestions").innerHTML=html
-
-}
-
-function selectLocation(lat2,lon2){
-document.getElementById("suggestions").innerHTML=""
-loadLocation(lat2,lon2)
 }
 
 function detectLocation(){
@@ -393,7 +396,6 @@ loadLocation(pos.coords.latitude,pos.coords.longitude)
 
 detectLocation()
 loadNationalAlerts()
-
 setInterval(loadNationalAlerts,300000)
 
 </script>
