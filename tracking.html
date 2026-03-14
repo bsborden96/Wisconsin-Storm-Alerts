@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Storm Arrival Tracker</title>
+<title>Storm Tracker</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
@@ -37,36 +39,22 @@ nav a:hover{
 color:#ffcc00;
 }
 
+#map{
+height:500px;
+width:100%;
+}
+
 .section{
-max-width:700px;
+max-width:900px;
 margin:auto;
-padding:30px;
+padding:20px;
 }
 
 .card{
+background:#111827;
 padding:25px;
 border-radius:10px;
 margin-top:20px;
-font-size:20px;
-background:#111827;
-}
-
-.tornado{
-background:#7a0000;
-}
-
-.severe{
-background:#8a4b00;
-}
-
-.safe{
-background:#1f3b1f;
-}
-
-.big{
-font-size:26px;
-font-weight:bold;
-margin-bottom:10px;
 }
 
 </style>
@@ -75,26 +63,33 @@ margin-bottom:10px;
 <body>
 
 <header>
-Storm Arrival Tracker
+Storm Tracker
 </header>
 
 <nav>
 <a href="index.html">Home</a>
 <a href="tornado.html">Tornado Tracker</a>
-<a href="tracking.html">Storm Arrival</a>
+<a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
 <a href="reports.html">Storm Reports</a>
 </nav>
 
 <div class="section">
+
+<div id="map"></div>
+
 <div id="stormBox" class="card">
 Scanning for storms approaching your location...
 </div>
+
 </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
+let map
 let lat
 let lon
 
@@ -134,24 +129,111 @@ lon:lonSum/coords.length
 
 }
 
-function getRelativeDirection(userLat,userLon,stormLat,stormLon){
+async function loadStorms(){
 
-let dLat=stormLat-userLat
-let dLon=stormLon-userLon
+let res=await fetch("https://api.weather.gov/alerts/active")
+let data=await res.json()
 
-if(dLat>0&&dLon>0) return "NE"
-if(dLat>0&&dLon<0) return "NW"
-if(dLat<0&&dLon>0) return "SE"
-if(dLat<0&&dLon<0) return "SW"
+let storms=[]
 
-if(Math.abs(dLat)>Math.abs(dLon)){
-return dLat>0?"N":"S"
-}else{
-return dLon>0?"E":"W"
+data.features.forEach(alert=>{
+
+if(!alert.geometry) return
+
+if(
+alert.properties.event.includes("Severe")||
+alert.properties.event.includes("Tornado")
+){
+
+let polygon=alert.geometry.coordinates[0]
+
+let latlngs=polygon.map(p=>[p[1],p[0]])
+
+let color="orange"
+
+if(alert.properties.event.includes("Tornado")){
+color="red"
 }
 
+L.polygon(latlngs,{
+color:color,
+weight:2,
+fillOpacity:0.3
+})
+.addTo(map)
+.bindPopup(alert.properties.event)
+
+let center=polygonCenter(polygon)
+
+let dist=distance(lat,lon,center.lat,center.lon)
+
+let speed=alert.properties.parameters?.stormMotionSpeed?.[0]||40
+
+let arrival=Math.round((dist/speed)*60)
+
+storms.push({
+event:alert.properties.event,
+distance:dist,
+arrival:arrival
+})
+
 }
 
-function motionArrow(deg){
+})
 
-if(deg
+storms.sort((a,b)=>a.distance-b.distance)
+
+if(storms.length===0){
+
+document.getElementById("stormBox").innerText=
+"No storms approaching your location."
+
+return
+
+}
+
+let html=""
+
+storms.slice(0,5).forEach(storm=>{
+
+html+=`
+<div>
+
+<b>${storm.event}</b><br>
+
+Distance: ${Math.round(storm.distance)} miles<br>
+
+Estimated arrival: ${storm.arrival} minutes
+
+<hr>
+
+</div>
+`
+
+})
+
+document.getElementById("stormBox").innerHTML=html
+
+}
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+
+map=L.map('map').setView([lat,lon],7)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:10
+}).addTo(map)
+
+L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
+
+loadStorms()
+
+})
+
+</script>
+
+</body>
+</html>
