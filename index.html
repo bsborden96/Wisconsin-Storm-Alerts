@@ -15,38 +15,65 @@ text-align:center;
 
 header{
 background:#151c2c;
-padding:30px;
-font-size:38px;
+padding:28px;
+font-size:36px;
 font-weight:bold;
+}
+
+/* TICKER */
+
+.tickerWrap{
+background:#7a0000;
+overflow:hidden;
+white-space:nowrap;
+padding:10px 0;
+}
+
+.ticker{
+display:inline-block;
+padding-left:100%;
+animation:ticker 60s linear infinite;
+font-size:18px;
+}
+
+@keyframes ticker{
+0%{transform:translateX(0)}
+100%{transform:translateX(-100%)}
 }
 
 /* SEARCH */
 
 .searchBox{
 margin:25px auto;
-max-width:500px;
+max-width:550px;
+position:relative;
 }
 
 .searchBox input{
-width:65%;
+width:100%;
 padding:12px;
 font-size:18px;
 border-radius:6px;
 border:none;
 }
 
-.searchBox button{
-padding:12px 16px;
-font-size:18px;
-border:none;
+.suggestions{
+position:absolute;
+background:#1f2937;
+width:100%;
+text-align:left;
 border-radius:6px;
-background:#2563eb;
-color:white;
+max-height:200px;
+overflow-y:auto;
+}
+
+.suggestions div{
+padding:10px;
 cursor:pointer;
 }
 
-.searchBox button:hover{
-background:#1d4ed8;
+.suggestions div:hover{
+background:#374151;
 }
 
 /* CONTENT */
@@ -64,12 +91,12 @@ border-radius:12px;
 }
 
 .countyName{
-font-size:48px;
+font-size:46px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:26px;
+font-size:24px;
 margin-top:6px;
 }
 
@@ -87,36 +114,34 @@ border-radius:10px;
 }
 
 .weatherTitle{
-font-size:16px;
+font-size:15px;
 opacity:.8;
 }
 
 .weatherValue{
-font-size:34px;
+font-size:32px;
 font-weight:bold;
-margin-top:5px;
 }
 
 /* ALERT COLORS */
 
 .card{
 background:#111;
-padding:18px;
+padding:16px;
 margin-top:12px;
 border-radius:10px;
-font-size:18px;
+cursor:pointer;
 }
 
-.tornado{
-background:#7a0000;
-}
+.tornado{background:#7a0000}
+.severe{background:#8a4b00}
+.none{background:#1f3b1f}
 
-.severe{
-background:#8a4b00;
-}
-
-.none{
-background:#1f3b1f;
+.alertDetail{
+display:none;
+margin-top:10px;
+font-size:15px;
+text-align:left;
 }
 
 </style>
@@ -124,17 +149,17 @@ background:#1f3b1f;
 
 <body>
 
-<header>
-US Storm Alerts
-</header>
+<header>US Storm Alerts</header>
+
+<div class="tickerWrap">
+<div id="ticker" class="ticker">Loading severe alerts across the US...</div>
+</div>
 
 <div class="searchBox">
 
-<input id="searchInput" placeholder="Search city or county">
+<input id="searchInput" placeholder="Search US city or county">
 
-<button onclick="searchLocation()">Search</button>
-
-<button onclick="useLocation()">Use My Location</button>
+<div id="suggestions" class="suggestions"></div>
 
 </div>
 
@@ -197,64 +222,54 @@ Detecting location...
 let lat
 let lon
 
-/* AUTO LOCATION ON PAGE LOAD */
-
 navigator.geolocation.getCurrentPosition(pos=>{
-
 lat=pos.coords.latitude
 lon=pos.coords.longitude
-
 loadLocation()
 loadWeather()
 loadAlerts()
-
 })
 
-/* MANUAL LOCATION BUTTON */
+/* SEARCH AUTOCOMPLETE */
 
-function useLocation(){
+let input=document.getElementById("searchInput")
+let box=document.getElementById("suggestions")
 
-navigator.geolocation.getCurrentPosition(pos=>{
+input.addEventListener("input",async()=>{
 
-lat=pos.coords.latitude
-lon=pos.coords.longitude
+let q=input.value
+if(q.length<2){box.innerHTML="";return}
 
-loadLocation()
-loadWeather()
-loadAlerts()
-
-})
-
-}
-
-/* SEARCH */
-
-async function searchLocation(){
-
-let q=document.getElementById("searchInput").value
-
-let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`)
+let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=5`)
 let data=await res.json()
 
-if(!data.results){
-alert("Location not found")
-return
-}
+box.innerHTML=""
 
-lat=data.results[0].latitude
-lon=data.results[0].longitude
+if(!data.results) return
 
+data.results.forEach(place=>{
+
+let div=document.createElement("div")
+div.innerText=`${place.name}, ${place.admin1}`
+
+div.onclick=()=>{
+lat=place.latitude
+lon=place.longitude
+box.innerHTML=""
 loadLocation()
 loadWeather()
 loadAlerts()
-
 }
 
-/* LOCATION INFO */
+box.appendChild(div)
+
+})
+
+})
+
+/* LOCATION */
 
 async function loadLocation(){
-
-try{
 
 let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let pointData=await point.json()
@@ -268,15 +283,8 @@ let countyData=await countyRes.json()
 let county=countyData.properties.name
 
 document.getElementById("locationCard").innerHTML=
-
 `<div class="countyName">${county} County</div>
 <div class="cityName">${city}, ${state}</div>`
-
-}catch{
-
-document.getElementById("locationCard").innerHTML="Location unavailable"
-
-}
 
 }
 
@@ -289,14 +297,14 @@ let data=await res.json()
 
 let c=data.current
 
-document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
-document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
-document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
-document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
+temp.innerText=Math.round(c.temperature_2m)+"°F"
+dew.innerText=Math.round(c.dewpoint_2m)+"°F"
+humidity.innerText=c.relative_humidity_2m+"%"
+wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
 
-/* ALERTS */
+/* LOCAL ALERTS */
 
 async function loadAlerts(){
 
@@ -305,33 +313,68 @@ let data=await res.json()
 
 let html=""
 
-data.features.forEach(alert=>{
+data.features.forEach((alert,i)=>{
 
-let event=alert.properties.event
-
+let e=alert.properties.event
 let style="card"
 
-if(event.includes("Tornado Warning")) style+=" tornado"
-else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+if(e.includes("Tornado"))style+=" tornado"
+else if(e.includes("Severe"))style+=" severe"
 else style+=" none"
 
 html+=`
-<div class="${style}">
-<b>${event}</b><br>
-${alert.properties.areaDesc}
+<div class="${style}" onclick="toggleAlert(${i})">
+<b>${e}</b><br>${alert.properties.areaDesc}
+
+<div id="detail${i}" class="alertDetail">
+${alert.properties.description}
+</div>
+
 </div>
 `
 
 })
 
-if(html==="") html='<div class="card none">No active alerts</div>'
+if(html==="")html='<div class="card none">No active alerts</div>'
 
-document.getElementById("alerts").innerHTML=html
+alerts.innerHTML=html
 
-document.getElementById("lastUpdated").innerText =
-"Last Updated: " + new Date().toLocaleTimeString()
+lastUpdated.innerText="Last Updated: "+new Date().toLocaleTimeString()
 
 }
+
+/* EXPAND ALERT */
+
+function toggleAlert(id){
+
+let el=document.getElementById("detail"+id)
+
+el.style.display=
+el.style.display==="block"?"none":"block"
+
+}
+
+/* NATIONAL TICKER */
+
+async function loadTicker(){
+
+let res=await fetch(`https://api.weather.gov/alerts/active`)
+let data=await res.json()
+
+let text=""
+
+data.features.forEach(a=>{
+let e=a.properties.event
+if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
+text+=`⚠ ${e} — ${a.properties.areaDesc} • `
+}
+})
+
+ticker.innerText=text
+
+}
+
+loadTicker()
 
 </script>
 
