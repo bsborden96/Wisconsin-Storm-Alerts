@@ -20,7 +20,7 @@ font-size:40px;
 font-weight:bold;
 }
 
-/* NATIONAL ALERT TICKER */
+/* TICKER */
 
 .ticker-wrap{
 width:100%;
@@ -33,7 +33,7 @@ align-items:center;
 
 .ticker{
 white-space:nowrap;
-animation:tickerScroll 80s linear infinite;
+animation:tickerScroll 60s linear infinite;
 font-size:20px;
 font-weight:bold;
 padding-left:100%;
@@ -118,6 +118,22 @@ opacity:0.8;
 font-size:44px;
 font-weight:bold;
 margin-top:6px;
+}
+
+.updateTime{
+margin-top:10px;
+font-size:18px;
+opacity:0.8;
+}
+
+/* HOTSPOTS */
+
+.hotspotCard{
+background:#111827;
+border-radius:12px;
+padding:20px;
+margin-top:10px;
+font-size:20px;
 }
 
 /* ALERT CARDS */
@@ -240,6 +256,13 @@ Loading national severe alerts...
 
 </div>
 
+<div id="conditionsTime" class="updateTime"></div>
+
+</div>
+
+<div class="section">
+<h2>🔥 Severe Weather Hotspots</h2>
+<div id="hotspots"></div>
 </div>
 
 <div class="section">
@@ -294,6 +317,9 @@ document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
 document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
+let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
+document.getElementById("conditionsTime").innerText="Conditions Updated: "+time
+
 }
 
 async function loadAlerts(){
@@ -326,7 +352,7 @@ if(html==="") html='<div class="card none">No active alerts</div>'
 document.getElementById("alerts").innerHTML=html
 
 let time=new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})
-document.getElementById("status").innerText="Last Updated: "+time
+document.getElementById("status").innerText="Alerts Updated: "+time
 
 }
 
@@ -338,33 +364,45 @@ let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let alerts=[]
+let stateCounts={}
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
 let area=alert.properties.areaDesc
+let state=area.split(" ").slice(-1)[0]
 
 if(event==="Tornado Warning"){
 alerts.unshift(`🌪 ${event} — ${area}`)
 }
+
 else if(event==="Severe Thunderstorm Warning"){
 alerts.push(`⚡ ${event} — ${area}`)
 }
+
 else if(event==="Flash Flood Warning"){
 alerts.push(`🌊 ${event} — ${area}`)
 }
-else if(event==="Blizzard Warning"){
-alerts.push(`❄ ${event} — ${area}`)
+
+if(event.includes("Warning")){
+stateCounts[state]=(stateCounts[state]||0)+1
 }
 
 })
 
-if(alerts.length===0){
-document.getElementById("alertTicker").innerText="No major severe weather alerts across the United States."
-return
-}
+document.getElementById("alertTicker").innerText=alerts.join(" • ")
 
-document.getElementById("alertTicker").innerText=alerts.join("   •   ")
+let sorted=Object.entries(stateCounts)
+.sort((a,b)=>b[1]-a[1])
+.slice(0,5)
+
+let hotspotHTML=""
+
+sorted.forEach(state=>{
+hotspotHTML+=`<div class="hotspotCard">${state[0]} — ${state[1]} warnings</div>`
+})
+
+document.getElementById("hotspots").innerHTML=hotspotHTML
 
 }catch{
 
