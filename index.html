@@ -33,6 +33,10 @@ font-size:18px;
 font-weight:bold;
 }
 
+nav a:hover{
+color:#ffcc00;
+}
+
 .section{
 max-width:700px;
 margin:auto;
@@ -143,6 +147,7 @@ US Storm Alerts
 
 <nav>
 <a href="index.html">Home</a>
+<a href="lightning.html">Lightning Tracker</a>
 <a href="reports.html">Storm Reports</a>
 </nav>
 
@@ -289,13 +294,11 @@ return
 let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=8`)
 let geoData=await geo.json()
 
-if(!geoData.results) return
-
 let html=""
 
 geoData.results.forEach(place=>{
 
-html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude},'${place.name}, ${place.admin1}')">
+html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude})">
 ${place.name}, ${place.admin1}
 </div>`
 
@@ -305,11 +308,9 @@ document.getElementById("suggestions").innerHTML=html
 
 }
 
-function selectLocation(lat2,lon2,name){
+function selectLocation(lat2,lon2){
 
-document.getElementById("searchBox").value=name
 document.getElementById("suggestions").innerHTML=""
-
 loadLocation(lat2,lon2)
 
 }
