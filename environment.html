@@ -130,40 +130,41 @@ async function loadEnvironment(){
 
 try{
 
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl`)
-let data=await res.json()
+let res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl&temperature_unit=fahrenheit`)
 
-let c=data.current
+let data = await res.json()
 
-document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
-document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
-document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
-document.getElementById("pressure").innerText=Math.round(c.pressure_msl)+" mb"
+let c = data.current
 
-let risk="LOW"
+document.getElementById("temp").innerText = Math.round(c.temperature_2m) + "°F"
+document.getElementById("humidity").innerText = c.relative_humidity_2m + "%"
+document.getElementById("wind").innerText = Math.round(c.wind_speed_10m) + " mph"
+document.getElementById("pressure").innerText = Math.round(c.pressure_msl) + " mb"
 
-if(c.temperature_2m>75 && c.relative_humidity_2m>60 && c.wind_speed_10m>20){
-risk="MODERATE"
+let risk = "LOW"
+
+if(c.temperature_2m > 75 && c.relative_humidity_2m > 60 && c.wind_speed_10m > 20){
+risk = "MODERATE"
 }
 
-if(c.temperature_2m>80 && c.relative_humidity_2m>65 && c.wind_speed_10m>30){
-risk="HIGH"
+if(c.temperature_2m > 80 && c.relative_humidity_2m > 65 && c.wind_speed_10m > 30){
+risk = "HIGH"
 }
 
-document.getElementById("risk").innerText="Storm Potential: "+risk
+document.getElementById("risk").innerText = "Storm Potential: " + risk
 
 }catch{
 
-document.getElementById("risk").innerText="Unable to load environment data"
+document.getElementById("risk").innerText = "Unable to load environment data"
 
 }
 
 }
 
-navigator.geolocation.getCurrentPosition(pos=>{
+navigator.geolocation.getCurrentPosition(function(pos){
 
-lat=pos.coords.latitude
-lon=pos.coords.longitude
+lat = pos.coords.latitude
+lon = pos.coords.longitude
 
 loadEnvironment()
 
