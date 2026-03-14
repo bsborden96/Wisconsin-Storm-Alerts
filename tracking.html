@@ -3,8 +3,6 @@
 <head>
 <title>Storm Tracker</title>
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
 body{
@@ -16,45 +14,70 @@ text-align:center;
 }
 
 header{
-background:#7f1d1d;
+background:#151c2c;
 padding:30px;
-font-size:38px;
+font-size:34px;
 font-weight:bold;
 }
 
 nav{
 background:#0f1424;
-padding:14px;
+padding:16px;
+display:flex;
+justify-content:center;
+gap:30px;
+flex-wrap:wrap;
 }
 
 nav a{
 color:white;
 text-decoration:none;
-margin:0 12px;
 font-size:20px;
 font-weight:bold;
 }
 
-nav a:hover{
-color:#ffcc00;
+.dropdown{position:relative;}
+
+.dropbtn{
+background:#0f1424;
+color:white;
+border:none;
+font-size:20px;
+padding:12px 16px;
+cursor:pointer;
 }
 
-#map{
-height:500px;
-width:100%;
+.dropdown-content{
+display:none;
+position:absolute;
+background:#1f2937;
+min-width:230px;
+border-radius:8px;
+z-index:1000;
+}
+
+.dropdown-content a{
+color:white;
+padding:18px;
+display:block;
+text-decoration:none;
+}
+
+.dropdown-content a:hover{
+background:#374151;
 }
 
 .section{
-max-width:900px;
+max-width:800px;
 margin:auto;
-padding:20px;
+padding:30px;
 }
 
 .card{
 background:#111827;
 padding:25px;
 border-radius:10px;
-margin-top:20px;
+margin-top:15px;
 }
 
 </style>
@@ -62,176 +85,55 @@ margin-top:20px;
 
 <body>
 
-<header>
-Storm Tracker
-</header>
+<header>Storm Tracker</header>
 
 <nav>
+
 <a href="index.html">Home</a>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('toolsMenu')">Storm Tools ▼</button>
+<div id="toolsMenu" class="dropdown-content">
 <a href="tornado.html">Tornado Tracker</a>
 <a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
+</div>
+</div>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('alertsMenu')">Alerts ▼</button>
+<div id="alertsMenu" class="dropdown-content">
 <a href="reports.html">Storm Reports</a>
+<a href="severe.html">Severe Alerts</a>
+</div>
+</div>
+
 </nav>
 
 <div class="section">
 
-<div id="map"></div>
-
-<div id="stormBox" class="card">
-Scanning for storms approaching your location...
+<div class="card" id="stormBox">
+Checking nearby storms...
 </div>
 
 </div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-let map
-let lat
-let lon
+function toggleMenu(menuId){
 
-function distance(lat1,lon1,lat2,lon2){
+let menu=document.getElementById(menuId)
 
-const R=3958.8
+let menus=document.querySelectorAll(".dropdown-content")
 
-const dLat=(lat2-lat1)*Math.PI/180
-const dLon=(lon2-lon1)*Math.PI/180
-
-const a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-const c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-return R*c
-
-}
-
-function polygonCenter(coords){
-
-let latSum=0
-let lonSum=0
-
-coords.forEach(p=>{
-lonSum+=p[0]
-latSum+=p[1]
+menus.forEach(m=>{
+if(m.id!==menuId){m.style.display="none"}
 })
 
-return{
-lat:latSum/coords.length,
-lon:lonSum/coords.length
-}
+menu.style.display=menu.style.display==="block"?"none":"block"
 
 }
-
-async function loadStorms(){
-
-let res=await fetch("https://api.weather.gov/alerts/active")
-let data=await res.json()
-
-let storms=[]
-
-data.features.forEach(alert=>{
-
-if(!alert.geometry) return
-
-if(
-alert.properties.event.includes("Severe")||
-alert.properties.event.includes("Tornado")
-){
-
-let polygon=alert.geometry.coordinates[0]
-
-let latlngs=polygon.map(p=>[p[1],p[0]])
-
-let color="orange"
-
-if(alert.properties.event.includes("Tornado")){
-color="red"
-}
-
-L.polygon(latlngs,{
-color:color,
-weight:2,
-fillOpacity:0.3
-})
-.addTo(map)
-.bindPopup(alert.properties.event)
-
-let center=polygonCenter(polygon)
-
-let dist=distance(lat,lon,center.lat,center.lon)
-
-let speed=alert.properties.parameters?.stormMotionSpeed?.[0]||40
-
-let arrival=Math.round((dist/speed)*60)
-
-storms.push({
-event:alert.properties.event,
-distance:dist,
-arrival:arrival
-})
-
-}
-
-})
-
-storms.sort((a,b)=>a.distance-b.distance)
-
-if(storms.length===0){
-
-document.getElementById("stormBox").innerText=
-"No storms approaching your location."
-
-return
-
-}
-
-let html=""
-
-storms.slice(0,5).forEach(storm=>{
-
-html+=`
-<div>
-
-<b>${storm.event}</b><br>
-
-Distance: ${Math.round(storm.distance)} miles<br>
-
-Estimated arrival: ${storm.arrival} minutes
-
-<hr>
-
-</div>
-`
-
-})
-
-document.getElementById("stormBox").innerHTML=html
-
-}
-
-navigator.geolocation.getCurrentPosition(pos=>{
-
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-
-map=L.map('map').setView([lat,lon],7)
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:10
-}).addTo(map)
-
-L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
-
-loadStorms()
-
-})
 
 </script>
 
