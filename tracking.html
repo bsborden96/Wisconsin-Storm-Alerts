@@ -1,89 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Storm Arrival Predictor</title>
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#0a0f1c;
-color:white;
-text-align:center;
-}
-
-header{
-background:#7f1d1d;
-padding:30px;
-font-size:36px;
-font-weight:bold;
-}
-
-nav{
-background:#0f1424;
-padding:14px;
-}
-
-nav a{
-color:white;
-text-decoration:none;
-margin:0 12px;
-font-size:20px;
-font-weight:bold;
-}
-
-nav a:hover{
-color:#ffcc00;
-}
-
-.section{
-max-width:700px;
-margin:auto;
-padding:30px;
-}
-
-.card{
-background:#111827;
-padding:30px;
-border-radius:12px;
-font-size:22px;
-}
-
-.warning{
-background:#7a0000;
-}
-
-.safe{
-background:#1f3b1f;
-}
-
-</style>
-</head>
-
-<body>
-
-<header>
-Storm Arrival Predictor
-</header>
-
-<nav>
-<a href="index.html">Home</a>
-<a href="tornado.html">Tornado Tracker</a>
-<a href="tracking.html">Storm Arrival</a>
-<a href="environment.html">Storm Environment</a>
-<a href="lightning.html">Lightning Tracker</a>
-<a href="reports.html">Storm Reports</a>
-</nav>
-
-<div class="section">
-
-<div id="stormBox" class="card">
-Checking nearby storms...
-</div>
-
-</div>
-
 <script>
 
 let lat
@@ -153,15 +67,15 @@ a.properties.event.includes("Tornado")
 if(storms.length===0){
 
 document.getElementById("stormBox").className="card safe"
-
-document.getElementById("stormBox").innerText=
-"No severe storms detected nearby."
+document.getElementById("stormBox").innerText="No severe storms detected nearby."
 
 return
 
 }
 
-let storm=storms[0]
+let stormList=[]
+
+storms.forEach(storm=>{
 
 let polygon=storm.geometry.coordinates[0]
 
@@ -170,30 +84,52 @@ let center=centerOfPolygon(polygon)
 let dist=distance(lat,lon,center.lat,center.lon)
 
 let speed=storm.properties.parameters?.stormMotionSpeed?.[0] || 40
+
 let dir=storm.properties.parameters?.stormMotionDirection?.[0] || "Unknown"
 
 let arrival=Math.round((dist/speed)*60)
 
 let direction=directionFromUser(lat,lon,center.lat,center.lon)
 
-document.getElementById("stormBox").className="card warning"
+stormList.push({
+event:storm.properties.event,
+distance:dist,
+direction:direction,
+speed:speed,
+dir:dir,
+arrival:arrival
+})
 
-document.getElementById("stormBox").innerHTML=`
+})
 
-<h2>${storm.properties.event}</h2>
+stormList.sort((a,b)=>a.distance-b.distance)
 
-Storm detected ${Math.round(dist)} miles ${direction} of you<br><br>
+let html=""
 
-Storm Motion: ${dir}° at ${speed} mph<br><br>
+stormList.slice(0,5).forEach(s=>{
 
-Estimated Arrival: ${arrival} minutes
+html+=`
+<div class="card warning">
 
+<h2>${s.event}</h2>
+
+Storm detected ${Math.round(s.distance)} miles ${s.direction} of you<br><br>
+
+Storm Motion: ${s.dir}° at ${s.speed} mph<br><br>
+
+Estimated Arrival: ${s.arrival} minutes
+
+</div>
 `
+
+})
+
+document.getElementById("stormBox").className=""
+document.getElementById("stormBox").innerHTML=html
 
 }catch{
 
-document.getElementById("stormBox").innerText=
-"Unable to load storm data."
+document.getElementById("stormBox").innerText="Unable to load storm data."
 
 }
 
@@ -211,6 +147,3 @@ checkStorm()
 setInterval(checkStorm,60000)
 
 </script>
-
-</body>
-</html>
