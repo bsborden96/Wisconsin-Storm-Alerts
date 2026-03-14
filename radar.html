@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Radar Viewer</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#151c2c;
+padding:30px;
+font-size:34px;
+font-weight:bold;
+}
+
+nav{
+background:#0f1424;
+padding:12px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-size:18px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
+.section{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.controls{
+margin-top:10px;
+}
+
+button{
+padding:10px 16px;
+margin:6px;
+border:none;
+border-radius:6px;
+background:#2563eb;
+color:white;
+font-size:16px;
+cursor:pointer;
+}
+
+button:hover{
+background:#1d4ed8;
+}
+
+.mapContainer{
+width:100%;
+height:80vh;
+border-radius:10px;
+overflow:hidden;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+Live Radar
+</header>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="radar.html">Radar</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
+
+<div class="section">
+
+<div class="controls">
+
+<button onclick="setRadar('reflectivity')">Reflectivity</button>
+<button onclick="setRadar('velocity')">Velocity</button>
+<button onclick="setRadar('cc')">Correlation Coefficient</button>
+
+</div>
+
+<div class="mapContainer">
+
+<iframe id="radarMap" width="100%" height="100%" frameborder="0"></iframe>
+
+</div>
+
+</div>
+
+<script>
+
+let lat
+let lon
+let radarType="reflectivity"
+
+function loadRadar(){
+
+let url=""
+
+if(radarType==="reflectivity"){
+url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=reflectivity`
+}
+
+if(radarType==="velocity"){
+url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=velocity`
+}
+
+if(radarType==="cc"){
+url=`https://radar.weather.gov/?settings=v1_0&lat=${lat}&lon=${lon}&zoom=7&layers=correlationCoefficient`
+}
+
+document.getElementById("radarMap").src=url
+
+}
+
+function setRadar(type){
+radarType=type
+loadRadar()
+}
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+
+loadRadar()
+
+})
+
+</script>
+
+</body>
+</html>
