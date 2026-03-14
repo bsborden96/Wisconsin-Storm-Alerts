@@ -149,7 +149,7 @@ Last Updated: --
 <div class="section">
 
 <div id="locationCard" class="locationCard">
-Enter a location or use GPS
+Detecting location...
 </div>
 
 </div>
@@ -188,7 +188,7 @@ Enter a location or use GPS
 
 <h2>Active Alerts</h2>
 
-<div id="alerts">Search for a location to view alerts</div>
+<div id="alerts">Loading alerts...</div>
 
 </div>
 
@@ -196,6 +196,21 @@ Enter a location or use GPS
 
 let lat
 let lon
+
+/* AUTO LOCATION ON PAGE LOAD */
+
+navigator.geolocation.getCurrentPosition(pos=>{
+
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+
+loadLocation()
+loadWeather()
+loadAlerts()
+
+})
+
+/* MANUAL LOCATION BUTTON */
 
 function useLocation(){
 
@@ -211,6 +226,8 @@ loadAlerts()
 })
 
 }
+
+/* SEARCH */
 
 async function searchLocation(){
 
@@ -232,6 +249,8 @@ loadWeather()
 loadAlerts()
 
 }
+
+/* LOCATION INFO */
 
 async function loadLocation(){
 
@@ -261,6 +280,8 @@ document.getElementById("locationCard").innerHTML="Location unavailable"
 
 }
 
+/* WEATHER */
+
 async function loadWeather(){
 
 let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
@@ -274,6 +295,8 @@ document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
 document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
+
+/* ALERTS */
 
 async function loadAlerts(){
 
