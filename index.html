@@ -25,33 +25,35 @@ background:#0f1424;
 padding:12px;
 }
 
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-size:18px;
+font-weight:bold;
+}
+
 .section{
 max-width:700px;
 margin:auto;
 padding:25px;
 }
 
-.alertBanner{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-padding:18px;
-font-size:22px;
-font-weight:bold;
-display:none;
-z-index:9999;
-}
-
-.tornadoBanner{background:#8b0000;}
-.severeBanner{background:#b45309;}
-.watchBanner{background:#92400e;}
-
 .locationCard{
 background:#111827;
 padding:35px;
 border-radius:12px;
 margin-top:15px;
+}
+
+.countyName{
+font-size:46px;
+font-weight:bold;
+}
+
+.cityName{
+font-size:26px;
+margin-top:6px;
 }
 
 .weatherGrid{
@@ -66,6 +68,29 @@ background:#0f172a;
 padding:18px;
 border-radius:10px;
 }
+
+.weatherTitle{
+font-size:15px;
+opacity:0.8;
+}
+
+.weatherValue{
+font-size:28px;
+font-weight:bold;
+margin-top:5px;
+}
+
+.card{
+background:#111;
+padding:18px;
+margin-top:12px;
+border-radius:10px;
+font-size:17px;
+}
+
+.tornado{background:#7a0000;}
+.severe{background:#8a4b00;}
+.none{background:#1f3b1f;}
 
 .searchBox{
 width:65%;
@@ -93,28 +118,39 @@ border-bottom:1px solid #334155;
 background:#334155;
 }
 
-.card{
-background:#111;
-padding:18px;
-margin-top:12px;
-border-radius:10px;
+.button{
+padding:12px 16px;
+font-size:18px;
+border:none;
+border-radius:6px;
+color:white;
+cursor:pointer;
+margin-left:8px;
 }
+
+.searchBtn{background:#2563eb;}
+.locBtn{background:#16a34a;}
 
 </style>
 </head>
 
 <body>
 
-<div id="alertBanner" class="alertBanner"></div>
-
 <header>
 US Storm Alerts
 <div id="status">Loading...</div>
 </header>
 
+<nav>
+<a href="index.html">Home</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
+
 <div class="section">
 
 <input id="searchBox" class="searchBox" placeholder="Search City or Town" oninput="getSuggestions()">
+
+<button class="button locBtn" onclick="detectLocation()">Use My Location</button>
 
 <div id="suggestions" class="suggestions"></div>
 
@@ -122,7 +158,7 @@ US Storm Alerts
 
 <div class="section">
 <h2>Location</h2>
-<div id="locationCard"></div>
+<div id="locationCard">Detecting location...</div>
 </div>
 
 <div class="section">
@@ -132,23 +168,23 @@ US Storm Alerts
 <div class="weatherGrid">
 
 <div class="weatherCard">
-Temperature
-<div id="temp"></div>
+<div class="weatherTitle">Temperature</div>
+<div id="temp" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
-Dew Point
-<div id="dew"></div>
+<div class="weatherTitle">Dew Point</div>
+<div id="dew" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
-Humidity
-<div id="humidity"></div>
+<div class="weatherTitle">Humidity</div>
+<div id="humidity" class="weatherValue">--</div>
 </div>
 
 <div class="weatherCard">
-Wind
-<div id="wind"></div>
+<div class="weatherTitle">Wind</div>
+<div id="wind" class="weatherValue">--</div>
 </div>
 
 </div>
@@ -157,18 +193,13 @@ Wind
 
 <div class="section">
 <h2>Active Alerts</h2>
-<div id="alerts"></div>
+<div id="alerts">Loading alerts...</div>
 </div>
-
-<audio id="tornadoSound" src="https://www.soundjay.com/misc/sounds/siren-01.mp3"></audio>
-<audio id="severeSound" src="https://www.soundjay.com/button/sounds/beep-07.mp3"></audio>
-<audio id="watchSound" src="https://www.soundjay.com/button/sounds/beep-09.mp3"></audio>
 
 <script>
 
 let lat
 let lon
-let lastAlerts=[]
 
 async function loadLocation(newLat,newLon){
 
@@ -188,7 +219,8 @@ let county=countyData.properties.name
 
 document.getElementById("locationCard").innerHTML=
 `<div class="locationCard">
-<b>${county}</b><br>${city}, ${state}
+<div class="countyName">${county}</div>
+<div class="cityName">${city}, ${state}</div>
 </div>`
 
 loadWeather()
@@ -201,6 +233,7 @@ async function loadWeather(){
 let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 
 let data=await res.json()
+
 let c=data.current
 
 document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
@@ -210,74 +243,32 @@ document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
 
-function triggerAlert(type,event){
-
-let banner=document.getElementById("alertBanner")
-
-banner.innerText=event
-banner.style.display="block"
-
-if(type==="tornado"){
-
-banner.className="alertBanner tornadoBanner"
-document.getElementById("tornadoSound").play()
-
-}
-
-if(type==="severe"){
-
-banner.className="alertBanner severeBanner"
-document.getElementById("severeSound").play()
-
-}
-
-if(type==="watch"){
-
-banner.className="alertBanner watchBanner"
-document.getElementById("watchSound").play()
-
-}
-
-setTimeout(()=>{
-
-banner.style.display="none"
-
-},10000)
-
-}
-
 async function loadAlerts(){
 
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
 let html=""
-let current=[]
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-current.push(event)
+let desc=alert.properties.description
 
 let style="card"
 
+if(event.includes("Tornado Warning")) style+=" tornado"
+else if(event.includes("Severe Thunderstorm Warning")) style+=" severe"
+else style+=" none"
+
 html+=`<div class="${style}">
-<b>${event}</b>
+<h3>${event}</h3>
+<p>${desc}</p>
 </div>`
-
-if(!lastAlerts.includes(event)){
-
-if(event.includes("Tornado Warning")) triggerAlert("tornado",event)
-else if(event.includes("Severe Thunderstorm Warning")) triggerAlert("severe",event)
-else if(event.includes("Watch")) triggerAlert("watch",event)
-
-}
 
 })
 
-lastAlerts=current
-
-if(html==="") html='<div class="card">No active alerts</div>'
+if(html==="") html='<div class="card none">No active alerts</div>'
 
 document.getElementById("alerts").innerHTML=html
 
@@ -298,11 +289,13 @@ return
 let geo=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=8`)
 let geoData=await geo.json()
 
+if(!geoData.results) return
+
 let html=""
 
 geoData.results.forEach(place=>{
 
-html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude})">
+html+=`<div class="suggestion" onclick="selectLocation(${place.latitude},${place.longitude},'${place.name}, ${place.admin1}')">
 ${place.name}, ${place.admin1}
 </div>`
 
@@ -312,20 +305,24 @@ document.getElementById("suggestions").innerHTML=html
 
 }
 
-function selectLocation(lat2,lon2){
+function selectLocation(lat2,lon2,name){
 
+document.getElementById("searchBox").value=name
 document.getElementById("suggestions").innerHTML=""
+
 loadLocation(lat2,lon2)
 
 }
 
+function detectLocation(){
+
 navigator.geolocation.getCurrentPosition(pos=>{
-
 loadLocation(pos.coords.latitude,pos.coords.longitude)
-
 })
 
-setInterval(loadAlerts,60000)
+}
+
+detectLocation()
 
 </script>
 
