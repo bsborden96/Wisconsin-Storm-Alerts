@@ -2,173 +2,73 @@
 <html>
 <head>
 <title>Storm Environment</title>
-
 <style>
 
-body{
-margin:0;
-font-family:Arial;
-background:#0a0f1c;
-color:white;
-text-align:center;
-}
+body{margin:0;font-family:Arial;background:#0a0f1c;color:white;text-align:center;}
+header{background:#151c2c;padding:30px;font-size:34px;font-weight:bold;}
 
-header{
-background:#151c2c;
-padding:30px;
-font-size:36px;
-font-weight:bold;
-}
+nav{background:#0f1424;padding:16px;display:flex;justify-content:center;gap:30px;flex-wrap:wrap;}
 
-nav{
-background:#0f1424;
-padding:14px;
-}
+nav a{color:white;text-decoration:none;font-size:20px;font-weight:bold;}
 
-nav a{
-color:white;
-text-decoration:none;
-margin:0 12px;
-font-size:20px;
-font-weight:bold;
-}
+.dropdown{position:relative;}
+.dropbtn{background:#0f1424;color:white;border:none;font-size:20px;padding:12px 16px;}
 
-nav a:hover{
-color:#ffcc00;
-}
+.dropdown-content{display:none;position:absolute;background:#1f2937;min-width:230px;border-radius:8px;}
 
-.section{
-max-width:700px;
-margin:auto;
-padding:30px;
-}
+.dropdown-content a{color:white;padding:18px;display:block;}
 
-.grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:18px;
-}
-
-.card{
-background:#111827;
-padding:25px;
-border-radius:10px;
-}
-
-.label{
-font-size:18px;
-opacity:.8;
-}
-
-.value{
-font-size:34px;
-font-weight:bold;
-margin-top:6px;
-}
-
-.risk{
-margin-top:25px;
-font-size:28px;
-font-weight:bold;
-}
+.section{max-width:800px;margin:auto;padding:30px;}
 
 </style>
 </head>
 
 <body>
 
-<header>
-Storm Environment
-</header>
+<header>Storm Environment</header>
 
 <nav>
+
 <a href="index.html">Home</a>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('toolsMenu')">Storm Tools ▼</button>
+<div id="toolsMenu" class="dropdown-content">
 <a href="tornado.html">Tornado Tracker</a>
+<a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
+</div>
+</div>
+
+<div class="dropdown">
+<button class="dropbtn" onclick="toggleMenu('alertsMenu')">Alerts ▼</button>
+<div id="alertsMenu" class="dropdown-content">
 <a href="reports.html">Storm Reports</a>
+<a href="severe.html">Severe Alerts</a>
+</div>
+</div>
+
 </nav>
 
 <div class="section">
-
-<div class="grid">
-
-<div class="card">
-<div class="label">Temperature</div>
-<div id="temp" class="value">Loading...</div>
-</div>
-
-<div class="card">
-<div class="label">Humidity</div>
-<div id="humidity" class="value">Loading...</div>
-</div>
-
-<div class="card">
-<div class="label">Wind Speed</div>
-<div id="wind" class="value">Loading...</div>
-</div>
-
-<div class="card">
-<div class="label">Pressure</div>
-<div id="pressure" class="value">Loading...</div>
-</div>
-
-</div>
-
-<div id="risk" class="risk">
-Analyzing storm environment...
-</div>
-
+<h2>Atmospheric Conditions</h2>
 </div>
 
 <script>
 
-let lat
-let lon
+function toggleMenu(menuId){
 
-async function loadEnvironment(){
+let menu=document.getElementById(menuId)
+let menus=document.querySelectorAll(".dropdown-content")
 
-try{
-
-let res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl&temperature_unit=fahrenheit`)
-
-let data = await res.json()
-
-let c = data.current
-
-document.getElementById("temp").innerText = Math.round(c.temperature_2m) + "°F"
-document.getElementById("humidity").innerText = c.relative_humidity_2m + "%"
-document.getElementById("wind").innerText = Math.round(c.wind_speed_10m) + " mph"
-document.getElementById("pressure").innerText = Math.round(c.pressure_msl) + " mb"
-
-let risk = "LOW"
-
-if(c.temperature_2m > 75 && c.relative_humidity_2m > 60 && c.wind_speed_10m > 20){
-risk = "MODERATE"
-}
-
-if(c.temperature_2m > 80 && c.relative_humidity_2m > 65 && c.wind_speed_10m > 30){
-risk = "HIGH"
-}
-
-document.getElementById("risk").innerText = "Storm Potential: " + risk
-
-}catch{
-
-document.getElementById("risk").innerText = "Unable to load environment data"
-
-}
-
-}
-
-navigator.geolocation.getCurrentPosition(function(pos){
-
-lat = pos.coords.latitude
-lon = pos.coords.longitude
-
-loadEnvironment()
-
+menus.forEach(m=>{
+if(m.id!==menuId){m.style.display="none"}
 })
+
+menu.style.display=menu.style.display==="block"?"none":"block"
+
+}
 
 </script>
 
