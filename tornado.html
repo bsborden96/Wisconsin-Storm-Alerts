@@ -5,31 +5,67 @@
 
 <style>
 
-body{margin:0;font-family:Arial;background:#0a0f1c;color:white;text-align:center;}
-header{background:#7a0000;padding:30px;font-size:34px;font-weight:bold;}
-
-nav{background:#0f1424;padding:16px;display:flex;justify-content:center;gap:30px;flex-wrap:wrap;}
-nav a{color:white;text-decoration:none;font-size:20px;font-weight:bold;}
-
-.dropdown{position:relative;}
-.dropbtn{background:#0f1424;color:white;border:none;font-size:20px;padding:12px 16px;cursor:pointer;}
-
-.dropdown-content{
-display:none;
-position:absolute;
-background:#1f2937;
-min-width:230px;
-border-radius:8px;
-}
-
-.dropdown-content a{
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
 color:white;
-padding:18px;
-display:block;
-text-decoration:none;
+text-align:center;
 }
 
-.section{max-width:800px;margin:auto;padding:30px;}
+header{
+background:#7a0000;
+padding:30px;
+font-size:34px;
+font-weight:bold;
+}
+
+nav{
+background:#0f1424;
+padding:14px;
+text-align:left;
+}
+
+.menu-button{
+font-size:24px;
+font-weight:bold;
+cursor:pointer;
+color:white;
+}
+
+.menu-panel{
+display:none;
+background:#111827;
+margin-top:10px;
+border-radius:8px;
+overflow:hidden;
+}
+
+.menu-panel a{
+display:block;
+padding:18px;
+font-size:20px;
+color:white;
+text-decoration:none;
+border-bottom:1px solid #1f2937;
+}
+
+.menu-panel a:hover{
+background:#1f2937;
+}
+
+.menu-group{
+padding:12px;
+font-weight:bold;
+font-size:18px;
+background:#0f172a;
+}
+
+.section{
+max-width:800px;
+margin:auto;
+padding:30px;
+}
 
 </style>
 </head>
@@ -40,24 +76,22 @@ text-decoration:none;
 
 <nav>
 
+<div class="menu-button" onclick="toggleMenu()">☰ Menu</div>
+
+<div id="menuPanel" class="menu-panel">
+
 <a href="index.html">Home</a>
 
-<div class="dropdown">
-<button class="dropbtn" onclick="toggleMenu('toolsMenu')">Storm Tools ▼</button>
-<div id="toolsMenu" class="dropdown-content">
+<div class="menu-group">Storm Tools</div>
 <a href="tornado.html">Tornado Tracker</a>
 <a href="tracking.html">Storm Tracker</a>
 <a href="environment.html">Storm Environment</a>
 <a href="lightning.html">Lightning Tracker</a>
-</div>
-</div>
 
-<div class="dropdown">
-<button class="dropbtn" onclick="toggleMenu('alertsMenu')">Alerts ▼</button>
-<div id="alertsMenu" class="dropdown-content">
+<div class="menu-group">Alerts</div>
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
-</div>
+
 </div>
 
 </nav>
@@ -70,16 +104,12 @@ text-decoration:none;
 
 <script>
 
-function toggleMenu(menuId){
+function toggleMenu(){
 
-let menu=document.getElementById(menuId)
-let menus=document.querySelectorAll(".dropdown-content")
+let panel=document.getElementById("menuPanel")
 
-menus.forEach(m=>{
-if(m.id!==menuId){m.style.display="none"}
-})
-
-menu.style.display=menu.style.display==="block"?"none":"block"
+panel.style.display =
+panel.style.display === "block" ? "none" : "block"
 
 }
 
