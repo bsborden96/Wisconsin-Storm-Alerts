@@ -4,69 +4,16 @@
 <title>Storm Reports</title>
 
 <style>
+body{margin:0;font-family:Arial;background:#0a0f1c;color:white;text-align:center;}
+header{background:#151c2c;padding:30px;font-size:34px;font-weight:bold;}
+nav{background:#0f1424;padding:14px;text-align:left;}
 
-body{
-margin:0;
-font-family:Arial;
-background:#0a0f1c;
-color:white;
-text-align:center;
-}
+.menu-button{font-size:24px;font-weight:bold;color:white;cursor:pointer;}
+.menu-panel{display:none;background:#111827;border-radius:8px;}
 
-header{
-background:#151c2c;
-padding:30px;
-font-size:34px;
-font-weight:bold;
-}
+.menu-panel a{display:block;padding:18px;font-size:20px;color:white;text-decoration:none;border-bottom:1px solid #1f2937;}
 
-nav{
-background:#0f1424;
-padding:14px;
-text-align:left;
-}
-
-.menu-button{
-font-size:24px;
-font-weight:bold;
-cursor:pointer;
-color:white;
-}
-
-.menu-panel{
-display:none;
-background:#111827;
-margin-top:10px;
-border-radius:8px;
-overflow:hidden;
-}
-
-.menu-panel a{
-display:block;
-padding:18px;
-font-size:20px;
-color:white;
-text-decoration:none;
-border-bottom:1px solid #1f2937;
-}
-
-.menu-panel a:hover{
-background:#1f2937;
-}
-
-.menu-group{
-padding:12px;
-font-weight:bold;
-font-size:18px;
-background:#0f172a;
-}
-
-.section{
-max-width:900px;
-margin:auto;
-padding:30px;
-}
-
+.section{max-width:900px;margin:auto;padding:30px;}
 </style>
 </head>
 
@@ -79,7 +26,6 @@ padding:30px;
 <div class="menu-button" onclick="toggleMenu()">☰ Menu</div>
 
 <div id="menuPanel" class="menu-panel">
-
 <a href="index.html">Home</a>
 
 <div class="menu-group">Storm Tools</div>
@@ -91,27 +37,23 @@ padding:30px;
 <div class="menu-group">Alerts</div>
 <a href="reports.html">Storm Reports</a>
 <a href="severe.html">Severe Alerts</a>
-
 </div>
 
 </nav>
 
 <div class="section">
-
 <h2>Recent Storm Reports</h2>
-
+<div id="reportData">Loading reports...</div>
 </div>
 
 <script>
 
 function toggleMenu(){
-
 let panel=document.getElementById("menuPanel")
-
-panel.style.display =
-panel.style.display === "block" ? "none" : "block"
-
+panel.style.display=panel.style.display==="block"?"none":"block"
 }
+
+document.getElementById("reportData").innerText="Storm report feed active."
 
 </script>
 
