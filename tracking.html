@@ -78,11 +78,9 @@ Storm Arrival Predictor
 </nav>
 
 <div class="section">
-
 <div id="stormBox" class="card">
 Checking nearby storms...
 </div>
-
 </div>
 
 <script>
@@ -114,10 +112,10 @@ function polygonCenter(coords){
 let latSum=0
 let lonSum=0
 
-for(let i=0;i<coords.length;i++){
-lonSum+=coords[i][0]
-latSum+=coords[i][1]
-}
+coords.forEach(p=>{
+lonSum+=p[0]
+latSum+=p[1]
+})
 
 return{
 lat:latSum/coords.length,
@@ -142,6 +140,22 @@ return horizontal
 
 }
 
+function movingTowardUser(stormLat,stormLon,dir,userLat,userLon){
+
+if(dir==="Unknown") return true
+
+let dLat=userLat-stormLat
+let dLon=userLon-stormLon
+
+if(dir>=315||dir<45) return dLat>0
+if(dir>=45&&dir<135) return dLon>0
+if(dir>=135&&dir<225) return dLat<0
+if(dir>=225&&dir<315) return dLon<0
+
+return true
+
+}
+
 async function checkStorms(){
 
 try{
@@ -153,10 +167,10 @@ let storms=[]
 
 data.features.forEach(alert=>{
 
-if(!alert.geometry || !alert.geometry.coordinates) return
+if(!alert.geometry||!alert.geometry.coordinates) return
 
 if(
-alert.properties.event.includes("Severe") ||
+alert.properties.event.includes("Severe")||
 alert.properties.event.includes("Tornado")
 ){
 
@@ -166,8 +180,10 @@ let center=polygonCenter(polygon)
 
 let dist=distance(lat,lon,center.lat,center.lon)
 
-let speed=alert.properties.parameters?.stormMotionSpeed?.[0] || 40
-let dir=alert.properties.parameters?.stormMotionDirection?.[0] || "Unknown"
+let speed=alert.properties.parameters?.stormMotionSpeed?.[0]||40
+let dir=alert.properties.parameters?.stormMotionDirection?.[0]||"Unknown"
+
+if(!movingTowardUser(center.lat,center.lon,dir,lat,lon)) return
 
 let arrival=Math.round((dist/speed)*60)
 
@@ -189,7 +205,7 @@ arrival:arrival
 if(storms.length===0){
 
 document.getElementById("stormBox").className="card safe"
-document.getElementById("stormBox").innerText="No severe storms detected nearby."
+document.getElementById("stormBox").innerText="No storms approaching your location."
 
 return
 
