@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Storm Arrival Predictor</title>
+<title>Storm Arrival Tracker</title>
 
 <style>
 
@@ -16,7 +16,7 @@ text-align:center;
 header{
 background:#7f1d1d;
 padding:30px;
-font-size:36px;
+font-size:38px;
 font-weight:bold;
 }
 
@@ -44,19 +44,29 @@ padding:30px;
 }
 
 .card{
-background:#111827;
 padding:25px;
 border-radius:10px;
-margin-top:15px;
+margin-top:20px;
 font-size:20px;
+background:#111827;
 }
 
-.warning{
+.tornado{
 background:#7a0000;
+}
+
+.severe{
+background:#8a4b00;
 }
 
 .safe{
 background:#1f3b1f;
+}
+
+.big{
+font-size:26px;
+font-weight:bold;
+margin-bottom:10px;
 }
 
 </style>
@@ -65,7 +75,7 @@ background:#1f3b1f;
 <body>
 
 <header>
-Storm Arrival Predictor
+Storm Arrival Tracker
 </header>
 
 <nav>
@@ -79,7 +89,7 @@ Storm Arrival Predictor
 
 <div class="section">
 <div id="stormBox" class="card">
-Checking nearby storms...
+Scanning for storms approaching your location...
 </div>
 </div>
 
@@ -124,137 +134,24 @@ lon:lonSum/coords.length
 
 }
 
-function getDirection(userLat,userLon,stormLat,stormLon){
+function getRelativeDirection(userLat,userLon,stormLat,stormLon){
 
 let dLat=stormLat-userLat
 let dLon=stormLon-userLon
 
-let vertical=dLat>0?"N":"S"
-let horizontal=dLon>0?"E":"W"
+if(dLat>0&&dLon>0) return "NE"
+if(dLat>0&&dLon<0) return "NW"
+if(dLat<0&&dLon>0) return "SE"
+if(dLat<0&&dLon<0) return "SW"
 
 if(Math.abs(dLat)>Math.abs(dLon)){
-return vertical
+return dLat>0?"N":"S"
 }else{
-return horizontal
+return dLon>0?"E":"W"
 }
 
 }
 
-function movingTowardUser(stormLat,stormLon,dir,userLat,userLon){
+function motionArrow(deg){
 
-if(dir==="Unknown") return true
-
-let dLat=userLat-stormLat
-let dLon=userLon-stormLon
-
-if(dir>=315||dir<45) return dLat>0
-if(dir>=45&&dir<135) return dLon>0
-if(dir>=135&&dir<225) return dLat<0
-if(dir>=225&&dir<315) return dLon<0
-
-return true
-
-}
-
-async function checkStorms(){
-
-try{
-
-let response=await fetch("https://api.weather.gov/alerts/active")
-let data=await response.json()
-
-let storms=[]
-
-data.features.forEach(alert=>{
-
-if(!alert.geometry||!alert.geometry.coordinates) return
-
-if(
-alert.properties.event.includes("Severe")||
-alert.properties.event.includes("Tornado")
-){
-
-let polygon=alert.geometry.coordinates[0]
-
-let center=polygonCenter(polygon)
-
-let dist=distance(lat,lon,center.lat,center.lon)
-
-let speed=alert.properties.parameters?.stormMotionSpeed?.[0]||40
-let dir=alert.properties.parameters?.stormMotionDirection?.[0]||"Unknown"
-
-if(!movingTowardUser(center.lat,center.lon,dir,lat,lon)) return
-
-let arrival=Math.round((dist/speed)*60)
-
-let direction=getDirection(lat,lon,center.lat,center.lon)
-
-storms.push({
-event:alert.properties.event,
-distance:dist,
-direction:direction,
-speed:speed,
-dir:dir,
-arrival:arrival
-})
-
-}
-
-})
-
-if(storms.length===0){
-
-document.getElementById("stormBox").className="card safe"
-document.getElementById("stormBox").innerText="No storms approaching your location."
-
-return
-
-}
-
-storms.sort((a,b)=>a.distance-b.distance)
-
-let html=""
-
-storms.slice(0,5).forEach(storm=>{
-
-html+=`
-<div class="card warning">
-
-<b>${storm.event}</b><br><br>
-
-Storm detected ${Math.round(storm.distance)} miles ${storm.direction} of you<br><br>
-
-Storm Motion: ${storm.dir}° at ${storm.speed} mph<br><br>
-
-Estimated Arrival: ${storm.arrival} minutes
-
-</div>
-`
-
-})
-
-document.getElementById("stormBox").innerHTML=html
-
-}catch{
-
-document.getElementById("stormBox").innerText="Unable to load storm data."
-
-}
-
-}
-
-navigator.geolocation.getCurrentPosition(pos=>{
-
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-
-checkStorms()
-
-})
-
-setInterval(checkStorms,60000)
-
-</script>
-
-</body>
-</html>
+if(deg
