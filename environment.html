@@ -121,8 +121,17 @@ let gridData=await grid.json()
 let cape=gridData.properties.convectiveAvailablePotentialEnergy?.values?.[0]?.value
 let li=gridData.properties.liftedIndex?.values?.[0]?.value
 
+if(cape!=null){
 document.getElementById("cape").innerText=Math.round(cape)+" J/kg"
+}else{
+document.getElementById("cape").innerText="Unavailable"
+}
+
+if(li!=null){
 document.getElementById("li").innerText=Math.round(li)
+}else{
+document.getElementById("li").innerText="Unavailable"
+}
 
 }catch{
 
