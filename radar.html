@@ -94,21 +94,20 @@ Live Radar
 
 let map
 let radarLayer
-let nearestRadar="DMX"
+let velocityLayer
+let nearestRadar="KMKX"
 
 const radars=[
 {code:"KMKX",lat:42.967,lon:-88.550},
 {code:"KLOT",lat:41.604,lon:-88.084},
-{code:"KDMX",lat:41.731,lon:-93.722},
 {code:"KGRB",lat:44.498,lon:-88.111},
 {code:"KARX",lat:43.823,lon:-91.191},
-{code:"KFSD",lat:43.588,lon:-96.729}
+{code:"KDMX",lat:41.731,lon:-93.722}
 ]
 
 function findNearestRadar(lat,lon){
 
-let minDist=9999
-
+let min=999
 radars.forEach(r=>{
 
 let d=Math.sqrt(
@@ -116,8 +115,8 @@ Math.pow(lat-r.lat,2)+
 Math.pow(lon-r.lon,2)
 )
 
-if(d<minDist){
-minDist=d
+if(d<min){
+min=d
 nearestRadar=r.code
 }
 
@@ -141,9 +140,8 @@ setRadar("reflectivity")
 
 function setRadar(type){
 
-if(radarLayer){
-map.removeLayer(radarLayer)
-}
+if(radarLayer) map.removeLayer(radarLayer)
+if(velocityLayer) map.removeLayer(velocityLayer)
 
 if(type==="reflectivity"){
 
@@ -152,18 +150,23 @@ radarLayer=L.tileLayer(
 {opacity:0.7}
 )
 
+radarLayer.addTo(map)
+
 }
 
 if(type==="velocity"){
 
-radarLayer=L.tileLayer(
-`https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-${nearestRadar}-n0u/{z}/{x}/{y}.png`,
-{opacity:0.7}
+let img=`https://mesonet.agron.iastate.edu/data/nexrad/n0u/${nearestRadar}_0.png`
+
+velocityLayer=L.imageOverlay(
+img,
+[[24,-125],[50,-66]],
+{opacity:0.75}
 )
 
-}
+velocityLayer.addTo(map)
 
-radarLayer.addTo(map)
+}
 
 }
 
