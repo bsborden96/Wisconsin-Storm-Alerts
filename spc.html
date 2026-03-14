@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>SPC Severe Weather Outlook</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#151c2c;
+padding:30px;
+font-size:38px;
+font-weight:bold;
+}
+
+nav{
+background:#0f1424;
+padding:14px;
+}
+
+nav a{
+color:white;
+text-decoration:none;
+margin:0 15px;
+font-size:22px;
+font-weight:bold;
+}
+
+nav a:hover{
+color:#ffcc00;
+}
+
+.section{
+max-width:900px;
+margin:auto;
+padding:30px;
+}
+
+.outlookCard{
+background:#111827;
+border-radius:12px;
+padding:25px;
+margin-top:25px;
+}
+
+.outlookCard img{
+width:100%;
+border-radius:8px;
+margin-top:10px;
+}
+
+h2{
+font-size:30px;
+}
+
+.update{
+opacity:.8;
+margin-top:20px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+SPC Severe Weather Outlook
+</header>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="spc.html">SPC Outlooks</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="reports.html">Storm Reports</a>
+</nav>
+
+<div class="section">
+
+<div class="outlookCard">
+<h2>Day 1 Outlook</h2>
+<img src="https://www.spc.noaa.gov/products/outlook/day1otlk_1200.gif">
+</div>
+
+<div class="outlookCard">
+<h2>Day 2 Outlook</h2>
+<img src="https://www.spc.noaa.gov/products/outlook/day2otlk_0600.gif">
+</div>
+
+<div class="outlookCard">
+<h2>Day 3 Outlook</h2>
+<img src="https://www.spc.noaa.gov/products/outlook/day3otlk_0730.gif">
+</div>
+
+<div class="update">
+Graphics provided by the NOAA Storm Prediction Center
+</div>
+
+</div>
+
+</body>
+</html>
