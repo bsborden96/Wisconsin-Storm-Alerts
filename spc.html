@@ -77,20 +77,40 @@ SPC Severe Weather Outlooks
 
 <div class="card">
 <h2>Day 1 Severe Outlook</h2>
-<img class="map" src="https://www.spc.noaa.gov/products/outlook/day1otlk.gif">
+<img id="day1" class="map">
 </div>
 
 <div class="card">
 <h2>Day 2 Severe Outlook</h2>
-<img class="map" src="https://www.spc.noaa.gov/products/outlook/day2otlk.gif">
+<img id="day2" class="map">
 </div>
 
 <div class="card">
 <h2>Day 3 Severe Outlook</h2>
-<img class="map" src="https://www.spc.noaa.gov/products/outlook/day3otlk.gif">
+<img id="day3" class="map">
 </div>
 
 </div>
+
+<script>
+
+function loadSPC(){
+
+let time=new Date().getTime()
+
+document.getElementById("day1").src="https://www.spc.noaa.gov/products/outlook/day1otlk.gif?"+time
+document.getElementById("day2").src="https://www.spc.noaa.gov/products/outlook/day2otlk.gif?"+time
+document.getElementById("day3").src="https://www.spc.noaa.gov/products/outlook/day3otlk.gif?"+time
+
+}
+
+loadSPC()
+
+/* refresh maps every 10 minutes */
+
+setInterval(loadSPC,600000)
+
+</script>
 
 </body>
 </html>
