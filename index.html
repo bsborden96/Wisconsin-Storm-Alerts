@@ -88,12 +88,12 @@ padding:12px 0;
 display:inline-block;
 white-space:nowrap;
 font-size:22px;
-min-width:100%;
+padding-left:100%;
 animation:scrollTicker 60s linear infinite;
 }
 
 @keyframes scrollTicker{
-0%{transform:translateX(100%)}
+0%{transform:translateX(0)}
 100%{transform:translateX(-100%)}
 }
 
@@ -323,9 +323,7 @@ Severe Weather Risk: LOW
 <h2 style="font-size:34px;">Storm Tools</h2>
 
 <a href="lightning.html" class="toolButton">⚡ Lightning Tracker</a>
-
 <br>
-
 <a href="tracking.html" class="toolButton">🌩 Storm Tracker</a>
 
 </div>
@@ -466,7 +464,7 @@ banner.innerText=text
 
 }
 
-/* FIXED TICKER */
+/* TICKER */
 
 async function loadTicker(){
 
@@ -498,15 +496,7 @@ if(count===0){
 text="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-let tickerText=text+text+text
-
-let ticker=document.getElementById("ticker")
-
-ticker.innerText=tickerText
-
-ticker.style.animation="none"
-ticker.offsetHeight
-ticker.style.animation="scrollTicker 60s linear infinite"
+document.getElementById("ticker").innerText=text+text
 
 }
 
