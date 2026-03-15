@@ -72,7 +72,7 @@ white-space:nowrap;
 font-size:22px;
 position:relative;
 left:100%;
-animation:scrollTicker 55s linear infinite;
+animation:scrollTicker 50s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -102,7 +102,7 @@ background:#1f2937;
 width:100%;
 text-align:left;
 border-radius:8px;
-max-height:250px;
+max-height:260px;
 overflow-y:auto;
 font-size:20px;
 }
@@ -139,6 +139,8 @@ font-weight:bold;
 font-size:30px;
 }
 
+/* WEATHER */
+
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -156,6 +158,8 @@ border-radius:12px;
 font-size:48px;
 font-weight:bold;
 }
+
+/* ALERTS */
 
 .card{
 background:#111;
@@ -203,11 +207,7 @@ text-align:left;
 </div>
 
 <div class="section">
-
-<div id="locationCard" class="locationCard">
-Detecting location...
-</div>
-
+<div id="locationCard" class="locationCard">Detecting location...</div>
 </div>
 
 <div class="section">
@@ -249,6 +249,8 @@ Wind
 
 <script>
 
+/* MENU */
+
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
@@ -263,11 +265,13 @@ lon=pos.coords.longitude
 refreshAll()
 })
 
-async function refreshAll(){
+function refreshAll(){
 loadLocation()
 loadWeather()
 loadAlerts()
 }
+
+/* SEARCH */
 
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
@@ -281,7 +285,7 @@ suggestions.innerHTML=""
 return
 }
 
-let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=15&language=en`)
+let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=15`)
 let data=await res.json()
 
 suggestions.innerHTML=""
@@ -295,11 +299,7 @@ let div=document.createElement("div")
 div.innerText=`${place.name}, ${place.admin1}`
 
 div.onclick=()=>{
-lat=place.latitude
-lon=place.longitude
-suggestions.innerHTML=""
-input.value=place.name
-refreshAll()
+selectLocation(place.latitude,place.longitude,place.name)
 }
 
 suggestions.appendChild(div)
@@ -307,6 +307,41 @@ suggestions.appendChild(div)
 })
 
 })
+
+input.addEventListener("keydown",async(e)=>{
+
+if(e.key==="Enter"){
+
+let q=input.value
+
+let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=1`)
+let data=await res.json()
+
+if(data.results && data.results.length>0){
+
+let place=data.results[0]
+
+selectLocation(place.latitude,place.longitude,place.name)
+
+}
+
+}
+
+})
+
+function selectLocation(newLat,newLon,name){
+
+lat=newLat
+lon=newLon
+
+suggestions.innerHTML=""
+input.value=name
+
+refreshAll()
+
+}
+
+/* LOCATION */
 
 async function loadLocation(){
 
@@ -327,6 +362,8 @@ document.getElementById("locationCard").innerHTML=
 
 }
 
+/* WEATHER */
+
 async function loadWeather(){
 
 let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
@@ -340,6 +377,8 @@ humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
+
+/* ALERTS */
 
 async function loadAlerts(){
 
@@ -378,6 +417,8 @@ function toggleAlert(i){
 let el=document.getElementById("detail"+i)
 el.style.display=(el.style.display==="block")?"none":"block"
 }
+
+/* TICKER */
 
 async function loadTicker(){
 
