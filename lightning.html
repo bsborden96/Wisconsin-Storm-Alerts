@@ -5,6 +5,8 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
 
 body{
@@ -15,25 +17,22 @@ color:white;
 text-align:center;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
 padding:24px;
 padding-left:110px;
-font-size:30px;
+font-size:28px;
 font-weight:bold;
 }
 
-/* HAMBURGER MENU */
+/* MENU */
 
 .menuIcon{
 position:absolute;
 top:16px;
 left:18px;
-font-size:48px;
+font-size:46px;
 cursor:pointer;
-z-index:10000;
 }
 
 .menuPanel{
@@ -45,27 +44,22 @@ background:#111827;
 border-radius:14px;
 padding:16px;
 text-align:left;
-z-index:10000;
+z-index:9999;
 }
 
 .menuPanel a{
 display:block;
 color:white;
 text-decoration:none;
-font-size:26px;
-padding:14px;
+font-size:24px;
+padding:12px;
 font-weight:bold;
-}
-
-.menuPanel a:hover{
-background:#1f2937;
-border-radius:8px;
 }
 
 /* SEARCH */
 
 .searchBox{
-margin:30px auto;
+margin:20px auto;
 max-width:600px;
 position:relative;
 }
@@ -73,7 +67,7 @@ position:relative;
 .searchBox input{
 width:100%;
 padding:14px;
-font-size:22px;
+font-size:20px;
 border-radius:8px;
 border:none;
 }
@@ -84,46 +78,32 @@ background:#1f2937;
 width:100%;
 text-align:left;
 border-radius:8px;
-max-height:220px;
+max-height:200px;
 overflow-y:auto;
-font-size:20px;
+font-size:18px;
 }
 
 .suggestions div{
-padding:12px;
+padding:10px;
 cursor:pointer;
 }
 
-.suggestions div:hover{
-background:#374151;
-}
+/* MAP */
 
-/* CONTENT */
-
-.section{
-max-width:1000px;
-margin:auto;
-padding:30px;
-}
-
-.card{
-background:#111827;
-padding:24px;
-border-radius:12px;
-margin-top:20px;
-font-size:22px;
-}
-
-.strike{
-background:#8a4b00;
-padding:18px;
-margin-top:14px;
+#map{
+height:500px;
+margin:20px;
 border-radius:10px;
 }
 
-.distance{
-font-size:28px;
-font-weight:bold;
+/* MESSAGE */
+
+.card{
+background:#111827;
+padding:22px;
+border-radius:12px;
+margin:20px;
+font-size:20px;
 }
 
 </style>
@@ -147,21 +127,13 @@ font-weight:bold;
 <div id="suggestions" class="suggestions"></div>
 </div>
 
-<div class="section">
+<div id="map"></div>
 
-<div class="card">
-Lightning producing storms near selected location
-</div>
+<div id="message"></div>
 
-<h2>Nearby Lightning Storms</h2>
-
-<div id="lightning"></div>
-
-</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
-
-/* MENU */
 
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
@@ -171,13 +143,28 @@ panel.style.display=(panel.style.display==="block")?"none":"block"
 let lat
 let lon
 
+let map=L.map('map').setView([39,-95],5)
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+maxZoom:18
+}).addTo(map)
+
+let stormLayer=L.layerGroup().addTo(map)
+
+/* GET LOCATION */
+
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
+map.setView([lat,lon],8)
+
+L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
+
 loadLightning()
+
 })
 
-/* UNIVERSAL SEARCH */
+/* SEARCH */
 
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
@@ -202,35 +189,26 @@ let div=document.createElement("div")
 div.innerText=place.display_name
 
 div.onclick=()=>{
+
 lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
+
+map.setView([lat,lon],8)
+
+stormLayer.clearLayers()
+
+L.marker([lat,lon]).addTo(map).bindPopup("Selected Location")
+
 input.value=place.display_name
 suggestions.innerHTML=""
+
 loadLightning()
+
 }
 
 suggestions.appendChild(div)
 
 })
-
-})
-
-input.addEventListener("keydown",async(e)=>{
-
-if(e.key==="Enter"){
-
-let q=input.value
-
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=1`)
-let data=await res.json()
-
-if(data.length>0){
-lat=parseFloat(data[0].lat)
-lon=parseFloat(data[0].lon)
-loadLightning()
-}
-
-}
 
 })
 
@@ -255,33 +233,25 @@ return km*0.621371
 
 }
 
-/* LOAD LIGHTNING */
+/* LOAD LIGHTNING STORMS */
 
 async function loadLightning(){
+
+stormLayer.clearLayers()
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let html=""
-let activeStorm=false
-
-data.features.forEach(alert=>{
-let event=alert.properties.event
-if(event.includes("Severe Thunderstorm Warning")) activeStorm=true
-})
-
-if(!activeStorm){
-document.getElementById("lightning").innerHTML =
-'<div class="card">No lightning producing storms near this location</div>'
-return
-}
+let found=false
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-if(!event.includes("Severe Thunderstorm")) return
+
+if(!event.includes("Severe Thunderstorm Warning")) return
 
 let geo=alert.geometry
+
 if(!geo) return
 
 let coord=geo.coordinates[0][0]
@@ -293,27 +263,35 @@ let miles=distance(lat,lon,sLat,sLon)
 
 if(miles<200){
 
-html+=`
+found=true
 
-<div class="strike">
+let polygon=L.polygon(
+geo.coordinates[0].map(c=>[c[1],c[0]]),
+{color:"orange"}
+)
 
-Lightning producing storm
+polygon.addTo(stormLayer)
 
-<div class="distance">
-${Math.round(miles)} miles away
-</div>
-
-${alert.properties.areaDesc}
-
-</div>
-
-`
+polygon.bindPopup(
+"<b>"+event+"</b><br>"+alert.properties.areaDesc+
+"<br>"+Math.round(miles)+" miles away"
+)
 
 }
 
 })
 
-document.getElementById("lightning").innerHTML=html
+if(!found){
+
+document.getElementById("message").innerHTML=
+'<div class="card">No lightning producing storms near this location</div>'
+
+}
+else{
+
+document.getElementById("message").innerHTML=""
+
+}
 
 }
 
