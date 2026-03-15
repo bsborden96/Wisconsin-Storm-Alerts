@@ -92,7 +92,6 @@ margin:10px 0;
 }
 
 .roadSafe{background:#1f3b1f}
-.roadWet{background:#005f8a}
 .roadSnow{background:#8a4b00}
 .roadDanger{background:#7a0000}
 
@@ -122,16 +121,6 @@ Current Weather
 <div class="card">
 Temperature
 <div id="temp" class="big">--</div>
-</div>
-
-<div class="card">
-Wind
-<div id="wind" class="big">--</div>
-</div>
-
-<div class="card">
-Visibility
-<div id="vis" class="big">--</div>
 </div>
 
 <div id="roadCard" class="card">
@@ -191,23 +180,8 @@ document.getElementById("weather").innerText=weather
 let temp=data.properties.temperature.value
 if(temp){
 temp=(temp*9/5)+32
-document.getElementById("temp").innerText=Math.round(temp)+"°F"
-}
-
-/* WIND */
-
-let wind=data.properties.windSpeed.value
-if(wind){
-wind=Math.round(wind*2.237)
-document.getElementById("wind").innerText=wind+" mph"
-}
-
-/* VISIBILITY */
-
-let vis=data.properties.visibility.value
-if(vis){
-vis=(vis/1609.34).toFixed(2)
-document.getElementById("vis").innerText=vis+" mi"
+temp=Math.round(temp)
+document.getElementById("temp").innerText=temp+"°F"
 }
 
 /* ROAD CONDITIONS */
@@ -218,11 +192,6 @@ let roadClass="roadSafe"
 if(weather.toLowerCase().includes("snow")){
 road="Snow Covered Roads"
 roadClass="roadSnow"
-}
-
-if(weather.toLowerCase().includes("snow") && vis<=0.5){
-road="Hazardous Travel"
-roadClass="roadDanger"
 }
 
 if(temp<=32 && weather.toLowerCase().includes("rain")){
