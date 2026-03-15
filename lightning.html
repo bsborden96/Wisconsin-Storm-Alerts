@@ -5,8 +5,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
 body{
@@ -17,58 +15,75 @@ color:white;
 text-align:center;
 }
 
-/* HEADER */
-
 header{
 background:#151c2c;
-padding:32px;
-font-size:40px;
+padding:28px;
+font-size:38px;
 font-weight:bold;
 }
 
-/* HAMBURGER MENU */
+/* SEARCH */
 
-.menuIcon{
+.searchBox{
+margin:30px auto;
+max-width:600px;
+position:relative;
+}
+
+.searchBox input{
+width:100%;
+padding:14px;
+font-size:22px;
+border-radius:8px;
+border:none;
+}
+
+.suggestions{
 position:absolute;
-top:18px;
-left:18px;
-font-size:52px;
-cursor:pointer;
-z-index:10000;
-}
-
-.menuPanel{
-display:none;
-position:absolute;
-top:95px;
-left:18px;
-background:#111827;
-border-radius:14px;
-padding:16px;
-text-align:left;
-z-index:10000;
-box-shadow:0 10px 30px rgba(0,0,0,.6);
-}
-
-.menuPanel a{
-display:block;
-color:white;
-text-decoration:none;
-font-size:30px;
-padding:18px 22px;
-font-weight:bold;
-}
-
-.menuPanel a:hover{
 background:#1f2937;
+width:100%;
+text-align:left;
+border-radius:8px;
+max-height:220px;
+overflow-y:auto;
+font-size:20px;
+}
+
+.suggestions div{
+padding:12px;
+cursor:pointer;
+}
+
+.suggestions div:hover{
+background:#374151;
+}
+
+/* SECTION */
+
+.section{
+max-width:1000px;
+margin:auto;
+padding:30px;
+}
+
+.card{
+background:#111827;
+padding:24px;
+border-radius:12px;
+margin-top:20px;
+font-size:22px;
+}
+
+.strike{
+background:#8a4b00;
+padding:18px;
+margin-top:14px;
 border-radius:10px;
 }
 
-/* MAP */
-
-#map{
-height:80vh;
-width:100%;
+.distance{
+font-size:30px;
+font-weight:bold;
 }
 
 </style>
@@ -76,47 +91,94 @@ width:100%;
 
 <body>
 
-<div class="menuIcon" onclick="toggleMenu()">☰</div>
-
-<div id="menuPanel" class="menuPanel">
-<a href="index.html">🏠 Home</a>
-<a href="lightning.html">⚡ Lightning Tracker</a>
-<a href="tracking.html">🌩 Storm Tracker</a>
-<a href="winter.html">❄ Winter Storm Center</a>
-</div>
-
 <header>Lightning Tracker</header>
 
-<div id="map"></div>
+<div class="searchBox">
+<input id="searchInput" placeholder="Search any US city or town">
+<div id="suggestions" class="suggestions"></div>
+</div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="section">
+
+<div class="card">
+Recent lightning strikes near selected location
+</div>
+
+<h2>Closest Lightning Strikes</h2>
+
+<div id="lightning">Loading lightning data...</div>
+
+</div>
 
 <script>
 
-function toggleMenu(){
-let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
-}
-
-let map
-let userLat
-let userLon
-let markers=[]
+let lat
+let lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
-
-userLat=pos.coords.latitude
-userLon=pos.coords.longitude
-
-map=L.map("map").setView([userLat,userLon],7)
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
-
-L.marker([userLat,userLon]).addTo(map).bindPopup("Your Location")
-
+lat=pos.coords.latitude
+lon=pos.coords.longitude
 loadLightning()
+})
+
+/* UNIVERSAL SEARCH */
+
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+
+input.addEventListener("input",async()=>{
+
+let q=input.value
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
+suggestions.innerHTML=""
+loadLightning()
+}
+
+suggestions.appendChild(div)
 
 })
+
+})
+
+input.addEventListener("keydown",async(e)=>{
+
+if(e.key==="Enter"){
+
+let q=input.value
+
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=1`)
+let data=await res.json()
+
+if(data.length>0){
+lat=parseFloat(data[0].lat)
+lon=parseFloat(data[0].lon)
+loadLightning()
+}
+
+}
+
+})
+
+/* DISTANCE CALCULATION */
 
 function distance(lat1,lon1,lat2,lon2){
 
@@ -124,56 +186,75 @@ let R=6371
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
 
-let a=Math.sin(dLat/2)**2+
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)**2
+Math.sin(dLon/2)*Math.sin(dLon/2)
 
 let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-return (R*c)*0.621371
+
+let km=R*c
+
+return km*0.621371
 
 }
 
+/* LOAD LIGHTNING */
+
 async function loadLightning(){
 
-markers.forEach(m=>map.removeLayer(m))
-markers=[]
+let res=await fetch("https://api.weather.gov/alerts/active")
+let data=await res.json()
 
-try{
+let html=""
 
-let res=await fetch("https://data.blitzortung.org/live_lightning.json")
-let strikes=await res.json()
+data.features.forEach(alert=>{
 
-strikes.slice(0,300).forEach(s=>{
+let event=alert.properties.event
 
-let lat=s[1]
-let lon=s[2]
+if(!event.includes("Severe Thunderstorm")) return
 
-let miles=distance(userLat,userLon,lat,lon)
+let geo=alert.geometry
+if(!geo) return
 
-if(miles<100){
+let coord=geo.coordinates[0][0]
 
-let marker=L.circleMarker([lat,lon],{
-radius:6,
-color:"yellow",
-fillColor:"yellow",
-fillOpacity:0.9
-}).addTo(map)
+let sLat=coord[1]
+let sLon=coord[0]
 
-marker.bindPopup("⚡ Lightning Strike<br>"+Math.round(miles)+" miles away")
+let miles=distance(lat,lon,sLat,sLon)
 
-markers.push(marker)
+if(miles<200){
+
+html+=`
+
+<div class="strike">
+
+Lightning producing storm
+
+<div class="distance">
+${Math.round(miles)} miles away
+</div>
+
+${alert.properties.areaDesc}
+
+</div>
+
+`
 
 }
 
 })
 
-}catch{
-console.log("Lightning data unavailable")
+if(html===""){
+html='<div class="card">No lightning producing storms near this location</div>'
 }
+
+document.getElementById("lightning").innerHTML=html
 
 }
 
-setInterval(loadLightning,30000)
+setInterval(loadLightning,60000)
 
 </script>
 
