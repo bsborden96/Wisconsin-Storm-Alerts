@@ -2,7 +2,6 @@
 <html>
 <head>
 <title>Winter Storm Center</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -91,9 +90,17 @@ font-size:22px;
 margin:10px 0;
 }
 
-.roadSafe{background:#1f3b1f}
-.roadSnow{background:#8a4b00}
-.roadDanger{background:#7a0000}
+.safe{
+background:#1f3b1f;
+}
+
+.warning{
+background:#8a4b00;
+}
+
+.danger{
+background:#7a0000;
+}
 
 </style>
 </head>
@@ -123,8 +130,8 @@ Temperature
 <div id="temp" class="big">--</div>
 </div>
 
-<div id="roadCard" class="card">
-Road Conditions
+<div id="roadCard" class="card safe">
+Road Conditions Near You
 <div id="roads" class="big">Checking...</div>
 </div>
 
@@ -154,6 +161,7 @@ navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
 loadWinter()
+loadRoads()
 })
 
 async function loadWinter(){
@@ -175,34 +183,13 @@ let data=await obs.json()
 let weather=data.properties.textDescription
 document.getElementById("weather").innerText=weather
 
-/* TEMP */
-
 let temp=data.properties.temperature.value
+
 if(temp){
 temp=(temp*9/5)+32
 temp=Math.round(temp)
 document.getElementById("temp").innerText=temp+"°F"
 }
-
-/* ROAD CONDITIONS */
-
-let road="Dry Roads"
-let roadClass="roadSafe"
-
-if(weather.toLowerCase().includes("snow")){
-road="Snow Covered Roads"
-roadClass="roadSnow"
-}
-
-if(temp<=32 && weather.toLowerCase().includes("rain")){
-road="Icy Roads"
-roadClass="roadDanger"
-}
-
-let roadCard=document.getElementById("roadCard")
-roadCard.classList.add(roadClass)
-
-document.getElementById("roads").innerText=road
 
 /* FORECAST TIMELINE */
 
@@ -243,6 +230,55 @@ document.getElementById("peak").innerText=
 if(end){
 document.getElementById("end").innerText=
 "Snow End: "+new Date(end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+}
+
+}
+
+/* ROAD CONDITIONS (Nationwide Incident Feed) */
+
+async function loadRoads(){
+
+try{
+
+let res = await fetch("https://api.weather.gov/alerts/active")
+let data = await res.json()
+
+let hazard = false
+
+data.features.forEach(a=>{
+
+let e = a.properties.event.toLowerCase()
+
+if(
+e.includes("winter storm") ||
+e.includes("blizzard") ||
+e.includes("ice storm") ||
+e.includes("snow squall")
+){
+hazard = true
+}
+
+})
+
+let card=document.getElementById("roadCard")
+
+if(hazard){
+
+card.classList.remove("safe")
+card.classList.add("danger")
+
+document.getElementById("roads").innerText="Hazardous Travel Possible"
+
+}else{
+
+document.getElementById("roads").innerText="No hazardous travel reported"
+
+}
+
+}catch{
+
+document.getElementById("roads").innerText="Road data unavailable"
+
 }
 
 }
