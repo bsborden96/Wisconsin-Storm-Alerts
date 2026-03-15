@@ -17,21 +17,58 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
-padding:28px;
-font-size:38px;
+padding:32px;
+font-size:40px;
 font-weight:bold;
 }
 
-#map{
-height:75vh;
-width:100%;
+/* HAMBURGER MENU */
+
+.menuIcon{
+position:absolute;
+top:18px;
+left:18px;
+font-size:52px;
+cursor:pointer;
+z-index:10000;
 }
 
-.info{
-padding:20px;
-font-size:22px;
+.menuPanel{
+display:none;
+position:absolute;
+top:95px;
+left:18px;
+background:#111827;
+border-radius:14px;
+padding:16px;
+text-align:left;
+z-index:10000;
+box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:30px;
+padding:18px 22px;
+font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:10px;
+}
+
+/* MAP */
+
+#map{
+height:80vh;
+width:100%;
 }
 
 </style>
@@ -39,11 +76,15 @@ font-size:22px;
 
 <body>
 
-<header>Lightning Tracker</header>
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
 
-<div class="info">
-Showing lightning strikes within 100 miles of your location
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">🏠 Home</a>
+<a href="lightning.html">⚡ Lightning Tracker</a>
+<a href="tracking.html">🌩 Storm Tracker</a>
 </div>
+
+<header>Lightning Tracker</header>
 
 <div id="map"></div>
 
@@ -51,25 +92,26 @@ Showing lightning strikes within 100 miles of your location
 
 <script>
 
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
 let map
 let userLat
 let userLon
-let strikeMarkers=[]
+let markers=[]
 
-navigator.geolocation.getCurrentPosition(position=>{
+navigator.geolocation.getCurrentPosition(pos=>{
 
-userLat=position.coords.latitude
-userLon=position.coords.longitude
+userLat=pos.coords.latitude
+userLon=pos.coords.longitude
 
 map=L.map("map").setView([userLat,userLon],7)
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-maxZoom:10
-}).addTo(map)
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
 
-L.marker([userLat,userLon]).addTo(map)
-.bindPopup("Your Location")
-.openPopup()
+L.marker([userLat,userLon]).addTo(map).bindPopup("Your Location")
 
 loadLightning()
 
@@ -78,38 +120,32 @@ loadLightning()
 function distance(lat1,lon1,lat2,lon2){
 
 let R=6371
-
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
 
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
+let a=Math.sin(dLat/2)**2+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
+Math.sin(dLon/2)**2
 
 let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-let km=R*c
-
-return km*0.621371
+return (R*c)*0.621371
 
 }
 
 async function loadLightning(){
 
-strikeMarkers.forEach(m=>map.removeLayer(m))
-strikeMarkers=[]
+markers.forEach(m=>map.removeLayer(m))
+markers=[]
 
 try{
 
-let response=await fetch("https://data.blitzortung.org/live_lightning.json")
+let res=await fetch("https://data.blitzortung.org/live_lightning.json")
+let strikes=await res.json()
 
-let strikes=await response.json()
+strikes.slice(0,300).forEach(s=>{
 
-strikes.slice(0,300).forEach(strike=>{
-
-let lat=strike[1]
-let lon=strike[2]
+let lat=s[1]
+let lon=s[2]
 
 let miles=distance(userLat,userLon,lat,lon)
 
@@ -122,20 +158,16 @@ fillColor:"yellow",
 fillOpacity:0.9
 }).addTo(map)
 
-marker.bindPopup(
-"⚡ Lightning Strike<br>"+Math.round(miles)+" miles away"
-)
+marker.bindPopup("⚡ Lightning Strike<br>"+Math.round(miles)+" miles away")
 
-strikeMarkers.push(marker)
+markers.push(marker)
 
 }
 
 })
 
-}catch(error){
-
+}catch{
 console.log("Lightning data unavailable")
-
 }
 
 }
