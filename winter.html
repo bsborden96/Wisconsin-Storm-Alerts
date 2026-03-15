@@ -42,21 +42,19 @@ background:#111827;
 border-radius:14px;
 padding:16px;
 z-index:10000;
-box-shadow:0 10px 30px rgba(0,0,0,.6);
 }
 
 .menuPanel a{
 display:block;
 color:white;
 text-decoration:none;
-font-size:30px;
-padding:18px 22px;
-font-weight:bold;
+font-size:28px;
+padding:16px;
 }
 
 .menuPanel a:hover{
 background:#1f2937;
-border-radius:10px;
+border-radius:8px;
 }
 
 /* CONTENT */
@@ -69,53 +67,34 @@ padding:30px;
 
 .card{
 background:#111827;
-padding:30px;
+padding:26px;
 border-radius:14px;
 margin-top:20px;
 font-size:26px;
 }
 
 .big{
-font-size:46px;
+font-size:44px;
 font-weight:bold;
 margin-top:10px;
 }
 
 .timeline{
 background:#0f172a;
-padding:24px;
+padding:22px;
 border-radius:14px;
 margin-top:20px;
-font-size:24px;
+font-size:22px;
 }
 
 .timeline div{
 margin:10px 0;
 }
 
-.blizzard{
-background:#7a0000;
-padding:24px;
-border-radius:14px;
-margin-top:20px;
-font-size:30px;
-font-weight:bold;
-animation:flash 1.5s infinite;
-}
-
-.safe{
-background:#1f3b1f;
-padding:24px;
-border-radius:14px;
-margin-top:20px;
-font-size:28px;
-}
-
-@keyframes flash{
-0%{opacity:1}
-50%{opacity:.5}
-100%{opacity:1}
-}
+.roadSafe{background:#1f3b1f}
+.roadWet{background:#005f8a}
+.roadSnow{background:#8a4b00}
+.roadDanger{background:#7a0000}
 
 </style>
 </head>
@@ -125,10 +104,10 @@ font-size:28px;
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
-<a href="index.html">🏠 Home</a>
-<a href="lightning.html">⚡ Lightning Tracker</a>
-<a href="tracking.html">🌩 Storm Tracker</a>
-<a href="winter.html">❄ Winter Storm Center</a>
+<a href="index.html">Home</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Storm Center</a>
 </div>
 
 <header>Winter Storm Center</header>
@@ -155,7 +134,10 @@ Visibility
 <div id="vis" class="big">--</div>
 </div>
 
-<div id="blizzard"></div>
+<div id="roadCard" class="card">
+Road Conditions
+<div id="roads" class="big">Checking...</div>
+</div>
 
 <div class="timeline">
 
@@ -187,28 +169,21 @@ loadWinter()
 
 async function loadWinter(){
 
-/* GET NWS GRID */
-
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let grid=await p.json()
 
 let stations=grid.properties.observationStations
 let forecast=grid.properties.forecastHourly
 
-/* GET STATION */
-
 let s=await fetch(stations)
 let stationData=await s.json()
 
 let station=stationData.features[0].properties.stationIdentifier
 
-/* GET OBS */
-
 let obs=await fetch(`https://api.weather.gov/stations/${station}/observations/latest`)
 let data=await obs.json()
 
 let weather=data.properties.textDescription
-
 document.getElementById("weather").innerText=weather
 
 /* TEMP */
@@ -235,19 +210,30 @@ vis=(vis/1609.34).toFixed(2)
 document.getElementById("vis").innerText=vis+" mi"
 }
 
-/* BLIZZARD CHECK */
+/* ROAD CONDITIONS */
 
-if(wind>=35 && vis<=0.25 && weather.toLowerCase().includes("snow")){
+let road="Dry Roads"
+let roadClass="roadSafe"
 
-document.getElementById("blizzard").innerHTML=
-'<div class="blizzard">⚠ Blizzard Conditions Possible</div>'
-
-}else{
-
-document.getElementById("blizzard").innerHTML=
-'<div class="safe">No Blizzard Conditions</div>'
-
+if(weather.toLowerCase().includes("snow")){
+road="Snow Covered Roads"
+roadClass="roadSnow"
 }
+
+if(weather.toLowerCase().includes("snow") && vis<=0.5){
+road="Hazardous Travel"
+roadClass="roadDanger"
+}
+
+if(temp<=32 && weather.toLowerCase().includes("rain")){
+road="Icy Roads"
+roadClass="roadDanger"
+}
+
+let roadCard=document.getElementById("roadCard")
+roadCard.classList.add(roadClass)
+
+document.getElementById("roads").innerText=road
 
 /* FORECAST TIMELINE */
 
@@ -267,7 +253,6 @@ let text=p.shortForecast.toLowerCase()
 if(text.includes("snow")){
 
 if(start===null) start=p.startTime
-
 end=p.endTime
 
 if(!peak) peak=p.startTime
