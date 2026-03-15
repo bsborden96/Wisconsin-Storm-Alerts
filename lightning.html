@@ -28,23 +28,25 @@ font-weight:bold;
 /* MENU */
 
 .menuIcon{
-position:absolute;
+position:fixed;
 top:16px;
 left:18px;
 font-size:46px;
 cursor:pointer;
+z-index:99999;
 }
 
 .menuPanel{
 display:none;
-position:absolute;
+position:fixed;
 top:80px;
 left:18px;
 background:#111827;
 border-radius:14px;
 padding:16px;
 text-align:left;
-z-index:9999;
+z-index:99999;
+box-shadow:0 10px 25px rgba(0,0,0,.6);
 }
 
 .menuPanel a{
@@ -54,6 +56,11 @@ text-decoration:none;
 font-size:24px;
 padding:12px;
 font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:8px;
 }
 
 /* SEARCH */
@@ -81,11 +88,16 @@ border-radius:8px;
 max-height:200px;
 overflow-y:auto;
 font-size:18px;
+z-index:5000;
 }
 
 .suggestions div{
 padding:10px;
 cursor:pointer;
+}
+
+.suggestions div:hover{
+background:#374151;
 }
 
 /* MAP */
@@ -156,6 +168,7 @@ let stormLayer=L.layerGroup().addTo(map)
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
+
 map.setView([lat,lon],8)
 
 L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
