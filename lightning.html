@@ -5,8 +5,6 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
 
 body{
@@ -33,7 +31,7 @@ top:16px;
 left:18px;
 font-size:46px;
 cursor:pointer;
-z-index:99999;
+z-index:9999;
 }
 
 .menuPanel{
@@ -45,7 +43,7 @@ background:#111827;
 border-radius:14px;
 padding:16px;
 text-align:left;
-z-index:99999;
+z-index:9999;
 }
 
 .menuPanel a{
@@ -62,49 +60,16 @@ background:#1f2937;
 border-radius:8px;
 }
 
-/* SEARCH */
-
-.searchBox{
-margin:20px auto;
-max-width:600px;
-position:relative;
-}
-
-.searchBox input{
-width:100%;
-padding:14px;
-font-size:20px;
-border-radius:8px;
-border:none;
-}
-
-.suggestions{
-position:absolute;
-background:#1f2937;
-width:100%;
-text-align:left;
-border-radius:8px;
-max-height:200px;
-overflow-y:auto;
-font-size:18px;
-z-index:5000;
-}
-
-.suggestions div{
-padding:10px;
-cursor:pointer;
-}
-
-.suggestions div:hover{
-background:#374151;
-}
-
-/* MAP */
-
-#map{
-height:520px;
+.mapWrap{
 margin:20px;
 border-radius:10px;
+overflow:hidden;
+}
+
+iframe{
+width:100%;
+height:520px;
+border:none;
 }
 
 </style>
@@ -123,14 +88,9 @@ border-radius:10px;
 
 <header>Lightning Tracker</header>
 
-<div class="searchBox">
-<input id="searchInput" placeholder="Search any US city or town">
-<div id="suggestions" class="suggestions"></div>
+<div class="mapWrap">
+<iframe id="lightningFrame"></iframe>
 </div>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
@@ -139,91 +99,31 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
+/* DEFAULT VIEW */
+
 let lat=39
 let lon=-95
 
-let map=L.map('map').setView([lat,lon],5)
+function loadMap(){
 
-/* BASE MAP */
+let url=`https://www.lightningmaps.org/?lang=en#m=oss;t=3;s=0;o=0;b=0.00;ts=0;lat=${lat};lon=${lon};z=7`
 
-L.tileLayer(
-'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-{maxZoom:18}
-).addTo(map)
+document.getElementById("lightningFrame").src=url
 
-/* LIGHTNING STRIKES */
-
-let lightningLayer=L.tileLayer(
-'https://maps.lightningmaps.org/tiles/strikes/{z}/{x}/{y}.png',
-{opacity:0.9}
-).addTo(map)
-
-/* REFRESH STRIKES */
-
-setInterval(()=>{
-map.removeLayer(lightningLayer)
-
-lightningLayer=L.tileLayer(
-'https://maps.lightningmaps.org/tiles/strikes/{z}/{x}/{y}.png?'+Date.now(),
-{opacity:0.9}
-).addTo(map)
-
-},30000)
+}
 
 /* GET USER LOCATION */
 
 navigator.geolocation.getCurrentPosition(pos=>{
+
 lat=pos.coords.latitude
 lon=pos.coords.longitude
 
-map.setView([lat,lon],8)
+loadMap()
 
-L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
-
-})
-
-/* SEARCH */
-
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-
-input.addEventListener("input",async()=>{
-
-let q=input.value
-
-if(q.length<2){
-suggestions.innerHTML=""
-return
-}
-
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=8`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-
-map.setView([lat,lon],8)
-
-L.marker([lat,lon]).addTo(map)
-
-input.value=place.display_name
-suggestions.innerHTML=""
-
-}
-
-suggestions.appendChild(div)
-
-})
-
+},
+()=>{
+loadMap()
 })
 
 </script>
