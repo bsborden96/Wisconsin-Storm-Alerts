@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>US Storm Alerts</title>
+<title>Lightning Tracker</title>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
 <style>
 
@@ -16,186 +18,47 @@ text-align:center;
 header{
 background:#151c2c;
 padding:32px;
-font-size:40px;
+font-size:36px;
 font-weight:bold;
 }
 
-/* STORM MODE BANNER */
+/* HAMBURGER MENU */
 
-.stormBanner{
-display:none;
-background:#7a0000;
-font-size:32px;
-font-weight:bold;
-padding:16px;
-animation:flash 1.5s infinite;
-}
-
-@keyframes flash{
-0%{opacity:1}
-50%{opacity:.4}
-100%{opacity:1}
-}
-
-/* ALERT TICKER */
-
-.tickerWrap{
-background:#7a0000;
-overflow:hidden;
-white-space:nowrap;
-padding:12px 0;
-}
-
-.ticker{
-display:inline-block;
-white-space:nowrap;
-font-size:22px;
-animation:scrollTicker 60s linear infinite;
-}
-
-@keyframes scrollTicker{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
-
-/* SEARCH */
-
-.searchBox{
-margin:30px auto;
-max-width:600px;
-position:relative;
-}
-
-.searchBox input{
-width:100%;
-padding:14px;
-font-size:22px;
-border-radius:8px;
-border:none;
-}
-
-.suggestions{
+.menuIcon{
 position:absolute;
-background:#1f2937;
-width:100%;
-text-align:left;
-border-radius:8px;
-max-height:220px;
-overflow-y:auto;
-font-size:20px;
-}
-
-.suggestions div{
-padding:12px;
+top:20px;
+left:20px;
+font-size:34px;
 cursor:pointer;
 }
 
-.suggestions div:hover{
-background:#374151;
-}
-
-/* SECTIONS */
-
-.section{
-max-width:1000px;
-margin:auto;
-padding:30px;
-}
-
-/* LOCATION */
-
-.locationCard{
-background:#111827;
-padding:36px;
-border-radius:14px;
-}
-
-.countyName{
-font-size:52px;
-font-weight:bold;
-}
-
-.cityName{
-font-size:30px;
-margin-top:6px;
-}
-
-/* RISK BOX */
-
-.riskBox{
-margin-top:20px;
-padding:20px;
-border-radius:10px;
-font-size:28px;
-font-weight:bold;
-}
-
-.low{background:#1f3b1f}
-.medium{background:#8a4b00}
-.high{background:#7a0000}
-
-/* WEATHER GRID */
-
-.weatherGrid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:22px;
-margin-top:30px;
-}
-
-.weatherCard{
-background:#0f172a;
-padding:28px;
-border-radius:12px;
-}
-
-.weatherTitle{
-font-size:22px;
-opacity:.8;
-}
-
-.weatherValue{
-font-size:52px;
-font-weight:bold;
-}
-
-/* ALERTS */
-
-.card{
-background:#111;
-padding:22px;
-margin-top:16px;
-border-radius:12px;
-cursor:pointer;
-font-size:22px;
-}
-
-.tornado{background:#7a0000}
-.severe{background:#8a4b00}
-.none{background:#1f3b1f}
-
-.alertDetail{
+.menuPanel{
 display:none;
-margin-top:12px;
-font-size:20px;
+position:absolute;
+top:70px;
+left:20px;
+background:#111827;
+border-radius:10px;
+padding:10px;
 text-align:left;
 }
 
-/* STORM TOOLS BUTTON */
-
-.toolButton{
-display:inline-block;
-background:#1f2937;
+.menuPanel a{
+display:block;
 color:white;
-padding:18px 28px;
-font-size:24px;
-border-radius:10px;
 text-decoration:none;
-margin-top:15px;
+font-size:22px;
+padding:10px 14px;
 }
 
-.toolButton:hover{
-background:#374151;
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:6px;
+}
+
+#map{
+height:80vh;
+width:100%;
 }
 
 </style>
@@ -203,298 +66,103 @@ background:#374151;
 
 <body>
 
-<header>US Storm Alerts</header>
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
 
-<div id="stormBanner" class="stormBanner"></div>
-
-<div class="tickerWrap">
-<span id="ticker" class="ticker">Loading severe alerts across the US...</span>
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">🏠 Home</a>
+<a href="lightning.html">⚡ Lightning Tracker</a>
+<a href="tracking.html">🌩 Storm Tracker</a>
 </div>
 
-<div class="searchBox">
-<input id="searchInput" placeholder="Search US city or county">
-<div id="suggestions" class="suggestions"></div>
-</div>
+<header>Lightning Tracker</header>
 
-<div class="section">
-<div id="lastUpdated" style="font-size:22px;">Last Updated: --</div>
-</div>
+<div id="map"></div>
 
-<div class="section">
-
-<div id="locationCard" class="locationCard">
-Detecting location...
-</div>
-
-<div id="riskLevel" class="riskBox low">
-Severe Weather Risk: LOW
-</div>
-
-</div>
-
-<div class="section">
-
-<h2 style="font-size:34px;">Current Conditions</h2>
-
-<div class="weatherGrid">
-
-<div class="weatherCard">
-<div class="weatherTitle">Temperature</div>
-<div id="temp" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-<div class="weatherTitle">Dew Point</div>
-<div id="dew" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-<div class="weatherTitle">Humidity</div>
-<div id="humidity" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-<div class="weatherTitle">Wind</div>
-<div id="wind" class="weatherValue">--</div>
-</div>
-
-</div>
-
-</div>
-
-<div class="section">
-
-<h2 style="font-size:34px;">Active Alerts</h2>
-
-<div id="alerts">Loading alerts...</div>
-
-</div>
-
-<div class="section">
-
-<h2 style="font-size:34px;">Storm Tools</h2>
-
-<a href="lightning.html" class="toolButton">
-⚡ Lightning Tracker
-</a>
-
-<br>
-
-<a href="tracking.html" class="toolButton">
-🌩 Storm Tracker
-</a>
-
-</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-let lat
-let lon
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
+let map
+let userLat
+let userLon
+let markers=[]
 
 navigator.geolocation.getCurrentPosition(pos=>{
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-loadLocation()
-loadWeather()
-loadAlerts()
-})
 
-/* SEARCH AUTOCOMPLETE */
+userLat=pos.coords.latitude
+userLon=pos.coords.longitude
 
-let input=document.getElementById("searchInput")
-let box=document.getElementById("suggestions")
+map=L.map("map").setView([userLat,userLon],7)
 
-input.addEventListener("input",async()=>{
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png").addTo(map)
 
-let q=input.value
-if(q.length<2){box.innerHTML="";return}
+L.marker([userLat,userLon]).addTo(map).bindPopup("Your Location")
 
-let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=5`)
-let data=await res.json()
-
-box.innerHTML=""
-
-if(!data.results) return
-
-data.results.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=`${place.name}, ${place.admin1}`
-
-div.onclick=()=>{
-lat=place.latitude
-lon=place.longitude
-box.innerHTML=""
-loadLocation()
-loadWeather()
-loadAlerts()
-}
-
-box.appendChild(div)
+loadLightning()
 
 })
 
-})
+function distance(lat1,lon1,lat2,lon2){
 
-/* LOCATION */
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
 
-async function loadLocation(){
+let a=Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)**2
 
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let pointData=await point.json()
-
-let city=pointData.properties.relativeLocation.properties.city
-let state=pointData.properties.relativeLocation.properties.state
-
-let countyRes=await fetch(pointData.properties.county)
-let countyData=await countyRes.json()
-
-let county=countyData.properties.name
-
-document.getElementById("locationCard").innerHTML=
-`<div class="countyName">${county} County</div>
-<div class="cityName">${city}, ${state}</div>`
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+return (R*c)*0.621371
 
 }
 
-/* WEATHER */
+async function loadLightning(){
 
-async function loadWeather(){
+markers.forEach(m=>map.removeLayer(m))
+markers=[]
 
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
-let data=await res.json()
+try{
 
-let c=data.current
+let res=await fetch("https://data.blitzortung.org/live_lightning.json")
+let strikes=await res.json()
 
-temp.innerText=Math.round(c.temperature_2m)+"°F"
-dew.innerText=Math.round(c.dewpoint_2m)+"°F"
-humidity.innerText=c.relative_humidity_2m+"%"
-wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+strikes.slice(0,300).forEach(s=>{
+
+let lat=s[1]
+let lon=s[2]
+
+let miles=distance(userLat,userLon,lat,lon)
+
+if(miles<100){
+
+let marker=L.circleMarker([lat,lon],{
+radius:6,
+color:"yellow",
+fillColor:"yellow",
+fillOpacity:0.9
+}).addTo(map)
+
+marker.bindPopup("⚡ Lightning Strike<br>"+Math.round(miles)+" miles away")
+
+markers.push(marker)
 
 }
-
-/* ALERTS */
-
-async function loadAlerts(){
-
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
-let data=await res.json()
-
-let html=""
-let risk="low"
-
-data.features.forEach((alert,i)=>{
-
-let e=alert.properties.event
-let style="card"
-
-if(e.includes("Tornado Warning")){
-style+=" tornado"
-risk="high"
-showStormBanner("TORNADO WARNING")
-}
-
-else if(e.includes("Severe Thunderstorm Warning")){
-style+=" severe"
-if(risk!=="high") risk="medium"
-showStormBanner("SEVERE THUNDERSTORM WARNING")
-}
-
-else{
-style+=" none"
-}
-
-html+=`
-<div class="${style}" onclick="toggleAlert(${i})">
-<b>${e}</b><br>${alert.properties.areaDesc}
-
-<div id="detail${i}" class="alertDetail">
-${alert.properties.description}
-</div>
-
-</div>
-`
 
 })
 
-if(html==="")html='<div class="card none">No active alerts</div>'
-
-alerts.innerHTML=html
-
-updateRisk(risk)
-
-lastUpdated.innerText="Last Updated: "+new Date().toLocaleTimeString()
-
-}
-
-/* EXPAND ALERT */
-
-function toggleAlert(id){
-let el=document.getElementById("detail"+id)
-el.style.display=el.style.display==="block"?"none":"block"
-}
-
-/* RISK */
-
-function updateRisk(level){
-
-let box=document.getElementById("riskLevel")
-
-if(level==="high"){
-box.className="riskBox high"
-box.innerText="Severe Weather Risk: HIGH"
-}
-
-else if(level==="medium"){
-box.className="riskBox medium"
-box.innerText="Severe Weather Risk: MODERATE"
-}
-
-else{
-box.className="riskBox low"
-box.innerText="Severe Weather Risk: LOW"
+}catch{
+console.log("Lightning data unavailable")
 }
 
 }
 
-/* STORM BANNER */
-
-function showStormBanner(text){
-
-let banner=document.getElementById("stormBanner")
-
-banner.style.display="block"
-banner.innerText=text
-
-}
-
-/* NATIONAL TICKER */
-
-async function loadTicker(){
-
-let res=await fetch(`https://api.weather.gov/alerts/active`)
-let data=await res.json()
-
-let text=""
-let count=0
-
-data.features.forEach(a=>{
-let e=a.properties.event
-if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
-text+=`⚠ ${e} — ${a.properties.areaDesc} • `
-count++
-}
-})
-
-if(count===0){
-text="No active tornado or severe thunderstorm warnings in the United States"
-}
-
-ticker.innerText=text
-
-}
-
-loadTicker()
+setInterval(loadLightning,30000)
 
 </script>
 
