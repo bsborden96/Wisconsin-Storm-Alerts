@@ -22,7 +22,7 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* MENU */
+/* HAMBURGER MENU */
 
 .menuIcon{
 position:absolute;
@@ -125,11 +125,6 @@ margin-top:14px;
 border-radius:10px;
 }
 
-.distance{
-font-size:30px;
-font-weight:bold;
-}
-
 </style>
 </head>
 
@@ -152,12 +147,6 @@ font-weight:bold;
 </div>
 
 <div class="section">
-
-<div class="card">
-Tracking storms moving toward selected location
-</div>
-
-<h2>Closest Approaching Storms</h2>
 
 <div id="storms"></div>
 
@@ -217,7 +206,26 @@ suggestions.appendChild(div)
 
 })
 
-/* STORMS */
+input.addEventListener("keydown",async(e)=>{
+
+if(e.key==="Enter"){
+
+let q=input.value
+
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=1`)
+let data=await res.json()
+
+if(data.length>0){
+lat=parseFloat(data[0].lat)
+lon=parseFloat(data[0].lon)
+loadStorms()
+}
+
+}
+
+})
+
+/* LOAD STORMS */
 
 async function loadStorms(){
 
@@ -225,6 +233,29 @@ let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let html=""
+let activeStorm=false
+
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+
+if(event.includes("Severe Thunderstorm Warning") || event.includes("Tornado Warning")){
+activeStorm=true
+}
+
+})
+
+/* IF NO STORMS ANYWHERE */
+
+if(!activeStorm){
+
+document.getElementById("storms").innerHTML=
+'<div class="card">No severe storms currently active in the United States</div>'
+
+return
+}
+
+/* SHOW STORMS */
 
 data.features.forEach(alert=>{
 
@@ -232,18 +263,11 @@ let event=alert.properties.event
 
 if(!event.includes("Severe Thunderstorm") && !event.includes("Tornado")) return
 
-let geo=alert.geometry
-if(!geo) return
+let style="storm"
 
-let coord=geo.coordinates[0][0]
+if(event.includes("Tornado")) style="tornado"
 
-let miles=Math.random()*300
-
-if(miles<300){
-
-html+=`<div class="storm">${event}<br>${alert.properties.areaDesc}</div>`
-
-}
+html+=`<div class="${style}">${event}<br>${alert.properties.areaDesc}</div>`
 
 })
 
