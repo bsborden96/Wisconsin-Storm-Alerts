@@ -25,8 +25,6 @@ font-size:28px;
 font-weight:bold;
 }
 
-/* MENU */
-
 .menuIcon{
 position:fixed;
 top:16px;
@@ -46,7 +44,6 @@ border-radius:14px;
 padding:16px;
 text-align:left;
 z-index:99999;
-box-shadow:0 10px 25px rgba(0,0,0,.6);
 }
 
 .menuPanel a{
@@ -62,8 +59,6 @@ font-weight:bold;
 background:#1f2937;
 border-radius:8px;
 }
-
-/* SEARCH */
 
 .searchBox{
 margin:20px auto;
@@ -96,19 +91,11 @@ padding:10px;
 cursor:pointer;
 }
 
-.suggestions div:hover{
-background:#374151;
-}
-
-/* MAP */
-
 #map{
 height:500px;
 margin:20px;
 border-radius:10px;
 }
-
-/* MESSAGE */
 
 .card{
 background:#111827;
@@ -163,14 +150,25 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 maxZoom:18
 }).addTo(map)
 
-/* LIVE LIGHTNING STRIKES */
+/* LIGHTNING TILE LAYER */
 
-L.tileLayer(
-"https://tile.blitzortung.org/2.0/strike_tiles/{z}/{x}/{y}.png",
+let lightningLayer=L.tileLayer(
+"https://tiles.lightningmaps.org/tiles/{z}/{x}/{y}.png",
 {
 opacity:0.9
-}
+}).addTo(map)
+
+/* AUTO REFRESH LIGHTNING */
+
+setInterval(()=>{
+map.removeLayer(lightningLayer)
+
+lightningLayer=L.tileLayer(
+"https://tiles.lightningmaps.org/tiles/{z}/{x}/{y}.png?"+Date.now(),
+{opacity:0.9}
 ).addTo(map)
+
+},30000)
 
 let stormLayer=L.layerGroup().addTo(map)
 
