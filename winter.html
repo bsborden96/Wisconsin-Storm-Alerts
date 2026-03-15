@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Winter Storm Center</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#151c2c;
+padding:28px;
+font-size:38px;
+font-weight:bold;
+}
+
+/* HAMBURGER MENU */
+
+.menuIcon{
+position:absolute;
+top:18px;
+left:18px;
+font-size:52px;
+cursor:pointer;
+z-index:10000;
+}
+
+.menuPanel{
+display:none;
+position:absolute;
+top:95px;
+left:18px;
+background:#111827;
+border-radius:14px;
+padding:16px;
+text-align:left;
+z-index:10000;
+box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:30px;
+padding:18px 22px;
+font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:10px;
+}
+
+/* CONTENT */
+
+.section{
+max-width:900px;
+margin:auto;
+padding:30px;
+}
+
+.card{
+background:#111827;
+padding:30px;
+border-radius:14px;
+margin-top:20px;
+font-size:26px;
+}
+
+.bigValue{
+font-size:56px;
+font-weight:bold;
+margin-top:10px;
+}
+
+.blizzard{
+background:#7a0000;
+padding:24px;
+border-radius:14px;
+margin-top:20px;
+font-size:30px;
+font-weight:bold;
+animation:flash 1.5s infinite;
+}
+
+.safe{
+background:#1f3b1f;
+padding:24px;
+border-radius:14px;
+margin-top:20px;
+font-size:28px;
+}
+
+@keyframes flash{
+0%{opacity:1}
+50%{opacity:.5}
+100%{opacity:1}
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">🏠 Home</a>
+<a href="lightning.html">⚡ Lightning Tracker</a>
+<a href="tracking.html">🌩 Storm Tracker</a>
+<a href="winter.html">❄ Winter Storm Center</a>
+</div>
+
+<header>Winter Storm Center</header>
+
+<div class="section">
+
+<div class="card">
+Snowfall Forecast
+<div id="snow" class="bigValue">--</div>
+</div>
+
+<div class="card">
+Wind Speed
+<div id="wind" class="bigValue">--</div>
+</div>
+
+<div id="blizzardStatus"></div>
+
+</div>
+
+<script>
+
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
+let lat
+let lon
+
+navigator.geolocation.getCurrentPosition(pos=>{
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+loadWinterWeather()
+})
+
+async function loadWinterWeather(){
+
+let res=await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=snowfall,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`
+)
+
+let data=await res.json()
+
+let snow=data.hourly.snowfall[0]
+let wind=data.hourly.wind_speed_10m[0]
+
+document.getElementById("snow").innerText=snow+" in"
+document.getElementById("wind").innerText=Math.round(wind)+" mph"
+
+let box=document.getElementById("blizzardStatus")
+
+if(wind>=35 && snow>0){
+
+box.innerHTML=`
+<div class="blizzard">
+⚠ Blizzard Conditions Possible
+</div>
+`
+
+}else{
+
+box.innerHTML=`
+<div class="safe">
+No Blizzard Conditions
+</div>
+`
+
+}
+
+}
+
+</script>
+
+</body>
+</html>
