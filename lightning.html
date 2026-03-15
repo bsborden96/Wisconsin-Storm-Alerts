@@ -157,9 +157,20 @@ let lon
 
 let map=L.map('map').setView([39,-95],5)
 
+/* BASE MAP */
+
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 maxZoom:18
 }).addTo(map)
+
+/* LIVE LIGHTNING STRIKES */
+
+L.tileLayer(
+"https://tile.blitzortung.org/2.0/strike_tiles/{z}/{x}/{y}.png",
+{
+opacity:0.9
+}
+).addTo(map)
 
 let stormLayer=L.layerGroup().addTo(map)
 
@@ -246,7 +257,7 @@ return km*0.621371
 
 }
 
-/* LOAD LIGHTNING STORMS */
+/* LOAD STORMS */
 
 async function loadLightning(){
 
