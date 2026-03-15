@@ -70,7 +70,7 @@ overflow:hidden;
 
 iframe{
 width:100%;
-height:560px;
+height:600px;
 border:none;
 }
 
@@ -91,7 +91,7 @@ border:none;
 <header>Lightning Tracker</header>
 
 <div class="mapWrap">
-<iframe id="blitzMap"></iframe>
+<iframe id="lightningFrame"></iframe>
 </div>
 
 <script>
@@ -104,26 +104,26 @@ panel.style.display=(panel.style.display==="block")?"none":"block"
 let lat=39
 let lon=-95
 
-function loadMap(){
+function loadLightningMap(){
 
-let url=`https://www.lightningmaps.org/?lang=en#m=oss;t=3;s=0;o=0;b=0.00;ts=0;lat=${lat};lon=${lon};z=6`
+let url=`https://www.lightningmaps.org/?lang=en#x=${lon};y=${lat};z=6;m=oss;t=3`
 
-document.getElementById("blitzMap").src=url
+document.getElementById("lightningFrame").src=url
 
 }
 
-/* AUTO LOCATION */
+/* GET USER LOCATION */
 
 navigator.geolocation.getCurrentPosition(
 
 pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
-loadMap()
+loadLightningMap()
 },
 
 ()=>{
-loadMap()
+loadLightningMap()
 }
 
 )
