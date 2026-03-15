@@ -22,6 +22,43 @@ font-size:38px;
 font-weight:bold;
 }
 
+/* HAMBURGER MENU */
+
+.menuIcon{
+position:absolute;
+top:18px;
+left:18px;
+font-size:52px;
+cursor:pointer;
+z-index:10000;
+}
+
+.menuPanel{
+display:none;
+position:absolute;
+top:95px;
+left:18px;
+background:#111827;
+border-radius:14px;
+padding:16px;
+text-align:left;
+z-index:10000;
+}
+
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:28px;
+padding:16px;
+font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:8px;
+}
+
 /* SEARCH */
 
 .searchBox{
@@ -91,6 +128,15 @@ font-weight:bold;
 
 <body>
 
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">Home</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
+</div>
+
 <header>Lightning Tracker</header>
 
 <div class="searchBox">
@@ -101,16 +147,21 @@ font-weight:bold;
 <div class="section">
 
 <div class="card">
-Recent lightning strikes near selected location
+Lightning producing storms near selected location
 </div>
 
-<h2>Closest Lightning Strikes</h2>
+<h2>Nearby Lightning Storms</h2>
 
-<div id="lightning">Loading lightning data...</div>
+<div id="lightning"></div>
 
 </div>
 
 <script>
+
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
 
 let lat
 let lon
@@ -178,7 +229,7 @@ loadLightning()
 
 })
 
-/* DISTANCE CALCULATION */
+/* DISTANCE */
 
 function distance(lat1,lon1,lat2,lon2){
 
