@@ -139,6 +139,20 @@ font-weight:bold;
 font-size:30px;
 }
 
+/* RISK BOX */
+
+.riskBox{
+margin-top:20px;
+padding:20px;
+border-radius:10px;
+font-size:28px;
+font-weight:bold;
+}
+
+.low{background:#1f3b1f}
+.medium{background:#8a4b00}
+.high{background:#7a0000}
+
 /* WEATHER */
 
 .weatherGrid{
@@ -207,7 +221,15 @@ text-align:left;
 </div>
 
 <div class="section">
-<div id="locationCard" class="locationCard">Detecting location...</div>
+
+<div id="locationCard" class="locationCard">
+Detecting location...
+</div>
+
+<div id="riskLevel" class="riskBox low">
+Severe Weather Risk: LOW
+</div>
+
 </div>
 
 <div class="section">
@@ -241,13 +263,13 @@ Wind
 </div>
 
 <div class="section">
+
 <h2>Active Alerts</h2>
 <div id="alerts">Loading alerts...</div>
+
 </div>
 
 <script>
-
-/* MENU */
 
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
@@ -371,15 +393,26 @@ let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
 let html=""
+let risk="low"
 
 data.features.forEach((alert,i)=>{
 
 let e=alert.properties.event
 let style="card"
 
-if(e.includes("Tornado")) style+=" tornado"
-else if(e.includes("Severe")) style+=" severe"
-else style+=" none"
+if(e.includes("Tornado Warning")){
+style+=" tornado"
+risk="high"
+}
+
+else if(e.includes("Severe Thunderstorm Warning")){
+style+=" severe"
+if(risk!=="high") risk="medium"
+}
+
+else{
+style+=" none"
+}
 
 html+=`
 <div class="${style}" onclick="toggleAlert(${i})">
@@ -396,6 +429,8 @@ html='<div class="card none">No active alerts</div>'
 
 alerts.innerHTML=html
 
+updateRisk(risk)
+
 }
 
 function toggleAlert(i){
@@ -403,7 +438,28 @@ let el=document.getElementById("detail"+i)
 el.style.display=(el.style.display==="block")?"none":"block"
 }
 
-/* TICKER WITH PRIORITY */
+function updateRisk(level){
+
+let box=document.getElementById("riskLevel")
+
+if(level==="high"){
+box.className="riskBox high"
+box.innerText="Severe Weather Risk: HIGH"
+}
+
+else if(level==="medium"){
+box.className="riskBox medium"
+box.innerText="Severe Weather Risk: MODERATE"
+}
+
+else{
+box.className="riskBox low"
+box.innerText="Severe Weather Risk: LOW"
+}
+
+}
+
+/* TICKER */
 
 async function loadTicker(){
 
