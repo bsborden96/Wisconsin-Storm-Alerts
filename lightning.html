@@ -15,10 +15,13 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
-padding:28px;
-font-size:38px;
+padding:24px;
+padding-left:110px;
+font-size:30px;
 font-weight:bold;
 }
 
@@ -26,9 +29,9 @@ font-weight:bold;
 
 .menuIcon{
 position:absolute;
-top:18px;
+top:16px;
 left:18px;
-font-size:52px;
+font-size:48px;
 cursor:pointer;
 z-index:10000;
 }
@@ -36,7 +39,7 @@ z-index:10000;
 .menuPanel{
 display:none;
 position:absolute;
-top:95px;
+top:80px;
 left:18px;
 background:#111827;
 border-radius:14px;
@@ -49,8 +52,8 @@ z-index:10000;
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
+font-size:26px;
+padding:14px;
 font-weight:bold;
 }
 
@@ -95,7 +98,7 @@ cursor:pointer;
 background:#374151;
 }
 
-/* SECTION */
+/* CONTENT */
 
 .section{
 max-width:1000px;
@@ -119,7 +122,7 @@ border-radius:10px;
 }
 
 .distance{
-font-size:30px;
+font-size:28px;
 font-weight:bold;
 }
 
@@ -157,6 +160,8 @@ Lightning producing storms near selected location
 </div>
 
 <script>
+
+/* MENU */
 
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
@@ -258,11 +263,22 @@ let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let html=""
+let activeStorm=false
+
+data.features.forEach(alert=>{
+let event=alert.properties.event
+if(event.includes("Severe Thunderstorm Warning")) activeStorm=true
+})
+
+if(!activeStorm){
+document.getElementById("lightning").innerHTML =
+'<div class="card">No lightning producing storms near this location</div>'
+return
+}
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-
 if(!event.includes("Severe Thunderstorm")) return
 
 let geo=alert.geometry
@@ -296,10 +312,6 @@ ${alert.properties.areaDesc}
 }
 
 })
-
-if(html===""){
-html='<div class="card">No lightning producing storms near this location</div>'
-}
 
 document.getElementById("lightning").innerHTML=html
 
