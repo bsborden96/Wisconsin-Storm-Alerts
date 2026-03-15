@@ -88,13 +88,14 @@ padding:12px 0;
 display:inline-block;
 white-space:nowrap;
 font-size:22px;
-padding-left:100%;
+position:relative;
+left:100%;
 animation:scrollTicker 60s linear infinite;
 }
 
 @keyframes scrollTicker{
-0%{transform:translateX(0)}
-100%{transform:translateX(-100%)}
+0%{left:100%}
+100%{left:-100%}
 }
 
 /* SEARCH */
@@ -496,7 +497,7 @@ if(count===0){
 text="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-document.getElementById("ticker").innerText=text+text
+document.getElementById("ticker").innerText=text
 
 }
 
