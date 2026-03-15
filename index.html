@@ -20,24 +20,41 @@ font-size:40px;
 font-weight:bold;
 }
 
-/* STORM MODE BANNER */
+/* MENU */
 
-.stormBanner{
+.menuIcon{
+position:absolute;
+left:15px;
+top:15px;
+font-size:34px;
+cursor:pointer;
+}
+
+.menuPanel{
 display:none;
-background:#7a0000;
-font-size:32px;
-font-weight:bold;
-padding:16px;
-animation:flash 1.5s infinite;
+position:absolute;
+top:70px;
+left:15px;
+background:#111827;
+border-radius:10px;
+padding:10px;
+text-align:left;
 }
 
-@keyframes flash{
-0%{opacity:1}
-50%{opacity:.4}
-100%{opacity:1}
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:22px;
+padding:10px 14px;
 }
 
-/* ALERT TICKER */
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:6px;
+}
+
+/* TICKER */
 
 .tickerWrap{
 background:#7a0000;
@@ -58,83 +75,13 @@ animation:scrollTicker 60s linear infinite;
 100%{transform:translateX(-100%)}
 }
 
-/* SEARCH */
-
-.searchBox{
-margin:30px auto;
-max-width:600px;
-position:relative;
-}
-
-.searchBox input{
-width:100%;
-padding:14px;
-font-size:22px;
-border-radius:8px;
-border:none;
-}
-
-.suggestions{
-position:absolute;
-background:#1f2937;
-width:100%;
-text-align:left;
-border-radius:8px;
-max-height:220px;
-overflow-y:auto;
-font-size:20px;
-}
-
-.suggestions div{
-padding:12px;
-cursor:pointer;
-}
-
-.suggestions div:hover{
-background:#374151;
-}
-
-/* SECTIONS */
+/* WEATHER */
 
 .section{
 max-width:1000px;
 margin:auto;
 padding:30px;
 }
-
-/* LOCATION */
-
-.locationCard{
-background:#111827;
-padding:36px;
-border-radius:14px;
-}
-
-.countyName{
-font-size:52px;
-font-weight:bold;
-}
-
-.cityName{
-font-size:30px;
-margin-top:6px;
-}
-
-/* RISK BOX */
-
-.riskBox{
-margin-top:20px;
-padding:20px;
-border-radius:10px;
-font-size:28px;
-font-weight:bold;
-}
-
-.low{background:#1f3b1f}
-.medium{background:#8a4b00}
-.high{background:#7a0000}
-
-/* WEATHER GRID */
 
 .weatherGrid{
 display:grid;
@@ -159,82 +106,28 @@ font-size:52px;
 font-weight:bold;
 }
 
-/* ALERTS */
-
-.card{
-background:#111;
-padding:22px;
-margin-top:16px;
-border-radius:12px;
-cursor:pointer;
-font-size:22px;
-}
-
-.tornado{background:#7a0000}
-.severe{background:#8a4b00}
-.none{background:#1f3b1f}
-
-.alertDetail{
-display:none;
-margin-top:12px;
-font-size:20px;
-text-align:left;
-}
-
-/* STORM TOOLS BUTTON */
-
-.toolButton{
-display:inline-block;
-background:#1f2937;
-color:white;
-padding:18px 28px;
-font-size:24px;
-border-radius:10px;
-text-decoration:none;
-margin-top:15px;
-}
-
-.toolButton:hover{
-background:#374151;
-}
-
 </style>
 </head>
 
 <body>
 
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">Home</a>
+<a href="lightning.html">⚡ Lightning Tracker</a>
+<a href="tracking.html">🌩 Storm Tracker</a>
+</div>
+
 <header>US Storm Alerts</header>
 
-<div id="stormBanner" class="stormBanner"></div>
-
 <div class="tickerWrap">
-<span id="ticker" class="ticker">Loading severe alerts across the US...</span>
-</div>
-
-<div class="searchBox">
-<input id="searchInput" placeholder="Search US city or county">
-<div id="suggestions" class="suggestions"></div>
-</div>
-
-<div class="section">
-<div id="lastUpdated" style="font-size:22px;">Last Updated: --</div>
+<span id="ticker" class="ticker">Loading severe alerts...</span>
 </div>
 
 <div class="section">
 
-<div id="locationCard" class="locationCard">
-Detecting location...
-</div>
-
-<div id="riskLevel" class="riskBox low">
-Severe Weather Risk: LOW
-</div>
-
-</div>
-
-<div class="section">
-
-<h2 style="font-size:34px;">Current Conditions</h2>
+<h2>Current Conditions</h2>
 
 <div class="weatherGrid">
 
@@ -262,100 +155,19 @@ Severe Weather Risk: LOW
 
 </div>
 
-<div class="section">
-
-<h2 style="font-size:34px;">Active Alerts</h2>
-
-<div id="alerts">Loading alerts...</div>
-
-</div>
-
-<div class="section">
-
-<h2 style="font-size:34px;">Storm Tools</h2>
-
-<a href="lightning.html" class="toolButton">
-⚡ Lightning Tracker
-</a>
-<a href="tracking.html" class="toolButton">
-🌩 Storm Tracker
-</a>
-</div>
-
 <script>
 
-let lat
-let lon
-
-navigator.geolocation.getCurrentPosition(pos=>{
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-loadLocation()
-loadWeather()
-loadAlerts()
-})
-
-/* SEARCH AUTOCOMPLETE */
-
-let input=document.getElementById("searchInput")
-let box=document.getElementById("suggestions")
-
-input.addEventListener("input",async()=>{
-
-let q=input.value
-if(q.length<2){box.innerHTML="";return}
-
-let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=5`)
-let data=await res.json()
-
-box.innerHTML=""
-
-if(!data.results) return
-
-data.results.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=`${place.name}, ${place.admin1}`
-
-div.onclick=()=>{
-lat=place.latitude
-lon=place.longitude
-box.innerHTML=""
-loadLocation()
-loadWeather()
-loadAlerts()
-}
-
-box.appendChild(div)
-
-})
-
-})
-
-/* LOCATION */
-
-async function loadLocation(){
-
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let pointData=await point.json()
-
-let city=pointData.properties.relativeLocation.properties.city
-let state=pointData.properties.relativeLocation.properties.state
-
-let countyRes=await fetch(pointData.properties.county)
-let countyData=await countyRes.json()
-
-let county=countyData.properties.name
-
-document.getElementById("locationCard").innerHTML=
-`<div class="countyName">${county} County</div>
-<div class="cityName">${city}, ${state}</div>`
-
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
 /* WEATHER */
 
-async function loadWeather(){
+navigator.geolocation.getCurrentPosition(async pos=>{
+
+let lat=pos.coords.latitude
+let lon=pos.coords.longitude
 
 let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let data=await res.json()
@@ -367,108 +179,13 @@ dew.innerText=Math.round(c.dewpoint_2m)+"°F"
 humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
-}
-
-/* ALERTS */
-
-async function loadAlerts(){
-
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
-let data=await res.json()
-
-let html=""
-let risk="low"
-
-data.features.forEach((alert,i)=>{
-
-let e=alert.properties.event
-let style="card"
-
-if(e.includes("Tornado Warning")){
-style+=" tornado"
-risk="high"
-showStormBanner("TORNADO WARNING")
-}
-
-else if(e.includes("Severe Thunderstorm Warning")){
-style+=" severe"
-if(risk!=="high") risk="medium"
-showStormBanner("SEVERE THUNDERSTORM WARNING")
-}
-
-else{
-style+=" none"
-}
-
-html+=`
-<div class="${style}" onclick="toggleAlert(${i})">
-<b>${e}</b><br>${alert.properties.areaDesc}
-
-<div id="detail${i}" class="alertDetail">
-${alert.properties.description}
-</div>
-
-</div>
-`
-
 })
 
-if(html==="")html='<div class="card none">No active alerts</div>'
-
-alerts.innerHTML=html
-
-updateRisk(risk)
-
-lastUpdated.innerText="Last Updated: "+new Date().toLocaleTimeString()
-
-}
-
-/* EXPAND ALERT */
-
-function toggleAlert(id){
-let el=document.getElementById("detail"+id)
-el.style.display=el.style.display==="block"?"none":"block"
-}
-
-/* RISK */
-
-function updateRisk(level){
-
-let box=document.getElementById("riskLevel")
-
-if(level==="high"){
-box.className="riskBox high"
-box.innerText="Severe Weather Risk: HIGH"
-}
-
-else if(level==="medium"){
-box.className="riskBox medium"
-box.innerText="Severe Weather Risk: MODERATE"
-}
-
-else{
-box.className="riskBox low"
-box.innerText="Severe Weather Risk: LOW"
-}
-
-}
-
-/* STORM BANNER */
-
-function showStormBanner(text){
-
-let banner=document.getElementById("stormBanner")
-
-banner.style.display="block"
-banner.innerText=text
-
-}
-
-/* NATIONAL TICKER */
+/* TICKER */
 
 async function loadTicker(){
 
-let res=await fetch(`https://api.weather.gov/alerts/active`)
+let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let text=""
