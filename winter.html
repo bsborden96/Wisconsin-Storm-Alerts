@@ -22,7 +22,7 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* HAMBURGER MENU */
+/* MENU */
 
 .menuIcon{
 position:absolute;
@@ -41,7 +41,6 @@ left:18px;
 background:#111827;
 border-radius:14px;
 padding:16px;
-text-align:left;
 z-index:10000;
 box-shadow:0 10px 30px rgba(0,0,0,.6);
 }
@@ -184,21 +183,23 @@ loadWinterWeather()
 async function loadWinterWeather(){
 
 let res=await fetch(
-`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,wind_speed_10m&hourly=precipitation,temperature_2m,snowfall&temperature_unit=fahrenheit&wind_speed_unit=mph`
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,wind_speed_10m&hourly=snowfall,temperature_2m&temperature_unit=fahrenheit&wind_speed_unit=mph`
 )
 
 let data=await res.json()
 
+let temp=data.current.temperature_2m
 let precip=data.current.precipitation
 let wind=data.current.wind_speed_10m
-let temp=data.current.temperature_2m
 
 document.getElementById("wind").innerText=Math.round(wind)+" mph"
 
-/* SNOW RATE */
+/* SNOW RATE DETECTION */
 
-if(temp<=34 && precip>0){
-document.getElementById("snowRate").innerText=precip+" in/hr"
+let hourlySnow=data.hourly.snowfall[0]
+
+if(temp<=34 && (precip>0 || hourlySnow>0)){
+document.getElementById("snowRate").innerText=hourlySnow.toFixed(2)+" in/hr"
 }else{
 document.getElementById("snowRate").innerText="No Snow"
 }
@@ -207,7 +208,7 @@ document.getElementById("snowRate").innerText="No Snow"
 
 let box=document.getElementById("blizzardStatus")
 
-if(wind>=35 && precip>=0.1 && temp<=34){
+if(wind>=35 && (precip>0 || hourlySnow>0) && temp<=34){
 
 box.innerHTML=`<div class="blizzard">⚠ Blizzard Conditions Possible</div>`
 
@@ -217,7 +218,7 @@ box.innerHTML=`<div class="safe">No Blizzard Conditions</div>`
 
 }
 
-/* SNOW TIMELINE */
+/* SNOW TOTAL + TIMELINE */
 
 let snow=data.hourly.snowfall
 let temps=data.hourly.temperature_2m
@@ -229,14 +230,13 @@ let peak=0
 let peakTime=null
 let total=0
 
-for(let i=0;i<snow.length;i++){
+for(let i=0;i<24;i++){
 
 if(temps[i]<=34 && snow[i]>0){
 
 if(start===null) start=i
 
 end=i
-
 total+=snow[i]
 
 if(snow[i]>peak){
@@ -257,8 +257,8 @@ let endTime=new Date(times[end]).toLocaleTimeString([], {hour:'numeric', minute:
 let peakT=new Date(times[peakTime]).toLocaleTimeString([], {hour:'numeric', minute:'2-digit'})
 
 document.getElementById("snowStart").innerText="Snow Start: "+startTime
-document.getElementById("snowEnd").innerText="Snow End: "+endTime
 document.getElementById("snowPeak").innerText="Heaviest Snow: "+peakT
+document.getElementById("snowEnd").innerText="Snow End: "+endTime
 
 }else{
 
