@@ -20,6 +20,23 @@ font-size:40px;
 font-weight:bold;
 }
 
+/* STORM MODE BANNER */
+
+.stormBanner{
+display:none;
+background:#7a0000;
+font-size:32px;
+font-weight:bold;
+padding:16px;
+animation:flash 1.5s infinite;
+}
+
+@keyframes flash{
+0%{opacity:1}
+50%{opacity:.4}
+100%{opacity:1}
+}
+
 /* TICKER */
 
 .tickerWrap{
@@ -101,6 +118,21 @@ font-size:30px;
 margin-top:6px;
 }
 
+/* RISK BOX */
+
+.riskBox{
+margin-top:20px;
+background:#0f172a;
+padding:20px;
+border-radius:10px;
+font-size:28px;
+font-weight:bold;
+}
+
+.low{background:#1f3b1f}
+.medium{background:#8a4b00}
+.high{background:#7a0000}
+
 /* WEATHER GRID */
 
 .weatherGrid{
@@ -124,10 +156,9 @@ opacity:.8;
 .weatherValue{
 font-size:52px;
 font-weight:bold;
-margin-top:6px;
 }
 
-/* ALERT COLORS */
+/* ALERTS */
 
 .card{
 background:#111;
@@ -156,6 +187,8 @@ text-align:left;
 
 <header>US Storm Alerts</header>
 
+<div id="stormBanner" class="stormBanner"></div>
+
 <div class="tickerWrap">
 <span id="ticker" class="ticker">Loading severe alerts across the US...</span>
 </div>
@@ -166,15 +199,19 @@ text-align:left;
 </div>
 
 <div class="section">
-<div id="lastUpdated" style="font-size:22px;">
-Last Updated: --
-</div>
+<div id="lastUpdated" style="font-size:22px;">Last Updated: --</div>
 </div>
 
 <div class="section">
+
 <div id="locationCard" class="locationCard">
 Detecting location...
 </div>
+
+<div id="riskLevel" class="riskBox low">
+Severe Weather Risk: LOW
+</div>
+
 </div>
 
 <div class="section">
@@ -302,7 +339,7 @@ wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
 
-/* LOCAL ALERTS */
+/* ALERTS */
 
 async function loadAlerts(){
 
@@ -310,15 +347,28 @@ let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
 let html=""
+let risk="low"
 
 data.features.forEach((alert,i)=>{
 
 let e=alert.properties.event
 let style="card"
 
-if(e.includes("Tornado"))style+=" tornado"
-else if(e.includes("Severe"))style+=" severe"
-else style+=" none"
+if(e.includes("Tornado Warning")){
+style+=" tornado"
+risk="high"
+showStormBanner("TORNADO WARNING")
+}
+
+else if(e.includes("Severe Thunderstorm Warning")){
+style+=" severe"
+if(risk!=="high") risk="medium"
+showStormBanner("SEVERE THUNDERSTORM WARNING")
+}
+
+else{
+style+=" none"
+}
 
 html+=`
 <div class="${style}" onclick="toggleAlert(${i})">
@@ -337,6 +387,8 @@ if(html==="")html='<div class="card none">No active alerts</div>'
 
 alerts.innerHTML=html
 
+updateRisk(risk)
+
 lastUpdated.innerText="Last Updated: "+new Date().toLocaleTimeString()
 
 }
@@ -344,11 +396,41 @@ lastUpdated.innerText="Last Updated: "+new Date().toLocaleTimeString()
 /* EXPAND ALERT */
 
 function toggleAlert(id){
-
 let el=document.getElementById("detail"+id)
+el.style.display=el.style.display==="block"?"none":"block"
+}
 
-el.style.display=
-el.style.display==="block"?"none":"block"
+/* RISK */
+
+function updateRisk(level){
+
+let box=document.getElementById("riskLevel")
+
+if(level==="high"){
+box.className="riskBox high"
+box.innerText="Severe Weather Risk: HIGH"
+}
+
+else if(level==="medium"){
+box.className="riskBox medium"
+box.innerText="Severe Weather Risk: MODERATE"
+}
+
+else{
+box.className="riskBox low"
+box.innerText="Severe Weather Risk: LOW"
+}
+
+}
+
+/* STORM BANNER */
+
+function showStormBanner(text){
+
+let banner=document.getElementById("stormBanner")
+
+banner.style.display="block"
+banner.innerText=text
 
 }
 
