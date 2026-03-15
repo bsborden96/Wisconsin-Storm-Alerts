@@ -15,20 +15,23 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
-padding:28px;
-font-size:38px;
+padding:24px;
+padding-left:110px;
+font-size:30px;
 font-weight:bold;
 }
 
-/* HAMBURGER MENU */
+/* MENU */
 
 .menuIcon{
 position:absolute;
-top:18px;
+top:16px;
 left:18px;
-font-size:52px;
+font-size:48px;
 cursor:pointer;
 z-index:10000;
 }
@@ -36,7 +39,7 @@ z-index:10000;
 .menuPanel{
 display:none;
 position:absolute;
-top:95px;
+top:80px;
 left:18px;
 background:#111827;
 border-radius:14px;
@@ -49,14 +52,9 @@ z-index:10000;
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
+font-size:26px;
+padding:14px;
 font-weight:bold;
-}
-
-.menuPanel a:hover{
-background:#1f2937;
-border-radius:8px;
 }
 
 /* SEARCH */
@@ -111,18 +109,23 @@ margin-top:20px;
 font-size:22px;
 }
 
-.storm{
+.tornado{
+background:#7a0000;
+padding:18px;
+margin-top:14px;
+border-radius:10px;
+}
+
+.severe{
 background:#8a4b00;
 padding:18px;
 margin-top:14px;
 border-radius:10px;
 }
 
-.tornado{
-background:#7a0000;
-padding:18px;
-margin-top:14px;
-border-radius:10px;
+.distance{
+font-size:28px;
+font-weight:bold;
 }
 
 </style>
@@ -206,24 +209,26 @@ suggestions.appendChild(div)
 
 })
 
-input.addEventListener("keydown",async(e)=>{
+/* DISTANCE CALCULATION */
 
-if(e.key==="Enter"){
+function distance(lat1,lon1,lat2,lon2){
 
-let q=input.value
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=1`)
-let data=await res.json()
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2)
 
-if(data.length>0){
-lat=parseFloat(data[0].lat)
-lon=parseFloat(data[0].lon)
-loadStorms()
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+
+let km=R*c
+
+return km*0.621371
+
 }
-
-}
-
-})
 
 /* LOAD STORMS */
 
@@ -233,46 +238,53 @@ let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let html=""
-let activeStorm=false
+let foundStorm=false
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
 
-if(event.includes("Severe Thunderstorm Warning") || event.includes("Tornado Warning")){
-activeStorm=true
-}
+if(!event.includes("Tornado Warning") && !event.includes("Severe Thunderstorm Warning")) return
 
-})
+let geo=alert.geometry
+if(!geo) return
 
-/* IF NO STORMS ANYWHERE */
+let coord=geo.coordinates[0][0]
 
-if(!activeStorm){
+let sLat=coord[1]
+let sLon=coord[0]
 
-document.getElementById("storms").innerHTML=
-'<div class="card">No severe storms currently active in the United States</div>'
+let miles=distance(lat,lon,sLat,sLon)
 
-return
-}
+if(miles<250){
 
-/* SHOW STORMS */
+foundStorm=true
 
-data.features.forEach(alert=>{
-
-let event=alert.properties.event
-
-if(!event.includes("Severe Thunderstorm") && !event.includes("Tornado")) return
-
-let style="storm"
-
+let style="severe"
 if(event.includes("Tornado")) style="tornado"
 
-html+=`<div class="${style}">${event}<br>${alert.properties.areaDesc}</div>`
+html+=`
+
+<div class="${style}">
+
+<b>${event}</b>
+
+<div class="distance">
+${Math.round(miles)} miles away
+</div>
+
+${alert.properties.areaDesc}
+
+</div>
+
+`
+
+}
 
 })
 
-if(html===""){
-html='<div class="card">No severe storms moving toward this location</div>'
+if(!foundStorm){
+html='<div class="card">No severe storms near this location</div>'
 }
 
 document.getElementById("storms").innerHTML=html
