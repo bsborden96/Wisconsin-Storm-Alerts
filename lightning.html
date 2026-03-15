@@ -5,10 +5,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-
 <style>
-
 body{
 margin:0;
 font-family:Arial;
@@ -24,6 +21,8 @@ padding-left:110px;
 font-size:28px;
 font-weight:bold;
 }
+
+/* MENU */
 
 .menuIcon{
 position:fixed;
@@ -60,6 +59,8 @@ background:#1f2937;
 border-radius:8px;
 }
 
+/* SEARCH */
+
 .searchBox{
 margin:20px auto;
 max-width:600px;
@@ -91,18 +92,22 @@ padding:10px;
 cursor:pointer;
 }
 
-#map{
-height:500px;
-margin:20px;
-border-radius:10px;
+.suggestions div:hover{
+background:#374151;
 }
 
-.card{
-background:#111827;
-padding:22px;
-border-radius:12px;
+/* MAP FRAME */
+
+.mapWrap{
 margin:20px;
-font-size:20px;
+border-radius:10px;
+overflow:hidden;
+}
+
+iframe{
+width:100%;
+height:520px;
+border:none;
 }
 
 </style>
@@ -126,11 +131,9 @@ font-size:20px;
 <div id="suggestions" class="suggestions"></div>
 </div>
 
-<div id="map"></div>
-
-<div id="message"></div>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<div class="mapWrap">
+<iframe id="lightningMap"></iframe>
+</div>
 
 <script>
 
@@ -139,51 +142,25 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
-let lat
-let lon
+let lat=39
+let lon=-95
 
-let map=L.map('map').setView([39,-95],5)
+/* LOAD MAP */
 
-/* BASE MAP */
+function loadMap(){
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-maxZoom:18
-}).addTo(map)
+let url=`https://www.lightningmaps.org/?lang=en#m=oss;t=3;s=0;o=0;b=0.00;ts=0;lat=${lat};lon=${lon};z=7;`
 
-/* LIGHTNING TILE LAYER */
+document.getElementById("lightningMap").src=url
 
-let lightningLayer=L.tileLayer(
-"https://tiles.lightningmaps.org/tiles/{z}/{x}/{y}.png",
-{
-opacity:0.9
-}).addTo(map)
+}
 
-/* AUTO REFRESH LIGHTNING */
-
-setInterval(()=>{
-map.removeLayer(lightningLayer)
-
-lightningLayer=L.tileLayer(
-"https://tiles.lightningmaps.org/tiles/{z}/{x}/{y}.png?"+Date.now(),
-{opacity:0.9}
-).addTo(map)
-
-},30000)
-
-let stormLayer=L.layerGroup().addTo(map)
-
-/* GET LOCATION */
+/* GET USER LOCATION */
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
-
-map.setView([lat,lon],8)
-
-L.marker([lat,lon]).addTo(map).bindPopup("Your Location")
-
-loadLightning()
-
+loadMap()
 })
 
 /* SEARCH */
@@ -200,7 +177,7 @@ suggestions.innerHTML=""
 return
 }
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=8`)
 let data=await res.json()
 
 suggestions.innerHTML=""
@@ -215,16 +192,10 @@ div.onclick=()=>{
 lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
 
-map.setView([lat,lon],8)
-
-stormLayer.clearLayers()
-
-L.marker([lat,lon]).addTo(map).bindPopup("Selected Location")
-
 input.value=place.display_name
 suggestions.innerHTML=""
 
-loadLightning()
+loadMap()
 
 }
 
@@ -234,90 +205,7 @@ suggestions.appendChild(div)
 
 })
 
-/* DISTANCE */
-
-function distance(lat1,lon1,lat2,lon2){
-
-let R=6371
-let dLat=(lat2-lat1)*Math.PI/180
-let dLon=(lon2-lon1)*Math.PI/180
-
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-let km=R*c
-
-return km*0.621371
-
-}
-
-/* LOAD STORMS */
-
-async function loadLightning(){
-
-stormLayer.clearLayers()
-
-let res=await fetch("https://api.weather.gov/alerts/active")
-let data=await res.json()
-
-let found=false
-
-data.features.forEach(alert=>{
-
-let event=alert.properties.event
-
-if(!event.includes("Severe Thunderstorm Warning")) return
-
-let geo=alert.geometry
-
-if(!geo) return
-
-let coord=geo.coordinates[0][0]
-
-let sLat=coord[1]
-let sLon=coord[0]
-
-let miles=distance(lat,lon,sLat,sLon)
-
-if(miles<200){
-
-found=true
-
-let polygon=L.polygon(
-geo.coordinates[0].map(c=>[c[1],c[0]]),
-{color:"orange"}
-)
-
-polygon.addTo(stormLayer)
-
-polygon.bindPopup(
-"<b>"+event+"</b><br>"+alert.properties.areaDesc+
-"<br>"+Math.round(miles)+" miles away"
-)
-
-}
-
-})
-
-if(!found){
-
-document.getElementById("message").innerHTML=
-'<div class="card">No lightning producing storms near this location</div>'
-
-}
-else{
-
-document.getElementById("message").innerHTML=""
-
-}
-
-}
-
-setInterval(loadLightning,60000)
+loadMap()
 
 </script>
 
