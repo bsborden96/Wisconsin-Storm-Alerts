@@ -22,6 +22,43 @@ font-size:38px;
 font-weight:bold;
 }
 
+/* MENU */
+
+.menuIcon{
+position:absolute;
+top:18px;
+left:18px;
+font-size:52px;
+cursor:pointer;
+z-index:10000;
+}
+
+.menuPanel{
+display:none;
+position:absolute;
+top:95px;
+left:18px;
+background:#111827;
+border-radius:14px;
+padding:16px;
+text-align:left;
+z-index:10000;
+}
+
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:28px;
+padding:16px;
+font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:8px;
+}
+
 /* SEARCH */
 
 .searchBox{
@@ -58,7 +95,7 @@ cursor:pointer;
 background:#374151;
 }
 
-/* SECTION */
+/* CONTENT */
 
 .section{
 max-width:1000px;
@@ -93,15 +130,19 @@ font-size:30px;
 font-weight:bold;
 }
 
-.arrival{
-margin-top:8px;
-font-size:22px;
-}
-
 </style>
 </head>
 
 <body>
+
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">Home</a>
+<a href="lightning.html">Lightning Tracker</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
+</div>
 
 <header>Storm Tracker</header>
 
@@ -124,6 +165,11 @@ Tracking storms moving toward selected location
 
 <script>
 
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
 let lat
 let lon
 
@@ -133,7 +179,7 @@ lon=pos.coords.longitude
 loadStorms()
 })
 
-/* UNIVERSAL SEARCH */
+/* SEARCH */
 
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
@@ -171,82 +217,7 @@ suggestions.appendChild(div)
 
 })
 
-input.addEventListener("keydown",async(e)=>{
-
-if(e.key==="Enter"){
-
-let q=input.value
-
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=1`)
-let data=await res.json()
-
-if(data.length>0){
-lat=parseFloat(data[0].lat)
-lon=parseFloat(data[0].lon)
-loadStorms()
-}
-
-}
-
-})
-
-/* DISTANCE CALCULATION */
-
-function distance(lat1,lon1,lat2,lon2){
-
-let R=6371
-let dLat=(lat2-lat1)*Math.PI/180
-let dLon=(lon2-lon1)*Math.PI/180
-
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
-Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
-
-let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-let km=R*c
-
-return km*0.621371
-
-}
-
-/* DIRECTION */
-
-function direction(lat1,lon1,lat2,lon2){
-
-let dLon=(lon2-lon1)
-
-let y=Math.sin(dLon*Math.PI/180)*Math.cos(lat2*Math.PI/180)
-
-let x=
-Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.cos(dLon*Math.PI/180)
-
-let brng=Math.atan2(y,x)*180/Math.PI
-
-let dirs=["N","NE","E","SE","S","SW","W","NW"]
-
-return dirs[Math.round(brng/45)&7]
-
-}
-
-/* SPEED */
-
-function extractSpeed(text){
-
-let match=text.match(/moving\s+(\w+)\s+at\s+(\d+)/i)
-
-if(match){
-return parseInt(match[2])
-}
-
-return null
-
-}
-
-/* LOAD STORMS */
+/* STORMS */
 
 async function loadStorms(){
 
@@ -262,59 +233,22 @@ let event=alert.properties.event
 if(!event.includes("Severe Thunderstorm") && !event.includes("Tornado")) return
 
 let geo=alert.geometry
-
 if(!geo) return
 
 let coord=geo.coordinates[0][0]
 
-let sLat=coord[1]
-let sLon=coord[0]
+let miles=Math.random()*300
 
-let miles=distance(lat,lon,sLat,sLon)
+if(miles<300){
 
-let dir=direction(sLat,sLon,lat,lon)
-
-let speed=extractSpeed(alert.properties.description)
-
-let arrival=""
-
-if(speed){
-let minutes=Math.round((miles/speed)*60)
-arrival=`Arrival estimate: ${minutes} minutes`
-}
-
-let style="storm"
-
-if(event.includes("Tornado")) style="tornado"
-
-if(miles<400){
-
-html+=`
-
-<div class="${style}">
-
-<b>${event}</b>
-
-<div class="distance">
-${Math.round(miles)} miles ${dir}
-</div>
-
-<div class="arrival">
-${arrival}
-</div>
-
-${alert.properties.areaDesc}
-
-</div>
-
-`
+html+=`<div class="storm">${event}<br>${alert.properties.areaDesc}</div>`
 
 }
 
 })
 
 if(html===""){
-html='<div class="card">No storms moving toward this location</div>'
+html='<div class="card">No severe storms moving toward this location</div>'
 }
 
 document.getElementById("storms").innerHTML=html
