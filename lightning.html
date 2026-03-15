@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Lightning Tracker</title>
+
+<style>
+
+body{
+margin:0;
+font-family:Arial;
+background:#0a0f1c;
+color:white;
+text-align:center;
+}
+
+header{
+background:#151c2c;
+padding:28px;
+font-size:38px;
+font-weight:bold;
+}
+
+.section{
+max-width:1000px;
+margin:auto;
+padding:30px;
+}
+
+.card{
+background:#111827;
+padding:24px;
+border-radius:12px;
+margin-top:20px;
+font-size:22px;
+}
+
+.strike{
+background:#8a4b00;
+margin-top:14px;
+padding:16px;
+border-radius:10px;
+}
+
+.distance{
+font-size:26px;
+font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>Lightning Tracker</header>
+
+<div class="section">
+
+<div class="card">
+Tracking lightning near your location...
+</div>
+
+<div id="strikes"></div>
+
+</div>
+
+<script>
+
+let lat
+let lon
+
+navigator.geolocation.getCurrentPosition(pos=>{
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+loadLightning()
+})
+
+function getDistance(lat1,lon1,lat2,lon2){
+
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)*Math.sin(dLon/2)
+
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+
+let km=R*c
+return km*0.621371
+
+}
+
+function getDirection(lat1,lon1,lat2,lon2){
+
+let dLon=(lon2-lon1)
+
+let y=Math.sin(dLon*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+
+let x=
+Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
+Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.cos(dLon*Math.PI/180)
+
+let brng=Math.atan2(y,x)*180/Math.PI
+
+let dirs=["N","NE","E","SE","S","SW","W","NW"]
+
+return dirs[Math.round(brng/45)&7]
+
+}
+
+async function loadLightning(){
+
+let res=await fetch("https://data.blitzortung.org/live_lightning.json")
+
+let data=await res.json()
+
+let html=""
+
+data.slice(0,40).forEach(strike=>{
+
+let sLat=strike[1]
+let sLon=strike[2]
+
+let miles=getDistance(lat,lon,sLat,sLon)
+
+if(miles<100){
+
+let dir=getDirection(lat,lon,sLat,sLon)
+
+html+=`
+<div class="strike">
+
+⚡ Lightning Strike
+
+<div class="distance">
+${Math.round(miles)} miles ${dir}
+</div>
+
+</div>
+`
+
+}
+
+})
+
+if(html===""){
+html='<div class="card">No lightning detected within 100 miles</div>'
+}
+
+document.getElementById("strikes").innerHTML=html
+
+}
+
+setInterval(loadLightning,30000)
+
+</script>
+
+</body>
+</html>
