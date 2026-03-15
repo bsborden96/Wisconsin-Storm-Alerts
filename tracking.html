@@ -22,6 +22,46 @@ font-size:38px;
 font-weight:bold;
 }
 
+/* HAMBURGER MENU */
+
+.menuIcon{
+position:absolute;
+top:18px;
+left:18px;
+font-size:52px;
+cursor:pointer;
+z-index:10000;
+}
+
+.menuPanel{
+display:none;
+position:absolute;
+top:95px;
+left:18px;
+background:#111827;
+border-radius:14px;
+padding:16px;
+text-align:left;
+z-index:10000;
+box-shadow:0 10px 30px rgba(0,0,0,.6);
+}
+
+.menuPanel a{
+display:block;
+color:white;
+text-decoration:none;
+font-size:30px;
+padding:18px 22px;
+font-weight:bold;
+}
+
+.menuPanel a:hover{
+background:#1f2937;
+border-radius:10px;
+}
+
+/* PAGE CONTENT */
+
 .section{
 max-width:1000px;
 margin:auto;
@@ -65,6 +105,14 @@ font-size:22px;
 
 <body>
 
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">🏠 Home</a>
+<a href="lightning.html">⚡ Lightning Tracker</a>
+<a href="tracking.html">🌩 Storm Tracker</a>
+</div>
+
 <header>Storm Tracker</header>
 
 <div class="section">
@@ -80,6 +128,11 @@ Tracking storms moving toward your location
 </div>
 
 <script>
+
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
 
 let lat
 let lon
