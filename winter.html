@@ -75,8 +75,8 @@ margin-top:20px;
 font-size:26px;
 }
 
-.bigValue{
-font-size:48px;
+.big{
+font-size:46px;
 font-weight:bold;
 margin-top:10px;
 }
@@ -137,28 +137,33 @@ font-size:28px;
 
 <div class="card">
 Current Weather
-<div id="weather" class="bigValue">Loading...</div>
+<div id="weather" class="big">Loading...</div>
+</div>
+
+<div class="card">
+Temperature
+<div id="temp" class="big">--</div>
 </div>
 
 <div class="card">
 Wind
-<div id="wind" class="bigValue">--</div>
+<div id="wind" class="big">--</div>
 </div>
 
 <div class="card">
 Visibility
-<div id="visibility" class="bigValue">--</div>
+<div id="vis" class="big">--</div>
 </div>
 
-<div id="blizzardStatus"></div>
+<div id="blizzard"></div>
 
 <div class="timeline">
 
 <h2>Snow Timeline</h2>
 
-<div id="snowStart">Checking forecast...</div>
-<div id="snowPeak"></div>
-<div id="snowEnd"></div>
+<div id="start">Checking forecast...</div>
+<div id="peak"></div>
+<div id="end"></div>
 
 </div>
 
@@ -167,8 +172,8 @@ Visibility
 <script>
 
 function toggleMenu(){
-let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
+let p=document.getElementById("menuPanel")
+p.style.display=(p.style.display==="block")?"none":"block"
 }
 
 let lat
@@ -182,98 +187,108 @@ loadWinter()
 
 async function loadWinter(){
 
-/* GET GRID INFO */
+/* GET NWS GRID */
 
-let pointRes = await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let pointData = await pointRes.json()
+let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let grid=await p.json()
 
-let stationsUrl = pointData.properties.observationStations
-let forecastUrl = pointData.properties.forecastHourly
+let stations=grid.properties.observationStations
+let forecast=grid.properties.forecastHourly
 
-/* GET NEAREST STATION */
+/* GET STATION */
 
-let stationRes = await fetch(stationsUrl)
-let stationData = await stationRes.json()
+let s=await fetch(stations)
+let stationData=await s.json()
 
-let station = stationData.features[0].properties.stationIdentifier
+let station=stationData.features[0].properties.stationIdentifier
 
-/* GET CURRENT OBSERVATION */
+/* GET OBS */
 
-let obsRes = await fetch(`https://api.weather.gov/stations/${station}/observations/latest`)
-let obsData = await obsRes.json()
+let obs=await fetch(`https://api.weather.gov/stations/${station}/observations/latest`)
+let data=await obs.json()
 
-let weatherText = obsData.properties.textDescription
-document.getElementById("weather").innerText = weatherText
+let weather=data.properties.textDescription
+
+document.getElementById("weather").innerText=weather
+
+/* TEMP */
+
+let temp=data.properties.temperature.value
+if(temp){
+temp=(temp*9/5)+32
+document.getElementById("temp").innerText=Math.round(temp)+"°F"
+}
 
 /* WIND */
 
-let wind = obsData.properties.windSpeed.value
+let wind=data.properties.windSpeed.value
 if(wind){
-wind = Math.round(wind * 2.237)
-document.getElementById("wind").innerText = wind + " mph"
+wind=Math.round(wind*2.237)
+document.getElementById("wind").innerText=wind+" mph"
 }
 
 /* VISIBILITY */
 
-let visibility = obsData.properties.visibility.value
-if(visibility){
-visibility = (visibility / 1609.34).toFixed(2)
-document.getElementById("visibility").innerText = visibility + " mi"
+let vis=data.properties.visibility.value
+if(vis){
+vis=(vis/1609.34).toFixed(2)
+document.getElementById("vis").innerText=vis+" mi"
 }
 
 /* BLIZZARD CHECK */
 
-if(wind >= 35 && visibility <= 0.25 && weatherText.toLowerCase().includes("snow")){
+if(wind>=35 && vis<=0.25 && weather.toLowerCase().includes("snow")){
 
-document.getElementById("blizzardStatus").innerHTML =
-`<div class="blizzard">⚠ Blizzard Conditions Possible</div>`
+document.getElementById("blizzard").innerHTML=
+'<div class="blizzard">⚠ Blizzard Conditions Possible</div>'
 
 }else{
 
-document.getElementById("blizzardStatus").innerHTML =
-`<div class="safe">No Blizzard Conditions</div>`
+document.getElementById("blizzard").innerHTML=
+'<div class="safe">No Blizzard Conditions</div>'
 
 }
 
 /* FORECAST TIMELINE */
 
-let forecastRes = await fetch(forecastUrl)
-let forecastData = await forecastRes.json()
+let f=await fetch(forecast)
+let fdata=await f.json()
 
-let periods = forecastData.properties.periods
+let periods=fdata.properties.periods
 
-let start = null
-let peak = null
-let end = null
+let start=null
+let end=null
+let peak=null
 
 periods.forEach(p=>{
 
-let text = p.shortForecast.toLowerCase()
+let text=p.shortForecast.toLowerCase()
 
 if(text.includes("snow")){
 
-if(start === null) start = p.startTime
-end = p.endTime
+if(start===null) start=p.startTime
 
-if(!peak) peak = p.startTime
+end=p.endTime
+
+if(!peak) peak=p.startTime
 
 }
 
 })
 
 if(start){
-document.getElementById("snowStart").innerText =
-"Snow Start: " + new Date(start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+document.getElementById("start").innerText=
+"Snow Start: "+new Date(start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
 }
 
 if(peak){
-document.getElementById("snowPeak").innerText =
-"Heaviest Snow: " + new Date(peak).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+document.getElementById("peak").innerText=
+"Heaviest Snow: "+new Date(peak).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
 }
 
 if(end){
-document.getElementById("snowEnd").innerText =
-"Snow End: " + new Date(end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+document.getElementById("end").innerText=
+"Snow End: "+new Date(end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
 }
 
 }
