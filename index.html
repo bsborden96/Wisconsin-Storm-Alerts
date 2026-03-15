@@ -88,6 +88,7 @@ padding:12px 0;
 display:inline-block;
 white-space:nowrap;
 font-size:22px;
+min-width:100%;
 animation:scrollTicker 60s linear infinite;
 }
 
@@ -321,15 +322,11 @@ Severe Weather Risk: LOW
 
 <h2 style="font-size:34px;">Storm Tools</h2>
 
-<a href="lightning.html" class="toolButton">
-⚡ Lightning Tracker
-</a>
+<a href="lightning.html" class="toolButton">⚡ Lightning Tracker</a>
 
 <br>
 
-<a href="tracking.html" class="toolButton">
-🌩 Storm Tracker
-</a>
+<a href="tracking.html" class="toolButton">🌩 Storm Tracker</a>
 
 </div>
 
@@ -349,41 +346,6 @@ lon=pos.coords.longitude
 loadLocation()
 loadWeather()
 loadAlerts()
-})
-
-let input=document.getElementById("searchInput")
-let box=document.getElementById("suggestions")
-
-input.addEventListener("input",async()=>{
-
-let q=input.value
-if(q.length<2){box.innerHTML="";return}
-
-let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=5`)
-let data=await res.json()
-
-box.innerHTML=""
-
-if(!data.results) return
-
-data.results.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=`${place.name}, ${place.admin1}`
-
-div.onclick=()=>{
-lat=place.latitude
-lon=place.longitude
-box.innerHTML=""
-loadLocation()
-loadWeather()
-loadAlerts()
-}
-
-box.appendChild(div)
-
-})
-
 })
 
 async function loadLocation(){
@@ -504,6 +466,8 @@ banner.innerText=text
 
 }
 
+/* FIXED TICKER */
+
 async function loadTicker(){
 
 let res=await fetch(`https://api.weather.gov/alerts/active`)
@@ -513,18 +477,36 @@ let text=""
 let count=0
 
 data.features.forEach(a=>{
+
 let e=a.properties.event
-if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
+
+if(
+e.includes("Tornado Warning")||
+e.includes("Severe Thunderstorm Warning")||
+e.includes("Tornado Watch")||
+e.includes("Severe Thunderstorm Watch")
+){
+
 text+=`⚠ ${e} — ${a.properties.areaDesc} • `
 count++
+
 }
+
 })
 
 if(count===0){
-text="No active tornado or severe thunderstorm warnings in the United States"
+text="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-ticker.innerText=text
+let tickerText=text+text+text
+
+let ticker=document.getElementById("ticker")
+
+ticker.innerText=tickerText
+
+ticker.style.animation="none"
+ticker.offsetHeight
+ticker.style.animation="scrollTicker 60s linear infinite"
 
 }
 
