@@ -233,6 +233,13 @@ font-size:22px;
 .severe{background:#8a4b00}
 .none{background:#1f3b1f}
 
+.alertDetails{
+display:none;
+margin-top:10px;
+font-size:18px;
+text-align:left;
+}
+
 </style>
 </head>
 
@@ -331,7 +338,41 @@ Wind
 
 <script>
 
-/* SEARCH — FULL US LOCATIONS */
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
+let tornadoActive=false
+
+function showTornado(){
+if(tornadoActive) return
+tornadoActive=true
+document.getElementById("tornadoPopup").style.display="flex"
+if(navigator.vibrate){
+navigator.vibrate([400,200,400,200,400])
+}
+}
+
+function closeTornado(){
+tornadoActive=false
+document.getElementById("tornadoPopup").style.display="none"
+}
+
+let lat
+let lon
+
+navigator.geolocation.getCurrentPosition(pos=>{
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+refreshAll()
+})
+
+function refreshAll(){
+loadLocation()
+loadWeather()
+loadAlerts()
+}
 
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
@@ -369,3 +410,151 @@ suggestions.appendChild(div)
 })
 
 })
+
+async function loadLocation(){
+
+let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let pointData=await point.json()
+
+let city=pointData.properties.relativeLocation.properties.city
+let state=pointData.properties.relativeLocation.properties.state
+
+let countyRes=await fetch(pointData.properties.county)
+let countyData=await countyRes.json()
+
+let county=countyData.properties.name
+
+document.getElementById("locationCard").innerHTML=
+`<div class="countyName">${county} County</div>
+<div class="cityName">${city}, ${state}</div>`
+
+}
+
+async function loadWeather(){
+
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let data=await res.json()
+
+let c=data.current
+
+temp.innerText=Math.round(c.temperature_2m)+"°F"
+dew.innerText=Math.round(c.dewpoint_2m)+"°F"
+humidity.innerText=c.relative_humidity_2m+"%"
+wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+
+}
+
+async function loadAlerts(){
+
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let data=await res.json()
+
+let html=""
+let risk="low"
+
+data.features.forEach((alert,i)=>{
+
+let e=alert.properties.event
+let style="card"
+
+if(e.includes("Tornado")){
+style+=" tornado"
+risk="high"
+showTornado()
+}
+else if(e.includes("Severe Thunderstorm Warning")){
+style+=" severe"
+if(risk!=="high") risk="medium"
+}
+else{
+style+=" none"
+}
+
+html+=`
+<div class="${style}" onclick="toggleAlert(${i})">
+<b>${e}</b><br>${alert.properties.areaDesc}
+<div id="detail${i}" class="alertDetails">
+${alert.properties.description}
+</div>
+</div>
+`
+
+})
+
+if(html===""){
+html='<div class="card none">No active alerts for this location</div>'
+}
+
+alerts.innerHTML=html
+updateRisk(risk)
+
+}
+
+function toggleAlert(id){
+let el=document.getElementById("detail"+id)
+el.style.display=(el.style.display==="block")?"none":"block"
+}
+
+function updateRisk(level){
+
+let box=document.getElementById("riskLevel")
+
+if(level==="high"){
+box.className="riskBox high"
+box.innerText="Severe Weather Risk: HIGH"
+}
+else if(level==="medium"){
+box.className="riskBox medium"
+box.innerText="Severe Weather Risk: MODERATE"
+}
+else{
+box.className="riskBox low"
+box.innerText="Severe Weather Risk: LOW"
+}
+
+}
+
+async function loadTicker(){
+
+let res=await fetch("https://api.weather.gov/alerts/active")
+let data=await res.json()
+
+let emergency=[]
+let warning=[]
+let watch=[]
+let severe=[]
+
+data.features.forEach(a=>{
+
+let e=a.properties.event
+let text=`⚠ ${e} — ${a.properties.areaDesc}`
+
+if(e.includes("Tornado Emergency")) emergency.push(text)
+else if(e.includes("Tornado Warning")) warning.push(text)
+else if(e.includes("Tornado Watch")) watch.push(text)
+else if(e.includes("Severe Thunderstorm Warning")) severe.push(text)
+
+})
+
+let ordered=[...emergency,...warning,...watch,...severe]
+
+let tickerText=""
+
+ordered.forEach(a=>{
+tickerText+=a+" • "
+})
+
+if(tickerText===""){
+tickerText="No active tornado or severe thunderstorm alerts across the United States • "
+}
+
+ticker.innerText=tickerText
+
+}
+
+loadTicker()
+
+</script>
+
+</body>
+</html>
