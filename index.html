@@ -103,11 +103,6 @@ padding:16px;
 font-weight:bold;
 }
 
-.menuPanel a:hover{
-background:#1f2937;
-border-radius:8px;
-}
-
 /* TICKER */
 
 .tickerWrap{
@@ -123,7 +118,7 @@ white-space:nowrap;
 font-size:22px;
 position:relative;
 left:100%;
-animation:scrollTicker 40s linear infinite;
+animation:scrollTicker 30s linear infinite;
 }
 
 @keyframes scrollTicker{
@@ -151,7 +146,6 @@ border:none;
 position:absolute;
 background:#1f2937;
 width:100%;
-text-align:left;
 border-radius:8px;
 max-height:260px;
 overflow-y:auto;
@@ -161,10 +155,6 @@ font-size:20px;
 .suggestions div{
 padding:12px;
 cursor:pointer;
-}
-
-.suggestions div:hover{
-background:#374151;
 }
 
 /* LAYOUT */
@@ -190,7 +180,7 @@ font-weight:bold;
 font-size:30px;
 }
 
-/* RISK BOX */
+/* RISK */
 
 .riskBox{
 margin-top:20px;
@@ -251,10 +241,6 @@ text-align:left;
 
 <body>
 
-<audio id="tornadoSiren">
-<source src="https://www.soundjay.com/misc/sounds/tornado-siren-01.mp3" type="audio/mpeg">
-</audio>
-
 <div id="tornadoPopup" class="tornadoPopup">
 <div class="tornadoBox">
 
@@ -266,8 +252,7 @@ text-align:left;
 Seek shelter immediately.<br><br>
 Go to an interior room on the lowest floor of a sturdy building.<br>
 Stay away from windows.<br>
-Protect your head and neck.<br><br>
-If you are in a mobile home or vehicle, move to stronger shelter now.
+Protect your head and neck.
 </div>
 
 <button class="closeBtn" onclick="closeTornado()">Dismiss</button>
@@ -357,24 +342,17 @@ function showTornado(){
 if(tornadoActive) return
 
 tornadoActive=true
-
 document.getElementById("tornadoPopup").style.display="flex"
 
-let siren=document.getElementById("tornadoSiren")
-siren.currentTime=0
-siren.play().catch(()=>{})
+if(navigator.vibrate){
+navigator.vibrate([400,200,400,200,400])
+}
 
 }
 
 function closeTornado(){
-
 tornadoActive=false
-
 document.getElementById("tornadoPopup").style.display="none"
-
-let siren=document.getElementById("tornadoSiren")
-siren.pause()
-
 }
 
 /* LOCATION */
@@ -394,40 +372,6 @@ loadLocation()
 loadWeather()
 loadAlerts()
 }
-
-/* SEARCH */
-
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-
-input.addEventListener("input",async()=>{
-
-let q=input.value
-if(q.length<2){suggestions.innerHTML="";return}
-
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
-suggestions.innerHTML=""
-refreshAll()
-}
-
-suggestions.appendChild(div)
-
-})
-
-})
 
 /* LOCATION DATA */
 
@@ -496,14 +440,9 @@ style+=" severe"
 if(risk!=="high") risk="medium"
 }
 
-else{
-style+=" none"
-}
-
 html+=`
-<div class="${style}" onclick="toggleAlert(${i})">
+<div class="${style}">
 <b>${e}</b><br>${alert.properties.areaDesc}
-<div id="detail${i}" class="alertDetail">${alert.properties.description}</div>
 </div>
 `
 
@@ -518,14 +457,7 @@ updateRisk(risk)
 
 }
 
-/* CHECK EVERY 30 SECONDS */
-
-setInterval(loadAlerts,30000)
-
-function toggleAlert(i){
-let el=document.getElementById("detail"+i)
-el.style.display=(el.style.display==="block")?"none":"block"
-}
+/* RISK LEVEL */
 
 function updateRisk(level){
 
@@ -546,27 +478,43 @@ box.innerText="Severe Weather Risk: LOW"
 
 }
 
-/* NATIONAL TICKER */
+/* NATIONAL TICKER WITH PRIORITY */
 
 async function loadTicker(){
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let text=""
+let emergency=[]
+let warn=[]
+let watch=[]
+let severe=[]
 
 data.features.forEach(a=>{
+
 let e=a.properties.event
-if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
-text+=`⚠ ${e} — ${a.properties.areaDesc} • `
-}
+let text=`⚠ ${e} — ${a.properties.areaDesc}`
+
+if(e.includes("Tornado Emergency")) emergency.push(text)
+else if(e.includes("Tornado Warning")) warn.push(text)
+else if(e.includes("Tornado Watch")) watch.push(text)
+else if(e.includes("Severe Thunderstorm Warning")) severe.push(text)
+
 })
 
-if(text===""){
-text="No active tornado or severe thunderstorm alerts across the United States • "
+let sorted=[...emergency,...warn,...watch,...severe]
+
+let tickerText=""
+
+sorted.forEach(a=>{
+tickerText+=a+" • "
+})
+
+if(tickerText===""){
+tickerText="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-document.getElementById("ticker").innerText=text
+document.getElementById("ticker").innerText=tickerText
 
 }
 
