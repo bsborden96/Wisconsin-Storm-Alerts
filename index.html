@@ -157,6 +157,10 @@ padding:12px;
 cursor:pointer;
 }
 
+.suggestions div:hover{
+background:#374151;
+}
+
 /* LAYOUT */
 
 .section{
@@ -373,6 +377,55 @@ loadWeather()
 loadAlerts()
 }
 
+/* IMPROVED US SEARCH */
+
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+
+input.addEventListener("input",async()=>{
+
+let q=input.value
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+let res=await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${q}&count=20&country=US`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+if(!data.results) return
+
+data.results.forEach(place=>{
+
+let div=document.createElement("div")
+
+let label=`${place.name}`
+
+if(place.admin1) label+=`, ${place.admin1}`
+
+div.innerText=label
+
+div.onclick=()=>{
+
+lat=place.latitude
+lon=place.longitude
+
+input.value=label
+suggestions.innerHTML=""
+
+refreshAll()
+
+}
+
+suggestions.appendChild(div)
+
+})
+
+})
+
 /* LOCATION DATA */
 
 async function loadLocation(){
@@ -457,7 +510,7 @@ updateRisk(risk)
 
 }
 
-/* RISK LEVEL */
+/* RISK */
 
 function updateRisk(level){
 
@@ -478,7 +531,7 @@ box.innerText="Severe Weather Risk: LOW"
 
 }
 
-/* NATIONAL TICKER WITH PRIORITY */
+/* NATIONAL TICKER */
 
 async function loadTicker(){
 
