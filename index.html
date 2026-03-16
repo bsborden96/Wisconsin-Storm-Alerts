@@ -3,6 +3,10 @@
 <head>
 <title>US Storm Alerts</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
 <style>
 
 body{
@@ -13,14 +17,7 @@ color:white;
 text-align:center;
 }
 
-header{
-background:#151c2c;
-padding:32px;
-font-size:40px;
-font-weight:bold;
-}
-
-/* TORNADO ALERT POPUP */
+/* POPUP */
 
 .tornadoPopup{
 display:none;
@@ -29,7 +26,7 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,.85);
+background:rgba(0,0,0,.9);
 z-index:20000;
 align-items:center;
 justify-content:center;
@@ -40,35 +37,40 @@ background:#7a0000;
 padding:40px;
 border-radius:14px;
 max-width:520px;
-animation:flashAlert 1s infinite;
+animation:flash 1s infinite;
 }
 
-@keyframes flashAlert{
+@keyframes flash{
 0%{opacity:1}
-50%{opacity:.6}
+50%{opacity:.5}
 100%{opacity:1}
 }
 
-.tornadoTitle{
-font-size:36px;
-font-weight:bold;
-margin-bottom:20px;
-}
-
-.tornadoText{
-font-size:22px;
-line-height:1.6;
-}
-
 .closeBtn{
-margin-top:25px;
+margin-top:20px;
 padding:12px 20px;
-font-size:18px;
 border:none;
 background:black;
 color:white;
-border-radius:8px;
+border-radius:6px;
 cursor:pointer;
+}
+
+/* MAP */
+
+#warningMap{
+height:300px;
+margin-top:20px;
+border-radius:10px;
+}
+
+/* HEADER */
+
+header{
+background:#151c2c;
+padding:32px;
+font-size:40px;
+font-weight:bold;
 }
 
 /* MENU */
@@ -90,7 +92,6 @@ left:18px;
 background:#111827;
 border-radius:14px;
 padding:16px;
-text-align:left;
 z-index:10000;
 }
 
@@ -98,14 +99,8 @@ z-index:10000;
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
-font-weight:bold;
-}
-
-.menuPanel a:hover{
-background:#1f2937;
-border-radius:8px;
+font-size:26px;
+padding:14px;
 }
 
 /* TICKER */
@@ -119,7 +114,6 @@ padding:12px 0;
 
 .ticker{
 display:inline-block;
-white-space:nowrap;
 font-size:22px;
 position:relative;
 left:100%;
@@ -151,11 +145,9 @@ border:none;
 position:absolute;
 background:#1f2937;
 width:100%;
-text-align:left;
 border-radius:8px;
 max-height:260px;
 overflow-y:auto;
-font-size:20px;
 }
 
 .suggestions div{
@@ -163,11 +155,7 @@ padding:12px;
 cursor:pointer;
 }
 
-.suggestions div:hover{
-background:#374151;
-}
-
-/* LAYOUT */
+/* SECTION */
 
 .section{
 max-width:1000px;
@@ -182,27 +170,13 @@ border-radius:14px;
 }
 
 .countyName{
-font-size:52px;
+font-size:48px;
 font-weight:bold;
 }
 
 .cityName{
-font-size:30px;
-}
-
-/* RISK BOX */
-
-.riskBox{
-margin-top:20px;
-padding:20px;
-border-radius:10px;
 font-size:28px;
-font-weight:bold;
 }
-
-.low{background:#1f3b1f}
-.medium{background:#8a4b00}
-.high{background:#7a0000}
 
 /* WEATHER */
 
@@ -220,18 +194,17 @@ border-radius:12px;
 }
 
 .weatherValue{
-font-size:48px;
+font-size:46px;
 font-weight:bold;
 }
 
-/* ALERTS */
+/* ALERT */
 
 .card{
 background:#111;
 padding:22px;
 margin-top:16px;
 border-radius:12px;
-cursor:pointer;
 font-size:22px;
 }
 
@@ -239,40 +212,28 @@ font-size:22px;
 .severe{background:#8a4b00}
 .none{background:#1f3b1f}
 
-.alertDetail{
-display:none;
-margin-top:10px;
-font-size:18px;
-text-align:left;
-}
-
 </style>
 </head>
 
 <body>
 
-<audio id="tornadoSiren">
-<source src="https://www.soundjay.com/misc/sounds/tornado-siren-01.mp3" type="audio/mpeg">
-</audio>
-
 <div id="tornadoPopup" class="tornadoPopup">
+
 <div class="tornadoBox">
 
-<div class="tornadoTitle">
-🚨 TORNADO WARNING 🚨
-</div>
+<h2 id="alertTitle">TORNADO WARNING</h2>
 
-<div class="tornadoText">
-Seek shelter immediately.<br><br>
-Go to an interior room on the lowest floor of a sturdy building.<br>
-Stay away from windows.<br>
-Protect your head and neck.<br><br>
-If you are in a mobile home or vehicle, move to stronger shelter now.
-</div>
+<p id="alertText">
+Seek shelter immediately in an interior room on the lowest floor of a sturdy building.
+Stay away from windows.
+</p>
 
-<button class="closeBtn" onclick="closeTornado()">Dismiss</button>
+<div id="warningMap"></div>
+
+<button class="closeBtn" onclick="closeAlert()">Dismiss</button>
 
 </div>
+
 </div>
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
@@ -290,7 +251,7 @@ If you are in a mobile home or vehicle, move to stronger shelter now.
 </div>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city or town">
+<input id="searchInput" placeholder="Search any US city">
 <div id="suggestions" class="suggestions"></div>
 </div>
 
@@ -298,10 +259,6 @@ If you are in a mobile home or vehicle, move to stronger shelter now.
 
 <div id="locationCard" class="locationCard">
 Detecting location...
-</div>
-
-<div id="riskLevel" class="riskBox low">
-Severe Weather Risk: LOW
 </div>
 
 </div>
@@ -337,51 +294,18 @@ Wind
 </div>
 
 <div class="section">
-
 <h2>Active Alerts</h2>
-<div id="alerts">Loading alerts...</div>
-
+<div id="alerts"></div>
 </div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
 
-function toggleMenu(){
-let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
-}
-
-let tornadoActive=false
-
-function showTornado(){
-
-if(tornadoActive) return
-
-tornadoActive=true
-
-document.getElementById("tornadoPopup").style.display="flex"
-
-let siren=document.getElementById("tornadoSiren")
-siren.currentTime=0
-siren.play().catch(()=>{})
-
-}
-
-function closeTornado(){
-
-tornadoActive=false
-
-document.getElementById("tornadoPopup").style.display="none"
-
-let siren=document.getElementById("tornadoSiren")
-siren.pause()
-
-}
-
-/* LOCATION */
-
 let lat
 let lon
-let countyZone=""
+let countyZone
+let alertMap
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
@@ -389,65 +313,86 @@ lon=pos.coords.longitude
 refreshAll()
 })
 
+function toggleMenu(){
+let p=document.getElementById("menuPanel")
+p.style.display=p.style.display==="block"?"none":"block"
+}
+
 function refreshAll(){
 loadLocation()
 loadWeather()
 loadAlerts()
 }
 
-/* SEARCH */
+/* POPUP */
 
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
+function showAlert(type,geometry){
 
-input.addEventListener("input",async()=>{
+let popup=document.getElementById("tornadoPopup")
 
-let q=input.value
-if(q.length<2){suggestions.innerHTML="";return}
+popup.style.display="flex"
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
-suggestions.innerHTML=""
-refreshAll()
+if(navigator.vibrate){
+navigator.vibrate([500,200,500,200,500])
 }
 
-suggestions.appendChild(div)
+if(type.includes("Emergency")){
+document.getElementById("alertTitle").innerText="TORNADO EMERGENCY"
+document.getElementById("alertText").innerText=
+"Life threatening tornado. Take shelter immediately in a basement or interior room."
+}
+else{
+document.getElementById("alertTitle").innerText="TORNADO WARNING"
+}
 
-})
+setTimeout(()=>{
 
-})
+if(alertMap){
+alertMap.remove()
+}
 
-/* LOCATION DATA */
+alertMap=L.map("warningMap").setView([lat,lon],8)
+
+L.tileLayer(
+'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+).addTo(alertMap)
+
+L.marker([lat,lon]).addTo(alertMap)
+
+if(geometry){
+let poly=L.polygon(
+geometry.coordinates[0].map(c=>[c[1],c[0]]),
+{color:"red"}
+).addTo(alertMap)
+
+alertMap.fitBounds(poly.getBounds())
+}
+
+},200)
+
+}
+
+function closeAlert(){
+document.getElementById("tornadoPopup").style.display="none"
+}
+
+/* LOCATION */
 
 async function loadLocation(){
 
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let pointData=await point.json()
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
 
-let city=pointData.properties.relativeLocation.properties.city
-let state=pointData.properties.relativeLocation.properties.state
+let city=data.properties.relativeLocation.properties.city
+let state=data.properties.relativeLocation.properties.state
 
-let countyRes=await fetch(pointData.properties.county)
+let countyRes=await fetch(data.properties.county)
 let countyData=await countyRes.json()
-
-let county=countyData.properties.name
 
 countyZone=countyData.properties.id.split("/").pop()
 
 document.getElementById("locationCard").innerHTML=
-`<div class="countyName">${county} County</div>
+`<div class="countyName">${countyData.properties.name} County</div>
 <div class="cityName">${city}, ${state}</div>`
 
 }
@@ -456,9 +401,11 @@ document.getElementById("locationCard").innerHTML=
 
 async function loadWeather(){
 
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
-let data=await res.json()
+let res=await fetch(
+`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`
+)
 
+let data=await res.json()
 let c=data.current
 
 temp.innerText=Math.round(c.temperature_2m)+"°F"
@@ -478,34 +425,16 @@ let res=await fetch(`https://api.weather.gov/alerts/active?zone=${countyZone}`)
 let data=await res.json()
 
 let html=""
-let risk="low"
 
-data.features.forEach((alert,i)=>{
+data.features.forEach(alert=>{
 
 let e=alert.properties.event
-let style="card"
 
 if(e.includes("Tornado")){
-style+=" tornado"
-risk="high"
-showTornado()
+showAlert(e,alert.geometry)
 }
 
-else if(e.includes("Severe Thunderstorm Warning")){
-style+=" severe"
-if(risk!=="high") risk="medium"
-}
-
-else{
-style+=" none"
-}
-
-html+=`
-<div class="${style}" onclick="toggleAlert(${i})">
-<b>${e}</b><br>${alert.properties.areaDesc}
-<div id="detail${i}" class="alertDetail">${alert.properties.description}</div>
-</div>
-`
+html+=`<div class="card">${e}<br>${alert.properties.areaDesc}</div>`
 
 })
 
@@ -514,39 +443,12 @@ html='<div class="card none">No active alerts</div>'
 }
 
 alerts.innerHTML=html
-updateRisk(risk)
 
 }
-
-/* CHECK EVERY 30 SECONDS */
 
 setInterval(loadAlerts,30000)
 
-function toggleAlert(i){
-let el=document.getElementById("detail"+i)
-el.style.display=(el.style.display==="block")?"none":"block"
-}
-
-function updateRisk(level){
-
-let box=document.getElementById("riskLevel")
-
-if(level==="high"){
-box.className="riskBox high"
-box.innerText="Severe Weather Risk: HIGH"
-}
-else if(level==="medium"){
-box.className="riskBox medium"
-box.innerText="Severe Weather Risk: MODERATE"
-}
-else{
-box.className="riskBox low"
-box.innerText="Severe Weather Risk: LOW"
-}
-
-}
-
-/* NATIONAL TICKER */
+/* TICKER */
 
 async function loadTicker(){
 
@@ -566,7 +468,7 @@ if(text===""){
 text="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-document.getElementById("ticker").innerText=text
+ticker.innerText=text
 
 }
 
