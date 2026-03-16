@@ -1,4 +1,4 @@
-l<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <title>US Storm Alerts</title>
@@ -447,7 +447,7 @@ wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
 
-/* FIXED ALERTS */
+/* ALERTS */
 
 async function loadAlerts(){
 
@@ -516,27 +516,43 @@ box.innerText="Severe Weather Risk: LOW"
 
 }
 
-/* NATIONAL TICKER */
+/* PRIORITY TICKER */
 
 async function loadTicker(){
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let text=""
+let emergency=[]
+let warning=[]
+let watch=[]
+let severe=[]
 
 data.features.forEach(a=>{
+
 let e=a.properties.event
-if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
-text+=`⚠ ${e} — ${a.properties.areaDesc} • `
-}
+let text=`⚠ ${e} — ${a.properties.areaDesc}`
+
+if(e.includes("Tornado Emergency")) emergency.push(text)
+else if(e.includes("Tornado Warning")) warning.push(text)
+else if(e.includes("Tornado Watch")) watch.push(text)
+else if(e.includes("Severe Thunderstorm Warning")) severe.push(text)
+
 })
 
-if(text===""){
-text="No active tornado or severe thunderstorm alerts across the United States • "
+let ordered=[...emergency,...warning,...watch,...severe]
+
+let tickerText=""
+
+ordered.forEach(a=>{
+tickerText+=a+" • "
+})
+
+if(tickerText===""){
+tickerText="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-ticker.innerText=text
+ticker.innerText=tickerText
 
 }
 
