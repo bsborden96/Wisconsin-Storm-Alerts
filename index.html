@@ -20,7 +20,7 @@ font-size:40px;
 font-weight:bold;
 }
 
-/* TORNADO POPUP */
+/* TORNADO ALERT POPUP */
 
 .tornadoPopup{
 display:none;
@@ -39,7 +39,7 @@ justify-content:center;
 background:#7a0000;
 padding:40px;
 border-radius:14px;
-max-width:500px;
+max-width:520px;
 animation:flashAlert 1s infinite;
 }
 
@@ -57,7 +57,7 @@ margin-bottom:20px;
 
 .tornadoText{
 font-size:22px;
-line-height:1.5;
+line-height:1.6;
 }
 
 .closeBtn{
@@ -257,7 +257,11 @@ text-align:left;
 
 <div id="tornadoPopup" class="tornadoPopup">
 <div class="tornadoBox">
-<div class="tornadoTitle">🚨 TORNADO WARNING 🚨</div>
+
+<div class="tornadoTitle">
+🚨 TORNADO WARNING 🚨
+</div>
+
 <div class="tornadoText">
 Seek shelter immediately.<br><br>
 Go to an interior room on the lowest floor of a sturdy building.<br>
@@ -265,7 +269,9 @@ Stay away from windows.<br>
 Protect your head and neck.<br><br>
 If you are in a mobile home or vehicle, move to stronger shelter now.
 </div>
+
 <button class="closeBtn" onclick="closeTornado()">Dismiss</button>
+
 </div>
 </div>
 
@@ -289,8 +295,15 @@ If you are in a mobile home or vehicle, move to stronger shelter now.
 </div>
 
 <div class="section">
-<div id="locationCard" class="locationCard">Detecting location...</div>
-<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
+
+<div id="locationCard" class="locationCard">
+Detecting location...
+</div>
+
+<div id="riskLevel" class="riskBox low">
+Severe Weather Risk: LOW
+</div>
+
 </div>
 
 <div class="section">
@@ -320,11 +333,14 @@ Wind
 </div>
 
 </div>
+
 </div>
 
 <div class="section">
+
 <h2>Active Alerts</h2>
 <div id="alerts">Loading alerts...</div>
+
 </div>
 
 <script>
@@ -334,20 +350,38 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
+let tornadoActive=false
+
 function showTornado(){
+
+if(tornadoActive) return
+
+tornadoActive=true
+
 document.getElementById("tornadoPopup").style.display="flex"
+
 let siren=document.getElementById("tornadoSiren")
 siren.currentTime=0
 siren.play().catch(()=>{})
+
 }
 
 function closeTornado(){
+
+tornadoActive=false
+
 document.getElementById("tornadoPopup").style.display="none"
-document.getElementById("tornadoSiren").pause()
+
+let siren=document.getElementById("tornadoSiren")
+siren.pause()
+
 }
+
+/* LOCATION */
 
 let lat
 let lon
+let countyZone=""
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
@@ -361,10 +395,13 @@ loadWeather()
 loadAlerts()
 }
 
+/* SEARCH */
+
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
 input.addEventListener("input",async()=>{
+
 let q=input.value
 if(q.length<2){suggestions.innerHTML="";return}
 
@@ -374,6 +411,7 @@ let data=await res.json()
 suggestions.innerHTML=""
 
 data.forEach(place=>{
+
 let div=document.createElement("div")
 div.innerText=place.display_name
 
@@ -386,26 +424,35 @@ refreshAll()
 }
 
 suggestions.appendChild(div)
+
 })
+
 })
+
+/* LOCATION DATA */
 
 async function loadLocation(){
 
-let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let data=await res.json()
+let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let pointData=await point.json()
 
-let city=data.properties.relativeLocation.properties.city
-let state=data.properties.relativeLocation.properties.state
+let city=pointData.properties.relativeLocation.properties.city
+let state=pointData.properties.relativeLocation.properties.state
 
-let countyRes=await fetch(data.properties.county)
+let countyRes=await fetch(pointData.properties.county)
 let countyData=await countyRes.json()
 
 let county=countyData.properties.name
 
+countyZone=countyData.properties.id.split("/").pop()
+
 document.getElementById("locationCard").innerHTML=
 `<div class="countyName">${county} County</div>
 <div class="cityName">${city}, ${state}</div>`
+
 }
+
+/* WEATHER */
 
 async function loadWeather(){
 
@@ -418,11 +465,16 @@ temp.innerText=Math.round(c.temperature_2m)+"°F"
 dew.innerText=Math.round(c.dewpoint_2m)+"°F"
 humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+
 }
+
+/* ALERTS */
 
 async function loadAlerts(){
 
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+if(!countyZone) return
+
+let res=await fetch(`https://api.weather.gov/alerts/active?zone=${countyZone}`)
 let data=await res.json()
 
 let html=""
@@ -433,7 +485,7 @@ data.features.forEach((alert,i)=>{
 let e=alert.properties.event
 let style="card"
 
-if(e.includes("Tornado Warning")){
+if(e.includes("Tornado")){
 style+=" tornado"
 risk="high"
 showTornado()
@@ -452,14 +504,23 @@ html+=`
 <div class="${style}" onclick="toggleAlert(${i})">
 <b>${e}</b><br>${alert.properties.areaDesc}
 <div id="detail${i}" class="alertDetail">${alert.properties.description}</div>
-</div>`
+</div>
+`
+
 })
 
-if(html===""){html='<div class="card none">No active alerts</div>'}
+if(html===""){
+html='<div class="card none">No active alerts</div>'
+}
 
 alerts.innerHTML=html
 updateRisk(risk)
+
 }
+
+/* CHECK EVERY 30 SECONDS */
+
+setInterval(loadAlerts,30000)
 
 function toggleAlert(i){
 let el=document.getElementById("detail"+i)
@@ -467,6 +528,7 @@ el.style.display=(el.style.display==="block")?"none":"block"
 }
 
 function updateRisk(level){
+
 let box=document.getElementById("riskLevel")
 
 if(level==="high"){
@@ -481,7 +543,10 @@ else{
 box.className="riskBox low"
 box.innerText="Severe Weather Risk: LOW"
 }
+
 }
+
+/* NATIONAL TICKER */
 
 async function loadTicker(){
 
@@ -502,6 +567,7 @@ text="No active tornado or severe thunderstorm alerts across the United States �
 }
 
 document.getElementById("ticker").innerText=text
+
 }
 
 loadTicker()
