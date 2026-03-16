@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+l<!DOCTYPE html>
 <html>
 <head>
 <title>US Storm Alerts</title>
@@ -233,13 +233,6 @@ font-size:22px;
 .severe{background:#8a4b00}
 .none{background:#1f3b1f}
 
-.alertDetail{
-display:none;
-margin-top:10px;
-font-size:18px;
-text-align:left;
-}
-
 </style>
 </head>
 
@@ -342,16 +335,12 @@ panel.style.display=(panel.style.display==="block")?"none":"block"
 let tornadoActive=false
 
 function showTornado(){
-
 if(tornadoActive) return
-
 tornadoActive=true
 document.getElementById("tornadoPopup").style.display="flex"
-
 if(navigator.vibrate){
 navigator.vibrate([400,200,400,200,400])
 }
-
 }
 
 function closeTornado(){
@@ -363,7 +352,6 @@ document.getElementById("tornadoPopup").style.display="none"
 
 let lat
 let lon
-let countyZone=""
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
@@ -377,7 +365,7 @@ loadWeather()
 loadAlerts()
 }
 
-/* IMPROVED US SEARCH */
+/* SEARCH */
 
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
@@ -409,15 +397,11 @@ if(place.admin1) label+=`, ${place.admin1}`
 div.innerText=label
 
 div.onclick=()=>{
-
 lat=place.latitude
 lon=place.longitude
-
 input.value=label
 suggestions.innerHTML=""
-
 refreshAll()
-
 }
 
 suggestions.appendChild(div)
@@ -441,8 +425,6 @@ let countyData=await countyRes.json()
 
 let county=countyData.properties.name
 
-countyZone=countyData.properties.id.split("/").pop()
-
 document.getElementById("locationCard").innerHTML=
 `<div class="countyName">${county} County</div>
 <div class="cityName">${city}, ${state}</div>`
@@ -465,19 +447,17 @@ wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
 }
 
-/* ALERTS */
+/* FIXED ALERTS */
 
 async function loadAlerts(){
 
-if(!countyZone) return
-
-let res=await fetch(`https://api.weather.gov/alerts/active?zone=${countyZone}`)
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
 let html=""
 let risk="low"
 
-data.features.forEach((alert,i)=>{
+data.features.forEach(alert=>{
 
 let e=alert.properties.event
 let style="card"
@@ -493,16 +473,21 @@ style+=" severe"
 if(risk!=="high") risk="medium"
 }
 
+else{
+style+=" none"
+}
+
 html+=`
 <div class="${style}">
-<b>${e}</b><br>${alert.properties.areaDesc}
+<b>${e}</b><br>
+${alert.properties.areaDesc}
 </div>
 `
 
 })
 
 if(html===""){
-html='<div class="card none">No active alerts</div>'
+html='<div class="card none">No active alerts for this location</div>'
 }
 
 alerts.innerHTML=html
@@ -538,36 +523,20 @@ async function loadTicker(){
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let emergency=[]
-let warn=[]
-let watch=[]
-let severe=[]
+let text=""
 
 data.features.forEach(a=>{
-
 let e=a.properties.event
-let text=`⚠ ${e} — ${a.properties.areaDesc}`
-
-if(e.includes("Tornado Emergency")) emergency.push(text)
-else if(e.includes("Tornado Warning")) warn.push(text)
-else if(e.includes("Tornado Watch")) watch.push(text)
-else if(e.includes("Severe Thunderstorm Warning")) severe.push(text)
-
+if(e.includes("Tornado")||e.includes("Severe Thunderstorm")){
+text+=`⚠ ${e} — ${a.properties.areaDesc} • `
+}
 })
 
-let sorted=[...emergency,...warn,...watch,...severe]
-
-let tickerText=""
-
-sorted.forEach(a=>{
-tickerText+=a+" • "
-})
-
-if(tickerText===""){
-tickerText="No active tornado or severe thunderstorm alerts across the United States • "
+if(text===""){
+text="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
-document.getElementById("ticker").innerText=tickerText
+ticker.innerText=text
 
 }
 
