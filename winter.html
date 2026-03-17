@@ -184,8 +184,6 @@ let data=await obs.json()
 
 let weather=data.properties.textDescription.toLowerCase()
 
-/* FIX SNOW DETECTION */
-
 if(
 weather.includes("snow") ||
 weather.includes("flurries") ||
@@ -218,25 +216,43 @@ periods.forEach(p=>{
 
 let t=p.shortForecast.toLowerCase()
 
-if(
+let isSnow =
+(
 t.includes("snow") ||
-t.includes("flurries") ||
-t.includes("wintry") ||
-t.includes("ice")
-){
+t.includes("snow showers") ||
+t.includes("snow likely") ||
+t.includes("heavy snow")
+)
+
+let weak =
+t.includes("chance") ||
+t.includes("slight") ||
+t.includes("possible") ||
+t.includes("rain/snow") ||
+t.includes("mix") ||
+t.includes("then") ||
+t.includes("ending")
+
+if(isSnow && !weak){
 
 if(!start) start=p.startTime
 end=p.endTime
 
-if(!peak) peak=p.startTime
+if(!peak || t.includes("heavy")){
+peak=p.startTime
+}
 
 }
 
 })
 
+/* DISPLAY */
+
 if(start){
 document.getElementById("start").innerText=
 "Snow Start: "+new Date(start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+}else{
+document.getElementById("start").innerText="No snow expected"
 }
 
 if(peak){
