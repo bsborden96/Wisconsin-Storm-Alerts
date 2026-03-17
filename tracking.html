@@ -15,13 +15,19 @@ color:white;
 text-align:center;
 }
 
+/* ✅ FIX: header below menu */
+
 header{
 background:#151c2c;
 padding:24px;
 padding-left:110px;
 font-size:30px;
 font-weight:bold;
+position:relative;
+z-index:1;
 }
+
+/* ✅ FIX: menu always on top */
 
 .menuIcon{
 position:absolute;
@@ -29,6 +35,7 @@ top:16px;
 left:18px;
 font-size:48px;
 cursor:pointer;
+z-index:20001;
 }
 
 .menuPanel{
@@ -40,6 +47,7 @@ background:#111827;
 border-radius:14px;
 padding:16px;
 text-align:left;
+z-index:20001;
 }
 
 .menuPanel a{
