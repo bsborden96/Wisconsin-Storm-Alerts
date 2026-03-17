@@ -69,14 +69,6 @@ font-weight:bold;
 margin-top:10px;
 }
 
-.timeline{
-background:#0f172a;
-padding:22px;
-border-radius:14px;
-margin-top:20px;
-font-size:22px;
-}
-
 .safe{background:#1f3b1f;}
 .warning{background:#8a4b00;}
 .danger{background:#7a0000;}
@@ -108,16 +100,24 @@ Temperature
 <div id="temp" class="big">--</div>
 </div>
 
-<div id="roadCard" class="card safe">
-Road Conditions Near You
-<div id="roads" class="big">Checking...</div>
+<div class="card">
+Snow Intensity
+<div id="intensity" class="big">--</div>
 </div>
 
-<div class="timeline">
-<h2>Snow Timeline</h2>
-<div id="start">Checking forecast...</div>
-<div id="peak"></div>
-<div id="end"></div>
+<div class="card">
+Estimated Snowfall
+<div id="snowTotal" class="big">--</div>
+</div>
+
+<div class="card">
+Storm Impact
+<div id="impact" class="big">--</div>
+</div>
+
+<div id="roadCard" class="card safe">
+Travel Risk
+<div id="roads" class="big">Checking...</div>
 </div>
 
 </div>
@@ -175,122 +175,100 @@ let obs=await fetch(`https://api.weather.gov/stations/${closest}/observations/la
 let data=await obs.json()
 
 let weather=data.properties.textDescription.toLowerCase()
+let tempC=data.properties.temperature.value
 
-if(
-weather.includes("snow") ||
-weather.includes("flurries") ||
-weather.includes("wintry") ||
-weather.includes("ice")
-){
+let isSnow = weather.includes("snow") || weather.includes("flurries")
+
+/* WEATHER DISPLAY */
+
+if(isSnow){
 document.getElementById("weather").innerText="Snowing ❄"
 }else{
 document.getElementById("weather").innerText=data.properties.textDescription
 }
 
-let temp=data.properties.temperature.value
-if(temp){
-temp=(temp*9/5)+32
-document.getElementById("temp").innerText=Math.round(temp)+"°F"
+/* TEMP */
+
+if(tempC){
+let tempF=(tempC*9/5)+32
+document.getElementById("temp").innerText=Math.round(tempF)+"°F"
 }
 
-/* 🔥 FIXED FORECAST LOGIC */
+/* INTENSITY */
 
-let f=await fetch(grid.properties.forecastHourly)
-let fdata=await f.json()
+let intensity="None"
 
-let periods=fdata.properties.periods
+if(isSnow){
 
-let start=null
-let peak=null
-let end=null
-
-periods.forEach(p=>{
-
-let t=p.shortForecast.toLowerCase()
-let prob=p.probabilityOfPrecipitation.value || 0
-
-let strongSnow =
-t.includes("snow") &&
-(
-t.includes("likely") ||
-t.includes("heavy") ||
-prob >= 40
-)
-
-let badSignal =
-t.includes("chance") ||
-t.includes("slight") ||
-t.includes("possible") ||
-t.includes("rain/snow") ||
-t.includes("mix") ||
-t.includes("then") ||
-t.includes("ending")
-
-if(strongSnow && !badSignal){
-
-if(!start) start=p.startTime
-end=p.endTime
-
-if(!peak || t.includes("heavy") || prob >= 70){
-peak=p.startTime
+if(weather.includes("heavy")){
+intensity="Heavy Snow"
+}
+else if(weather.includes("snow")){
+intensity="Moderate Snow"
+}
+else{
+intensity="Light Snow"
 }
 
 }
 
-})
+document.getElementById("intensity").innerText=intensity
 
-/* DISPLAY */
+/* SNOW TOTAL ESTIMATE (SMART LOGIC) */
 
-if(start){
-document.getElementById("start").innerText=
-"Snow Start: "+new Date(start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
-}else{
-document.getElementById("start").innerText="No snow expected"
-document.getElementById("peak").innerText=""
-document.getElementById("end").innerText=""
-}
+let snowTotal="0\""
 
-if(peak){
-document.getElementById("peak").innerText=
-"Heaviest Snow: "+new Date(peak).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
-}
+if(isSnow){
 
-if(end){
-document.getElementById("end").innerText=
-"Snow End: "+new Date(end).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
-}
+if(intensity==="Heavy Snow") snowTotal="4\" - 8\""
+else if(intensity==="Moderate Snow") snowTotal="2\" - 5\""
+else snowTotal="Dusting - 2\""
 
 }
+
+document.getElementById("snowTotal").innerText=snowTotal
+
+/* IMPACT SCORE */
+
+let impact="LOW"
+
+if(intensity==="Heavy Snow") impact="HIGH"
+else if(intensity==="Moderate Snow") impact="MODERATE"
+
+document.getElementById("impact").innerText=impact
+
+}
+
+/* ROAD CONDITIONS */
 
 async function loadRoads(){
 
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
-let hazard=false
+let risk="LOW"
+let card=document.getElementById("roadCard")
 
 data.features.forEach(a=>{
 let e=a.properties.event.toLowerCase()
 
-if(
-e.includes("winter storm") ||
-e.includes("blizzard") ||
-e.includes("ice storm") ||
-e.includes("snow squall")
-){
-hazard=true
+if(e.includes("blizzard")){
+risk="EXTREME"
+card.className="card danger"
+}
+else if(e.includes("winter storm")){
+risk="HIGH"
+card.className="card danger"
+}
+else if(e.includes("snow") || e.includes("ice")){
+if(risk!=="HIGH"){
+risk="MODERATE"
+card.className="card warning"
+}
 }
 })
 
-let card=document.getElementById("roadCard")
-
-if(hazard){
-card.className="card danger"
-document.getElementById("roads").innerText="Hazardous Travel Likely"
-}else{
-card.className="card safe"
-document.getElementById("roads").innerText="Roads Mostly Safe"
-}
+document.getElementById("roads").innerText=risk
 
 }
 
