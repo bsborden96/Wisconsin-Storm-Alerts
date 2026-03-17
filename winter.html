@@ -21,8 +21,6 @@ font-size:38px;
 font-weight:bold;
 }
 
-/* MENU */
-
 .menuIcon{
 position:absolute;
 top:18px;
@@ -50,13 +48,6 @@ text-decoration:none;
 font-size:28px;
 padding:16px;
 }
-
-.menuPanel a:hover{
-background:#1f2937;
-border-radius:8px;
-}
-
-/* CONTENT */
 
 .section{
 max-width:900px;
@@ -86,21 +77,9 @@ margin-top:20px;
 font-size:22px;
 }
 
-.timeline div{
-margin:10px 0;
-}
-
-.safe{
-background:#1f3b1f;
-}
-
-.warning{
-background:#8a4b00;
-}
-
-.danger{
-background:#7a0000;
-}
+.safe{background:#1f3b1f;}
+.warning{background:#8a4b00;}
+.danger{background:#7a0000;}
 
 </style>
 </head>
@@ -135,13 +114,10 @@ Road Conditions Near You
 </div>
 
 <div class="timeline">
-
 <h2>Snow Timeline</h2>
-
 <div id="start">Checking forecast...</div>
 <div id="peak"></div>
 <div id="end"></div>
-
 </div>
 
 </div>
@@ -153,8 +129,7 @@ let p=document.getElementById("menuPanel")
 p.style.display=(p.style.display==="block")?"none":"block"
 }
 
-let lat
-let lon
+let lat, lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
@@ -163,51 +138,94 @@ loadWinter()
 loadRoads()
 })
 
+/* DISTANCE FUNCTION */
+
+function getDistance(lat1,lon1,lat2,lon2){
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+let a=Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)**2
+return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+}
+
+/* MAIN */
+
 async function loadWinter(){
 
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let grid=await p.json()
 
-let stations=grid.properties.observationStations
-let forecast=grid.properties.forecastHourly
+/* FIND CLOSEST STATION */
 
-let s=await fetch(stations)
-let stationData=await s.json()
+let stations=await fetch(grid.properties.observationStations)
+let stationData=await stations.json()
 
-let station=stationData.features[0].properties.stationIdentifier
+let closest=null
+let minDist=999999
 
-let obs=await fetch(`https://api.weather.gov/stations/${station}/observations/latest`)
-let data=await obs.json()
+for(let s of stationData.features){
+let sLat=s.geometry.coordinates[1]
+let sLon=s.geometry.coordinates[0]
 
-let weather=data.properties.textDescription
-document.getElementById("weather").innerText=weather
+let d=getDistance(lat,lon,sLat,sLon)
 
-let temp=data.properties.temperature.value
-
-if(temp){
-temp=(temp*9/5)+32
-temp=Math.round(temp)
-document.getElementById("temp").innerText=temp+"°F"
+if(d<minDist){
+minDist=d
+closest=s.properties.stationIdentifier
+}
 }
 
-/* FORECAST TIMELINE */
+/* CURRENT OBS */
 
-let f=await fetch(forecast)
+let obs=await fetch(`https://api.weather.gov/stations/${closest}/observations/latest`)
+let data=await obs.json()
+
+let weather=data.properties.textDescription.toLowerCase()
+
+/* FIX SNOW DETECTION */
+
+if(
+weather.includes("snow") ||
+weather.includes("flurries") ||
+weather.includes("wintry") ||
+weather.includes("ice")
+){
+document.getElementById("weather").innerText="Snowing ❄"
+}else{
+document.getElementById("weather").innerText=data.properties.textDescription
+}
+
+let temp=data.properties.temperature.value
+if(temp){
+temp=(temp*9/5)+32
+document.getElementById("temp").innerText=Math.round(temp)+"°F"
+}
+
+/* FORECAST */
+
+let f=await fetch(grid.properties.forecastHourly)
 let fdata=await f.json()
 
 let periods=fdata.properties.periods
 
 let start=null
-let end=null
 let peak=null
+let end=null
 
 periods.forEach(p=>{
 
-let text=p.shortForecast.toLowerCase()
+let t=p.shortForecast.toLowerCase()
 
-if(text.includes("snow")){
+if(
+t.includes("snow") ||
+t.includes("flurries") ||
+t.includes("wintry") ||
+t.includes("ice")
+){
 
-if(start===null) start=p.startTime
+if(!start) start=p.startTime
 end=p.endTime
 
 if(!peak) peak=p.startTime
@@ -233,20 +251,17 @@ document.getElementById("end").innerText=
 
 }
 
-/* ROAD CONDITIONS (Nationwide Incident Feed) */
+/* LOCAL ROAD CONDITIONS */
 
 async function loadRoads(){
 
-try{
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let data=await res.json()
 
-let res = await fetch("https://api.weather.gov/alerts/active")
-let data = await res.json()
-
-let hazard = false
+let hazard=false
 
 data.features.forEach(a=>{
-
-let e = a.properties.event.toLowerCase()
+let e=a.properties.event.toLowerCase()
 
 if(
 e.includes("winter storm") ||
@@ -254,30 +269,18 @@ e.includes("blizzard") ||
 e.includes("ice storm") ||
 e.includes("snow squall")
 ){
-hazard = true
+hazard=true
 }
-
 })
 
 let card=document.getElementById("roadCard")
 
 if(hazard){
-
-card.classList.remove("safe")
-card.classList.add("danger")
-
-document.getElementById("roads").innerText="Hazardous Travel Possible"
-
+card.className="card danger"
+document.getElementById("roads").innerText="Hazardous Travel Likely"
 }else{
-
-document.getElementById("roads").innerText="No hazardous travel reported"
-
-}
-
-}catch{
-
-document.getElementById("roads").innerText="Road data unavailable"
-
+card.className="card safe"
+document.getElementById("roads").innerText="Roads Mostly Safe"
 }
 
 }
