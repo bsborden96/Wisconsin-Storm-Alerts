@@ -138,8 +138,6 @@ loadWinter()
 loadRoads()
 })
 
-/* DISTANCE FUNCTION */
-
 function getDistance(lat1,lon1,lat2,lon2){
 let R=6371
 let dLat=(lat2-lat1)*Math.PI/180
@@ -150,14 +148,10 @@ Math.sin(dLon/2)**2
 return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 }
 
-/* MAIN */
-
 async function loadWinter(){
 
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let grid=await p.json()
-
-/* FIND CLOSEST STATION */
 
 let stations=await fetch(grid.properties.observationStations)
 let stationData=await stations.json()
@@ -176,8 +170,6 @@ minDist=d
 closest=s.properties.stationIdentifier
 }
 }
-
-/* CURRENT OBS */
 
 let obs=await fetch(`https://api.weather.gov/stations/${closest}/observations/latest`)
 let data=await obs.json()
@@ -201,7 +193,7 @@ temp=(temp*9/5)+32
 document.getElementById("temp").innerText=Math.round(temp)+"°F"
 }
 
-/* FORECAST */
+/* 🔥 FIXED FORECAST LOGIC */
 
 let f=await fetch(grid.properties.forecastHourly)
 let fdata=await f.json()
@@ -215,16 +207,17 @@ let end=null
 periods.forEach(p=>{
 
 let t=p.shortForecast.toLowerCase()
+let prob=p.probabilityOfPrecipitation.value || 0
 
-let isSnow =
+let strongSnow =
+t.includes("snow") &&
 (
-t.includes("snow") ||
-t.includes("snow showers") ||
-t.includes("snow likely") ||
-t.includes("heavy snow")
+t.includes("likely") ||
+t.includes("heavy") ||
+prob >= 40
 )
 
-let weak =
+let badSignal =
 t.includes("chance") ||
 t.includes("slight") ||
 t.includes("possible") ||
@@ -233,12 +226,12 @@ t.includes("mix") ||
 t.includes("then") ||
 t.includes("ending")
 
-if(isSnow && !weak){
+if(strongSnow && !badSignal){
 
 if(!start) start=p.startTime
 end=p.endTime
 
-if(!peak || t.includes("heavy")){
+if(!peak || t.includes("heavy") || prob >= 70){
 peak=p.startTime
 }
 
@@ -253,6 +246,8 @@ document.getElementById("start").innerText=
 "Snow Start: "+new Date(start).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
 }else{
 document.getElementById("start").innerText="No snow expected"
+document.getElementById("peak").innerText=""
+document.getElementById("end").innerText=""
 }
 
 if(peak){
@@ -266,8 +261,6 @@ document.getElementById("end").innerText=
 }
 
 }
-
-/* LOCAL ROAD CONDITIONS */
 
 async function loadRoads(){
 
