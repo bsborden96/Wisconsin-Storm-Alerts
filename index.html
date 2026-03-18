@@ -13,6 +13,8 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
+
 header{
 background:#151c2c;
 padding:40px;
@@ -34,19 +36,26 @@ height:200px;
 .titleText{
 font-size:65px;
 font-weight:bold;
-letter-spacing:1px;
 }
 
-/* 🔥 SLIDE OUT MENU */
+/* 🔥 SIDE ARROW MENU BUTTON */
 
-.menuIcon{
-position:absolute;
-top:28px;
-left:24px;
-font-size:64px;
+.menuArrow{
+position:fixed;
+top:50%;
+left:0;
+transform:translateY(-50%);
+background:#111827;
+color:white;
+font-size:42px;
+padding:16px 12px;
+border-top-right-radius:12px;
+border-bottom-right-radius:12px;
 cursor:pointer;
-z-index:30001;
+z-index:30002;
 }
+
+/* 🔥 OVERLAY */
 
 .menuOverlay{
 position:fixed;
@@ -62,6 +71,8 @@ z-index:30000;
 .menuOverlay.show{
 display:block;
 }
+
+/* 🔥 SLIDE PANEL */
 
 .menuPanel{
 position:fixed;
@@ -89,57 +100,6 @@ font-weight:bold;
 border-bottom:1px solid #222;
 }
 
-/* TORNADO ALERT POPUP */
-
-.tornadoPopup{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.85);
-z-index:20000;
-align-items:center;
-justify-content:center;
-}
-
-.tornadoBox{
-background:#7a0000;
-padding:40px;
-border-radius:14px;
-max-width:520px;
-animation:flashAlert 1s infinite;
-}
-
-@keyframes flashAlert{
-0%{opacity:1}
-50%{opacity:.6}
-100%{opacity:1}
-}
-
-.tornadoTitle{
-font-size:36px;
-font-weight:bold;
-margin-bottom:20px;
-}
-
-.tornadoText{
-font-size:22px;
-line-height:1.6;
-}
-
-.closeBtn{
-margin-top:25px;
-padding:12px 20px;
-font-size:18px;
-border:none;
-background:black;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
 /* TICKER */
 
 .tickerWrap{
@@ -151,7 +111,6 @@ padding:12px 0;
 
 .ticker{
 display:inline-block;
-white-space:nowrap;
 font-size:22px;
 position:relative;
 left:100%;
@@ -168,7 +127,6 @@ animation:scrollTicker 30s linear infinite;
 .searchBox{
 margin:30px auto;
 max-width:600px;
-position:relative;
 }
 
 .searchBox input{
@@ -177,25 +135,6 @@ padding:14px;
 font-size:22px;
 border-radius:8px;
 border:none;
-}
-
-.suggestions{
-position:absolute;
-background:#1f2937;
-width:100%;
-border-radius:8px;
-max-height:260px;
-overflow-y:auto;
-font-size:20px;
-}
-
-.suggestions div{
-padding:12px;
-cursor:pointer;
-}
-
-.suggestions div:hover{
-background:#374151;
 }
 
 /* LAYOUT */
@@ -212,17 +151,6 @@ padding:36px;
 border-radius:14px;
 }
 
-.countyName{
-font-size:52px;
-font-weight:bold;
-}
-
-.cityName{
-font-size:30px;
-}
-
-/* RISK */
-
 .riskBox{
 margin-top:20px;
 padding:20px;
@@ -234,8 +162,6 @@ font-weight:bold;
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
-
-/* WEATHER */
 
 .weatherGrid{
 display:grid;
@@ -255,26 +181,12 @@ font-size:48px;
 font-weight:bold;
 }
 
-/* ALERTS */
-
 .card{
 background:#111;
 padding:22px;
 margin-top:16px;
 border-radius:12px;
-cursor:pointer;
 font-size:22px;
-}
-
-.tornado{background:#7a0000}
-.severe{background:#8a4b00}
-.none{background:#1f3b1f}
-
-.alertDetails{
-display:none;
-margin-top:10px;
-font-size:18px;
-text-align:left;
 }
 
 </style>
@@ -282,23 +194,13 @@ text-align:left;
 
 <body>
 
-<!-- 🔥 OVERLAY -->
+<!-- 🔥 SIDE ARROW BUTTON -->
+<div class="menuArrow" onclick="toggleMenu()">➤</div>
+
+<!-- OVERLAY -->
 <div id="menuOverlay" class="menuOverlay" onclick="closeMenu()"></div>
 
-<div id="tornadoPopup" class="tornadoPopup">
-<div class="tornadoBox">
-<div class="tornadoTitle">🚨 TORNADO WARNING 🚨</div>
-<div class="tornadoText">
-Seek shelter immediately.<br><br>
-Go to an interior room on the lowest floor of a sturdy building.<br>
-Stay away from windows and protect your head and neck.
-</div>
-<button class="closeBtn" onclick="closeTornado()">Dismiss</button>
-</div>
-</div>
-
-<div class="menuIcon" onclick="toggleMenu()">☰</div>
-
+<!-- MENU -->
 <div id="menuPanel" class="menuPanel">
 <a href="index.html">Home</a>
 <a href="tracking.html">Storm Tracker</a>
@@ -317,8 +219,7 @@ Stay away from windows and protect your head and neck.
 </div>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city, town, or village">
-<div id="suggestions" class="suggestions"></div>
+<input placeholder="Search any US city">
 </div>
 
 <div class="section">
@@ -328,12 +229,14 @@ Stay away from windows and protect your head and neck.
 
 <div class="section">
 <h2>Current Conditions</h2>
+
 <div class="weatherGrid">
-<div class="weatherCard">Temperature<div id="temp" class="weatherValue">--</div></div>
+<div class="weatherCard">Temp<div id="temp" class="weatherValue">--</div></div>
 <div class="weatherCard">Humidity<div id="humidity" class="weatherValue">--</div></div>
-<div class="weatherCard">Dew Point<div id="dew" class="weatherValue">--</div></div>
+<div class="weatherCard">Dew<div id="dew" class="weatherValue">--</div></div>
 <div class="weatherCard">Wind<div id="wind" class="weatherValue">--</div></div>
 </div>
+
 </div>
 
 <div class="section">
@@ -342,6 +245,8 @@ Stay away from windows and protect your head and neck.
 </div>
 
 <script>
+
+/* MENU */
 
 function toggleMenu(){
 document.getElementById("menuPanel").classList.toggle("open")
@@ -353,7 +258,59 @@ document.getElementById("menuPanel").classList.remove("open")
 document.getElementById("menuOverlay").classList.remove("show")
 }
 
-/* everything else unchanged */
+/* LOCATION */
+
+let lat, lon
+
+navigator.geolocation.getCurrentPosition(pos=>{
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+loadWeather()
+loadAlerts()
+})
+
+/* WEATHER */
+
+async function loadWeather(){
+let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let data=await res.json()
+let c=data.current
+
+temp.innerText=Math.round(c.temperature_2m)+"°F"
+dew.innerText=Math.round(c.dewpoint_2m)+"°F"
+humidity.innerText=c.relative_humidity_2m+"%"
+wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+}
+
+/* ALERTS */
+
+async function loadAlerts(){
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let data=await res.json()
+
+let html=""
+data.features.forEach(a=>{
+html+=`<div class="card">${a.properties.event}<br>${a.properties.areaDesc}</div>`
+})
+
+alerts.innerHTML = html || "No active alerts"
+}
+
+/* TICKER */
+
+async function loadTicker(){
+let res=await fetch("https://api.weather.gov/alerts/active")
+let data=await res.json()
+
+let txt=""
+data.features.slice(0,10).forEach(a=>{
+txt += a.properties.event + " • "
+})
+
+ticker.innerText = txt || "No active alerts"
+}
+
+loadTicker()
 
 </script>
 
