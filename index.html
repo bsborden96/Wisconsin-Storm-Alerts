@@ -16,7 +16,7 @@ text-align:center;
 
 header{
 background:#151c2c;
-padding:28px;
+padding:40px; /
 position:relative;
 z-index:1;
 }
@@ -25,17 +25,19 @@ z-index:1;
 display:flex;
 align-items:center;
 justify-content:center;
-gap:16px;
+gap:22px; /
 }
 
 .logo{
-height:52px;
+height:70px; /
 }
 
 .titleText{
-font-size:38px;
+font-size:52px; /
 font-weight:bold;
+letter-spacing:1px;
 }
+
 
 
 
@@ -92,23 +94,25 @@ cursor:pointer;
 
 /* MENU */
 
+
 .menuIcon{
 position:absolute;
-top:18px;
-left:18px;
-font-size:52px;
+top:28px;
+left:24px;
+font-size:64px; /* ⬅️ BIG menu icon */
 cursor:pointer;
 z-index:20001;
 }
 
+
 .menuPanel{
 display:none;
 position:absolute;
-top:95px;
+top:120px; /* ⬅️ drops lower to match bigger header */
 left:18px;
 background:#111827;
 border-radius:14px;
-padding:16px;
+padding:18px;
 text-align:left;
 z-index:20001;
 }
@@ -117,8 +121,8 @@ z-index:20001;
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
+font-size:30px; /* ⬅️ slightly bigger menu text */
+padding:18px;
 font-weight:bold;
 }
 
