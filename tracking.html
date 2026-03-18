@@ -15,19 +15,32 @@ color:white;
 text-align:center;
 }
 
-/* ✅ FIX: header below menu */
+/* ✅ UPDATED HEADER */
 
 header{
 background:#151c2c;
-padding:24px;
-padding-left:110px;
-font-size:30px;
-font-weight:bold;
+padding:20px;
 position:relative;
 z-index:1;
 }
 
-/* ✅ FIX: menu always on top */
+.headerContent{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
+}
+
+.logo{
+height:42px;
+}
+
+.titleText{
+font-size:32px;
+font-weight:bold;
+}
+
+/* ✅ MENU (unchanged but clean) */
 
 .menuIcon{
 position:absolute;
@@ -58,6 +71,8 @@ font-size:26px;
 padding:14px;
 font-weight:bold;
 }
+
+/* SEARCH */
 
 .searchBox{
 margin:30px auto;
@@ -141,7 +156,13 @@ font-size:20px;
 <a href="winter.html">Winter Center</a>
 </div>
 
-<header>Storm Tracker</header>
+<!-- ✅ UPDATED HEADER WITH LOGO -->
+<header>
+<div class="headerContent">
+<img src="logo.png" class="logo">
+<span class="titleText">Storm Tracker</span>
+</div>
+</header>
 
 <div class="searchBox">
 <input id="searchInput" placeholder="Search any US city or town">
