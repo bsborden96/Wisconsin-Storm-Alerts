@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Winter Storm Center</title>
+<title>Storm Tracker</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -14,64 +15,133 @@ color:white;
 text-align:center;
 }
 
+/* ✅ UNIFORM HEADER */
+
 header{
 background:#151c2c;
-padding:28px;
-font-size:38px;
+padding:20px;
+position:relative;
+z-index:1;
+}
+
+.headerContent{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
+}
+
+.logo{
+height:42px;
+}
+
+.titleText{
+font-size:32px;
 font-weight:bold;
 }
 
+/* ✅ MENU (FORCED ABOVE EVERYTHING) */
+
 .menuIcon{
 position:absolute;
-top:18px;
+top:16px;
 left:18px;
-font-size:52px;
+font-size:48px;
 cursor:pointer;
-z-index:10000;
+z-index:20001;
 }
 
 .menuPanel{
 display:none;
 position:absolute;
-top:95px;
+top:80px;
 left:18px;
 background:#111827;
 border-radius:14px;
 padding:16px;
-z-index:10000;
+text-align:left;
+z-index:20001;
 }
 
 .menuPanel a{
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
+font-size:26px;
+padding:14px;
+font-weight:bold;
+}
+
+/* SEARCH */
+
+.searchBox{
+margin:30px auto;
+max-width:600px;
+position:relative;
+}
+
+.searchBox input{
+width:100%;
+padding:14px;
+font-size:22px;
+border-radius:8px;
+border:none;
+}
+
+.suggestions{
+position:absolute;
+background:#1f2937;
+width:100%;
+text-align:left;
+border-radius:8px;
+max-height:220px;
+overflow-y:auto;
+font-size:20px;
+}
+
+.suggestions div{
+padding:12px;
+cursor:pointer;
 }
 
 .section{
-max-width:900px;
+max-width:1000px;
 margin:auto;
 padding:30px;
 }
 
 .card{
 background:#111827;
-padding:26px;
-border-radius:14px;
+padding:24px;
+border-radius:12px;
 margin-top:20px;
-font-size:26px;
+font-size:22px;
 }
 
-.big{
-font-size:44px;
+.tornado{
+background:#7a0000;
+padding:20px;
+margin-top:18px;
+border-radius:10px;
+}
+
+.severe{
+background:#8a4b00;
+padding:20px;
+margin-top:18px;
+border-radius:10px;
+}
+
+.distance{
+font-size:28px;
 font-weight:bold;
-margin-top:10px;
+margin-top:6px;
 }
 
-.safe{background:#1f3b1f;}
-.warning{background:#8a4b00;}
-.danger{background:#7a0000;}
+.info{
+margin-top:6px;
+font-size:20px;
+}
 
 </style>
 </head>
@@ -83,194 +153,271 @@ margin-top:10px;
 <div id="menuPanel" class="menuPanel">
 <a href="index.html">Home</a>
 <a href="tracking.html">Storm Tracker</a>
-<a href="winter.html">Winter Storm Center</a>
+<a href="winter.html">Winter Center</a>
 </div>
 
-<header>Winter Storm Center</header>
+<header>
+<div class="headerContent">
+<img src="logo.png" class="logo">
+<span class="titleText">Storm Tracker</span>
+</div>
+</header>
+
+<div class="searchBox">
+<input id="searchInput" placeholder="Search any US city or town">
+<div id="suggestions" class="suggestions"></div>
+</div>
 
 <div class="section">
-
-<div class="card">
-Current Weather
-<div id="weather" class="big">Loading...</div>
-</div>
-
-<div class="card">
-Temperature
-<div id="temp" class="big">--</div>
-</div>
-
-<div class="card">
-Snow Intensity
-<div id="intensity" class="big">--</div>
-</div>
-
-<div class="card">
-Estimated Snowfall
-<div id="snowTotal" class="big">--</div>
-</div>
-
-<div class="card">
-Storm Impact
-<div id="impact" class="big">--</div>
-</div>
-
-<div id="roadCard" class="card safe">
-Travel Risk
-<div id="roads" class="big">Checking...</div>
-</div>
-
+<div id="storms"></div>
 </div>
 
 <script>
 
 function toggleMenu(){
-let p=document.getElementById("menuPanel")
-p.style.display=(p.style.display==="block")?"none":"block"
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
-let lat, lon
+let lat
+let lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
-loadWinter()
-loadRoads()
+loadStorms()
 })
 
-function getDistance(lat1,lon1,lat2,lon2){
+/* SEARCH */
+
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+
+input.addEventListener("input",async()=>{
+
+let q=input.value
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
+suggestions.innerHTML=""
+loadStorms()
+}
+
+suggestions.appendChild(div)
+
+})
+
+})
+
+/* DISTANCE */
+
+function distance(lat1,lon1,lat2,lon2){
+
 let R=6371
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
-let a=Math.sin(dLat/2)**2+
+
+let a=
+Math.sin(dLat/2)*Math.sin(dLat/2)+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)**2
-return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-}
+Math.sin(dLon/2)*Math.sin(dLon/2)
 
-async function loadWinter(){
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 
-let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let grid=await p.json()
+let km=R*c
 
-let stations=await fetch(grid.properties.observationStations)
-let stationData=await stations.json()
-
-let closest=null
-let minDist=999999
-
-for(let s of stationData.features){
-let sLat=s.geometry.coordinates[1]
-let sLon=s.geometry.coordinates[0]
-
-let d=getDistance(lat,lon,sLat,sLon)
-
-if(d<minDist){
-minDist=d
-closest=s.properties.stationIdentifier
-}
-}
-
-let obs=await fetch(`https://api.weather.gov/stations/${closest}/observations/latest`)
-let data=await obs.json()
-
-let weather=data.properties.textDescription.toLowerCase()
-let tempC=data.properties.temperature.value
-
-let isSnow = weather.includes("snow") || weather.includes("flurries")
-
-/* WEATHER DISPLAY */
-
-if(isSnow){
-document.getElementById("weather").innerText="Snowing ❄"
-}else{
-document.getElementById("weather").innerText=data.properties.textDescription
-}
-
-/* TEMP */
-
-if(tempC){
-let tempF=(tempC*9/5)+32
-document.getElementById("temp").innerText=Math.round(tempF)+"°F"
-}
-
-/* INTENSITY */
-
-let intensity="None"
-
-if(isSnow){
-
-if(weather.includes("heavy")){
-intensity="Heavy Snow"
-}
-else if(weather.includes("snow")){
-intensity="Moderate Snow"
-}
-else{
-intensity="Light Snow"
-}
+return km*0.621371
 
 }
 
-document.getElementById("intensity").innerText=intensity
+/* DIRECTION */
 
-/* SNOW TOTAL ESTIMATE (SMART LOGIC) */
+function direction(lat1,lon1,lat2,lon2){
 
-let snowTotal="0\""
+let dLon=(lon2-lon1)
 
-if(isSnow){
+let y=Math.sin(dLon*Math.PI/180)*Math.cos(lat2*Math.PI/180)
 
-if(intensity==="Heavy Snow") snowTotal="4\" - 8\""
-else if(intensity==="Moderate Snow") snowTotal="2\" - 5\""
-else snowTotal="Dusting - 2\""
+let x=
+Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
+Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.cos(dLon*Math.PI/180)
 
-}
+let brng=Math.atan2(y,x)*180/Math.PI
 
-document.getElementById("snowTotal").innerText=snowTotal
+let dirs=["N","NE","E","SE","S","SW","W","NW"]
 
-/* IMPACT SCORE */
-
-let impact="LOW"
-
-if(intensity==="Heavy Snow") impact="HIGH"
-else if(intensity==="Moderate Snow") impact="MODERATE"
-
-document.getElementById("impact").innerText=impact
+return dirs[Math.round(brng/45)&7]
 
 }
 
-/* ROAD CONDITIONS */
+/* MOVEMENT */
 
-async function loadRoads(){
+function getMovement(text){
 
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let match=text.match(/moving\s+([a-zA-Z]+)\s+at\s+(\d+)/i)
+
+if(match){
+return {dir:match[1].toUpperCase(),speed:parseInt(match[2])}
+}
+
+return null
+
+}
+
+function isHeadingToward(stormDir,targetDir){
+
+let dirs=["N","NE","E","SE","S","SW","W","NW"]
+
+let stormIndex=dirs.indexOf(stormDir)
+let targetIndex=dirs.indexOf(targetDir)
+
+if(stormIndex==-1 || targetIndex==-1) return true
+
+let diff=Math.abs(stormIndex-targetIndex)
+
+return diff<=2
+
+}
+
+/* WIND + HAIL */
+
+function getWind(text){
+let match=text.match(/(\d+)\s?mph/i)
+if(match){return match[1]+" mph"}
+return "Unknown"
+}
+
+function getHail(text){
+let match=text.match(/(\d+(\.\d+)?)\s?inch/i)
+if(match){return match[1]+" in"}
+return "Unknown"
+}
+
+/* LOAD STORMS */
+
+async function loadStorms(){
+
+let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let risk="LOW"
-let card=document.getElementById("roadCard")
+let storms=[]
+let html=""
+let found=false
 
-data.features.forEach(a=>{
-let e=a.properties.event.toLowerCase()
+data.features.forEach(alert=>{
 
-if(e.includes("blizzard")){
-risk="EXTREME"
-card.className="card danger"
-}
-else if(e.includes("winter storm")){
-risk="HIGH"
-card.className="card danger"
-}
-else if(e.includes("snow") || e.includes("ice")){
-if(risk!=="HIGH"){
-risk="MODERATE"
-card.className="card warning"
-}
-}
+let event=alert.properties.event
+
+if(!event.includes("Tornado") && !event.includes("Severe Thunderstorm")) return
+
+storms.push(alert)
+
 })
 
-document.getElementById("roads").innerText=risk
+storms.sort((a,b)=>{
+
+let ea=a.properties.event
+let eb=b.properties.event
+
+if(ea.includes("Emergency")) return -1
+if(eb.includes("Emergency")) return 1
+
+if(ea.includes("Tornado") && !eb.includes("Tornado")) return -1
+if(eb.includes("Tornado") && !ea.includes("Tornado")) return 1
+
+return 0
+
+})
+
+storms.forEach(alert=>{
+
+let geo=alert.geometry
+if(!geo) return
+
+let coord=geo.coordinates[0][0]
+
+let sLat=coord[1]
+let sLon=coord[0]
+
+let miles=distance(lat,lon,sLat,sLon)
+
+let dir=direction(sLat,sLon,lat,lon)
+
+let desc=alert.properties.description
+
+let movement=getMovement(desc)
+
+let headingToward=true
+let arrival=""
+
+if(movement){
+
+headingToward=isHeadingToward(movement.dir,dir)
+
+let minutes=Math.round((miles/movement.speed)*60)
+
+arrival="Arrival: ~"+minutes+" minutes"
 
 }
+
+if(miles<250 && headingToward){
+
+found=true
+
+let style="severe"
+if(alert.properties.event.includes("Tornado")) style="tornado"
+
+html+=`
+
+<div class="${style}">
+
+<b>${alert.properties.event}</b>
+
+<div class="distance">
+${Math.round(miles)} miles ${dir}
+</div>
+
+<div class="info">${arrival}</div>
+<div class="info">Wind: ${getWind(desc)}</div>
+<div class="info">Hail: ${getHail(desc)}</div>
+
+${alert.properties.areaDesc}
+
+</div>
+
+`
+
+}
+
+})
+
+if(!found){
+html='<div class="card">No severe storms near this location</div>'
+}
+
+document.getElementById("storms").innerHTML=html
+
+}
+
+setInterval(loadStorms,60000)
 
 </script>
 
