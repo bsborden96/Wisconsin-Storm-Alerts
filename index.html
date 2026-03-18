@@ -36,12 +36,12 @@ font-size:65px;
 font-weight:bold;
 }
 
-/* 🔥 SIDE ARROW */
+/* 🔥 SIDE ARROW (LOWER NOW) */
 
 .menuArrow{
 position:fixed;
 left:0;
-top:50%;
+top:65%; /* 🔥 MOVED LOWER */
 transform:translateY(-50%);
 background:#111827;
 color:white;
@@ -114,6 +114,22 @@ animation:scroll 25s linear infinite;
 100%{transform:translateX(-100%)}
 }
 
+/* SEARCH */
+
+.searchBox{
+margin:30px auto;
+max-width:600px;
+position:relative;
+}
+
+.searchBox input{
+width:100%;
+padding:14px;
+font-size:22px;
+border-radius:8px;
+border:none;
+}
+
 /* LAYOUT */
 
 .section{
@@ -122,12 +138,23 @@ margin:auto;
 padding:30px;
 }
 
-.card{
+.locationCard{
 background:#111827;
-padding:24px;
-border-radius:12px;
-margin-top:20px;
+padding:36px;
+border-radius:14px;
 }
+
+.riskBox{
+margin-top:20px;
+padding:20px;
+border-radius:10px;
+font-size:28px;
+font-weight:bold;
+}
+
+.low{background:#1f3b1f}
+.medium{background:#8a4b00}
+.high{background:#7a0000}
 
 .weatherGrid{
 display:grid;
@@ -140,15 +167,20 @@ margin-top:20px;
 font-size:40px;
 }
 
+.card{
+background:#111827;
+padding:24px;
+border-radius:12px;
+margin-top:20px;
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- 🔥 SIDE ARROW -->
 <div class="menuArrow" onclick="toggleMenu()">➤</div>
 
-<!-- MENU -->
 <div id="menuOverlay" class="menuOverlay" onclick="closeMenu()"></div>
 
 <div id="menuPanel" class="menuPanel">
@@ -168,11 +200,20 @@ font-size:40px;
 <span id="ticker" class="ticker">Loading alerts...</span>
 </div>
 
+<!-- ✅ SEARCH RESTORED -->
+<div class="searchBox">
+<input id="searchInput" placeholder="Search any US city">
+</div>
+
 <div class="section">
 
-<div id="locationCard" class="card">Detecting location...</div>
+<div id="locationCard" class="locationCard">
+Detecting location...
+</div>
 
-<div id="riskLevel" class="card">Risk: LOW</div>
+<div id="riskLevel" class="riskBox low">
+Severe Weather Risk: LOW
+</div>
 
 </div>
 
@@ -237,26 +278,24 @@ loadLocation()
 loadWeather()
 loadAlerts()
 loadTicker()
-},
-()=>{
-document.getElementById("locationCard").innerText="Location blocked"
 })
 
-/* 🔥 FIXED LOCATION DISPLAY */
+/* LOCATION FIXED */
 
 async function loadLocation(){
-try{
-let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let data=await res.json()
+let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let pointData=await point.json()
 
-let city=data.properties.relativeLocation.properties.city
-let state=data.properties.relativeLocation.properties.state
+let city=pointData.properties.relativeLocation.properties.city
+let state=pointData.properties.relativeLocation.properties.state
+
+let countyRes=await fetch(pointData.properties.county)
+let countyData=await countyRes.json()
+
+let county=countyData.properties.name
 
 document.getElementById("locationCard").innerHTML=
-`<b>${city}, ${state}</b>`
-}catch{
-document.getElementById("locationCard").innerText="Location unavailable"
-}
+`<b>${county} County</b><br>${city}, ${state}`
 }
 
 /* WEATHER */
@@ -266,46 +305,83 @@ let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&long
 let data=await res.json()
 let c=data.current
 
-document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
-document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
-document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
-document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
+temp.innerText=Math.round(c.temperature_2m)+"°F"
+dew.innerText=Math.round(c.dewpoint_2m)+"°F"
+humidity.innerText=c.relative_humidity_2m+"%"
+wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
-/* ALERTS */
+/* ALERTS + RISK */
 
 async function loadAlerts(){
+
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
 let html=""
+let risk="low"
 
-if(data.features.length===0){
-html="No active alerts"
-}else{
 data.features.forEach(a=>{
-html+=`${a.properties.event}<br>`
+
+let e=a.properties.event
+
+if(e.includes("Tornado")){
+risk="high"
+html+=`<div class="card" style="background:#7a0000">${e}</div>`
+}
+else if(e.includes("Severe Thunderstorm")){
+if(risk!=="high") risk="medium"
+html+=`<div class="card" style="background:#8a4b00">${e}</div>`
+}
+
 })
+
+if(html===""){
+html="No active alerts"
 }
 
-document.getElementById("alerts").innerHTML=html
+alerts.innerHTML=html
+
+let box=document.getElementById("riskLevel")
+
+if(risk==="high"){
+box.className="riskBox high"
+box.innerText="Severe Weather Risk: HIGH"
+}
+else if(risk==="medium"){
+box.className="riskBox medium"
+box.innerText="Severe Weather Risk: MODERATE"
+}
+else{
+box.className="riskBox low"
+box.innerText="Severe Weather Risk: LOW"
 }
 
-/* 🔥 FIXED TICKER */
+}
+
+/* TICKER FIXED */
 
 async function loadTicker(){
+
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
 let txt=""
 
-data.features.slice(0,10).forEach(a=>{
-txt += "⚠ " + a.properties.event + " • "
+data.features.forEach(a=>{
+let e=a.properties.event
+
+if(e.includes("Tornado") || e.includes("Severe Thunderstorm")){
+txt += "⚠ " + e + " • "
+}
 })
 
-if(txt==="") txt="No active severe alerts across the U.S."
+if(txt===""){
+txt="No active tornado or severe thunderstorm alerts"
+}
 
-document.getElementById("ticker").innerText=txt
+ticker.innerText=txt
+
 }
 
 </script>
