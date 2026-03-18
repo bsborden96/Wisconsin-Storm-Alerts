@@ -13,10 +13,28 @@ color:white;
 text-align:center;
 }
 
+/* ✅ UPDATED HEADER */
+
 header{
 background:#151c2c;
-padding:32px;
-font-size:40px;
+padding:20px;
+position:relative;
+z-index:1;
+}
+
+.headerContent{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
+}
+
+.logo{
+height:42px;
+}
+
+.titleText{
+font-size:32px;
 font-weight:bold;
 }
 
@@ -79,7 +97,7 @@ top:18px;
 left:18px;
 font-size:52px;
 cursor:pointer;
-z-index:10000;
+z-index:20001;
 }
 
 .menuPanel{
@@ -91,7 +109,7 @@ background:#111827;
 border-radius:14px;
 padding:16px;
 text-align:left;
-z-index:10000;
+z-index:20001;
 }
 
 .menuPanel a{
@@ -276,7 +294,13 @@ If you are in a car, do NOT try to outrun the tornado. Drive to the nearest stro
 <a href="winter.html">Winter Center</a>
 </div>
 
-<header>US Storm Alerts</header>
+<!-- ✅ UPDATED HEADER WITH LOGO -->
+<header>
+<div class="headerContent">
+<img src="logo.png" class="logo">
+<span class="titleText">US Storm Alerts</span>
+</div>
+</header>
 
 <div class="tickerWrap">
 <span id="ticker" class="ticker">Loading severe alerts...</span>
@@ -337,6 +361,8 @@ Wind
 </div>
 
 <script>
+
+/* YOUR SCRIPT IS 100% UNCHANGED BELOW */
 
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
