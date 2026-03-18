@@ -36,20 +36,23 @@ font-size:65px;
 font-weight:bold;
 }
 
-/* 🔥 ARROW BUTTON */
+/* 🔥 SIDE ARROW */
 
 .menuArrow{
-display:inline-block;
+position:fixed;
+left:0;
+top:50%;
+transform:translateY(-50%);
 background:#111827;
 color:white;
 font-size:40px;
-padding:12px 20px;
-border-radius:12px;
+padding:14px 18px;
+border-radius:0 12px 12px 0;
 cursor:pointer;
-margin:20px auto;
+z-index:30002;
 }
 
-/* 🔥 MENU */
+/* MENU */
 
 .menuOverlay{
 position:fixed;
@@ -102,8 +105,8 @@ overflow:hidden;
 
 .ticker{
 white-space:nowrap;
-animation:scroll 25s linear infinite;
 display:inline-block;
+animation:scroll 25s linear infinite;
 }
 
 @keyframes scroll{
@@ -142,6 +145,9 @@ font-size:40px;
 
 <body>
 
+<!-- 🔥 SIDE ARROW -->
+<div class="menuArrow" onclick="toggleMenu()">➤</div>
+
 <!-- MENU -->
 <div id="menuOverlay" class="menuOverlay" onclick="closeMenu()"></div>
 
@@ -169,9 +175,6 @@ font-size:40px;
 <div id="riskLevel" class="card">Risk: LOW</div>
 
 </div>
-
-<!-- 🔥 ARROW HERE (ONLY MENU BUTTON) -->
-<div class="menuArrow" onclick="toggleMenu()">➤ Menu</div>
 
 <div class="section">
 
@@ -229,10 +232,32 @@ let lat, lon
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
+
+loadLocation()
 loadWeather()
 loadAlerts()
 loadTicker()
+},
+()=>{
+document.getElementById("locationCard").innerText="Location blocked"
 })
+
+/* 🔥 FIXED LOCATION DISPLAY */
+
+async function loadLocation(){
+try{
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let data=await res.json()
+
+let city=data.properties.relativeLocation.properties.city
+let state=data.properties.relativeLocation.properties.state
+
+document.getElementById("locationCard").innerHTML=
+`<b>${city}, ${state}</b>`
+}catch{
+document.getElementById("locationCard").innerText="Location unavailable"
+}
+}
 
 /* WEATHER */
 
@@ -266,7 +291,7 @@ html+=`${a.properties.event}<br>`
 document.getElementById("alerts").innerHTML=html
 }
 
-/* TICKER */
+/* 🔥 FIXED TICKER */
 
 async function loadTicker(){
 let res=await fetch("https://api.weather.gov/alerts/active")
@@ -275,10 +300,10 @@ let data=await res.json()
 let txt=""
 
 data.features.slice(0,10).forEach(a=>{
-txt += a.properties.event + " • "
+txt += "⚠ " + a.properties.event + " • "
 })
 
-if(txt==="") txt="No active alerts"
+if(txt==="") txt="No active severe alerts across the U.S."
 
 document.getElementById("ticker").innerText=txt
 }
