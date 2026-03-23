@@ -25,7 +25,6 @@ z-index:1;
 display:flex;
 align-items:center;
 justify-content:center;
-gap:30px;
 }
 
 /* LOGO */
@@ -35,24 +34,38 @@ width:auto;
 filter: drop-shadow(0 0 8px rgba(0,255,150,0.4));
 }
 
-/* MENU CENTER */
-.menuCenter{
-display:flex;
-gap:25px;
-font-size:22px;
-font-weight:bold;
+/* HAMBURGER MENU ICON */
+.menuIcon{
+position:fixed;
+left:15px;
+top:50%;
+transform:translateY(-50%);
+font-size:60px;
+cursor:pointer;
+z-index:30000;
 }
 
-.menuCenter a{
+/* MENU PANEL */
+.menuPanel{
+display:none;
+position:fixed;
+left:90px;
+top:50%;
+transform:translateY(-50%);
+background:#111827;
+border-radius:14px;
+padding:20px;
+z-index:30000;
+}
+
+/* MENU LINKS */
+.menuPanel a{
+display:block;
 color:white;
 text-decoration:none;
-padding:10px 18px;
-border-radius:8px;
-background:#111827;
-}
-
-.menuCenter a:hover{
-background:#1f2937;
+font-size:28px;
+padding:16px;
+font-weight:bold;
 }
 
 /* TICKER */
@@ -164,24 +177,12 @@ cursor:pointer;
 font-size:22px;
 }
 
-.alertDetails{
-display:none;
-margin-top:10px;
-font-size:18px;
-text-align:left;
-}
-
 </style>
 </head>
 
 <body>
 
-<header>
-<div class="headerContent">
-<img src="logo.PNG" class="logo" id="logo">
-</div>
-</header>
-
+<!-- HAMBURGER MENU -->
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
@@ -189,7 +190,10 @@ text-align:left;
 <a href="#">Storm Tracker</a>
 <a href="#">Winter Center</a>
 </div>
-</div>
+
+<header>
+<div class="headerContent">
+<img src="logo.PNG" class="logo" id="logo">
 </div>
 </header>
 
@@ -203,38 +207,18 @@ text-align:left;
 </div>
 
 <div class="section">
-<div id="locationCard" class="locationCard">
-Detecting location...
-</div>
-
-<div id="riskLevel" class="riskBox low">
-Severe Weather Risk: LOW
-</div>
+<div id="locationCard" class="locationCard">Detecting location...</div>
+<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
 </div>
 
 <div class="section">
 <h2>Current Conditions</h2>
 
 <div class="weatherGrid">
-<div class="weatherCard">
-Temperature
-<div id="temp" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-Humidity
-<div id="humidity" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-Dew Point
-<div id="dew" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-Wind
-<div id="wind" class="weatherValue">--</div>
-</div>
+<div class="weatherCard">Temperature<div id="temp" class="weatherValue">--</div></div>
+<div class="weatherCard">Humidity<div id="humidity" class="weatherValue">--</div></div>
+<div class="weatherCard">Dew Point<div id="dew" class="weatherValue">--</div></div>
+<div class="weatherCard">Wind<div id="wind" class="weatherValue">--</div></div>
 </div>
 </div>
 
@@ -245,6 +229,13 @@ Wind
 
 <script>
 
+/* MENU */
+function toggleMenu(){
+let panel=document.getElementById("menuPanel")
+panel.style.display=(panel.style.display==="block")?"none":"block"
+}
+
+/* GEO */
 let lat, lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
@@ -260,20 +251,14 @@ loadAlerts()
 loadTicker()
 }
 
-/* SEARCH FIX */
+/* SEARCH */
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
 input.addEventListener("input", async () => {
-
 let q=input.value.trim()
+if(q.length<2){suggestions.innerHTML="";return}
 
-if(q.length<2){
-suggestions.innerHTML=""
-return
-}
-
-try{
 let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=8`)
 let data=await res.json()
 
@@ -293,11 +278,6 @@ refreshAll()
 
 suggestions.appendChild(div)
 })
-
-}catch(err){
-console.error(err)
-}
-
 })
 
 async function loadLocation(){
@@ -333,8 +313,8 @@ let data=await res.json()
 let html=""
 let risk="low"
 
-data.features.forEach((alert,i)=>{
-let e=alert.properties.event
+data.features.forEach(a=>{
+let e=a.properties.event
 
 if(e.includes("Tornado")) risk="high"
 else if(e.includes("Severe")) risk="medium"
