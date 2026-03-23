@@ -13,9 +13,10 @@ color:white;
 text-align:center;
 }
 
+/* HEADER */
 header{
 background:transparent;
-padding:10px;
+padding:20px;
 position:relative;
 z-index:1;
 }
@@ -24,118 +25,37 @@ z-index:1;
 display:flex;
 align-items:center;
 justify-content:center;
+gap:30px;
 }
 
+/* LOGO */
 .logo{
-height:400px;
+height:60px;
 width:auto;
-display:block;
-margin:auto;
 filter: drop-shadow(0 0 8px rgba(0,255,150,0.4));
-transition: all 0.3s ease;
 }
 
-@keyframes logoPulse{
-0%{transform:scale(1);}
-50%{transform:scale(1.12);}
-100%{transform:scale(1);}
-}
-
-@keyframes logoPulseStrong{
-0%{transform:scale(1);}
-50%{transform:scale(1.18);}
-100%{transform:scale(1);}
-}
-
-.logo.pulse{
-animation:logoPulse 1.5s infinite;
-}
-
-.logo.pulseStrong{
-animation:logoPulseStrong 1s infinite;
-}
-
-/* EVERYTHING ELSE SAME */
-
-.tornadoPopup{
-display:none;
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-background:rgba(0,0,0,.85);
-z-index:20000;
-align-items:center;
-justify-content:center;
-}
-
-.tornadoBox{
-background:#7a0000;
-padding:40px;
-border-radius:14px;
-max-width:520px;
-animation:flashAlert 1s infinite;
-}
-
-@keyframes flashAlert{
-0%{opacity:1}
-50%{opacity:.6}
-100%{opacity:1}
-}
-
-.tornadoTitle{
-font-size:36px;
-font-weight:bold;
-margin-bottom:20px;
-}
-
-.tornadoText{
+/* MENU CENTER */
+.menuCenter{
+display:flex;
+gap:25px;
 font-size:22px;
-line-height:1.6;
+font-weight:bold;
 }
 
-.closeBtn{
-margin-top:25px;
-padding:12px 20px;
-font-size:18px;
-border:none;
-background:black;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
-.menuIcon{
-position:absolute;
-top:18px;
-left:18px;
-font-size:52px;
-cursor:pointer;
-z-index:20001;
-}
-
-.menuPanel{
-display:none;
-position:absolute;
-top:95px;
-left:18px;
-background:#111827;
-border-radius:14px;
-padding:16px;
-text-align:left;
-z-index:20001;
-}
-
-.menuPanel a{
-display:block;
+.menuCenter a{
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
-font-weight:bold;
+padding:10px 18px;
+border-radius:8px;
+background:#111827;
 }
 
+.menuCenter a:hover{
+background:#1f2937;
+}
+
+/* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
@@ -145,18 +65,16 @@ padding:12px 0;
 
 .ticker{
 display:inline-block;
-white-space:nowrap;
-font-size:22px;
-position:relative;
-left:100%;
-animation:scrollTicker 30s linear infinite;
+font-size:20px;
+animation:scroll 30s linear infinite;
 }
 
-@keyframes scrollTicker{
-0%{left:100%}
-100%{left:-100%}
+@keyframes scroll{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
 }
 
+/* SEARCH */
 .searchBox{
 margin:30px auto;
 max-width:600px;
@@ -179,6 +97,7 @@ border-radius:8px;
 max-height:260px;
 overflow-y:auto;
 font-size:20px;
+z-index:9999;
 }
 
 .suggestions div{
@@ -190,6 +109,7 @@ cursor:pointer;
 background:#374151;
 }
 
+/* LAYOUT */
 .section{
 max-width:1000px;
 margin:auto;
@@ -202,15 +122,7 @@ padding:36px;
 border-radius:14px;
 }
 
-.countyName{
-font-size:52px;
-font-weight:bold;
-}
-
-.cityName{
-font-size:30px;
-}
-
+/* RISK */
 .riskBox{
 margin-top:20px;
 padding:20px;
@@ -223,6 +135,7 @@ font-weight:bold;
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
+/* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -241,6 +154,7 @@ font-size:48px;
 font-weight:bold;
 }
 
+/* ALERTS */
 .card{
 background:#111;
 padding:22px;
@@ -249,10 +163,6 @@ border-radius:12px;
 cursor:pointer;
 font-size:22px;
 }
-
-.tornado{background:#7a0000}
-.severe{background:#8a4b00}
-.none{background:#1f3b1f}
 
 .alertDetails{
 display:none;
@@ -266,53 +176,60 @@ text-align:left;
 
 <body>
 
-<div id="tornadoPopup" class="tornadoPopup">
-<div class="tornadoBox">
-<div class="tornadoTitle">🚨 TORNADO WARNING 🚨</div>
-<div class="tornadoText">
-Seek shelter immediately.<br><br>
-Go to an interior room on the lowest floor of a sturdy building.<br>
-Stay away from windows and protect your head and neck.
-</div>
-<button class="closeBtn" onclick="closeTornado()">Dismiss</button>
-</div>
-</div>
-
-<div class="menuIcon" onclick="toggleMenu()">☰</div>
-
-<div id="menuPanel" class="menuPanel">
-<a href="index.html">Home</a>
-<a href="tracking.html">Storm Tracker</a>
-<a href="winter.html">Winter Center</a>
-</div>
-
 <header>
 <div class="headerContent">
 <img src="logo.PNG" class="logo" id="logo">
+
+<div class="menuCenter">
+<a href="#">Home</a>
+<a href="#">Storm Tracker</a>
+<a href="#">Winter Center</a>
+</div>
 </div>
 </header>
 
 <div class="tickerWrap">
-<span id="ticker" class="ticker">Loading severe alerts...</span>
+<div id="ticker" class="ticker">Loading alerts...</div>
 </div>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city">
+<input id="searchInput" placeholder="Search any US city, town, or village">
 <div id="suggestions" class="suggestions"></div>
 </div>
 
 <div class="section">
-<div id="locationCard" class="locationCard">Detecting location...</div>
-<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
+<div id="locationCard" class="locationCard">
+Detecting location...
+</div>
+
+<div id="riskLevel" class="riskBox low">
+Severe Weather Risk: LOW
+</div>
 </div>
 
 <div class="section">
 <h2>Current Conditions</h2>
+
 <div class="weatherGrid">
-<div class="weatherCard">Temperature<div id="temp" class="weatherValue">--</div></div>
-<div class="weatherCard">Humidity<div id="humidity" class="weatherValue">--</div></div>
-<div class="weatherCard">Dew Point<div id="dew" class="weatherValue">--</div></div>
-<div class="weatherCard">Wind<div id="wind" class="weatherValue">--</div></div>
+<div class="weatherCard">
+Temperature
+<div id="temp" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+Humidity
+<div id="humidity" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+Dew Point
+<div id="dew" class="weatherValue">--</div>
+</div>
+
+<div class="weatherCard">
+Wind
+<div id="wind" class="weatherValue">--</div>
+</div>
 </div>
 </div>
 
@@ -322,19 +239,6 @@ Stay away from windows and protect your head and neck.
 </div>
 
 <script>
-
-function toggleMenu(){
-let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
-}
-
-function updateLogoPulse(level){
-let logo=document.getElementById("logo")
-if(!logo) return
-logo.classList.remove("pulse","pulseStrong")
-if(level==="high") logo.classList.add("pulseStrong")
-else if(level==="medium") logo.classList.add("pulse")
-}
 
 let lat, lon
 
@@ -351,22 +255,56 @@ loadAlerts()
 loadTicker()
 }
 
+/* SEARCH FIX */
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+
+input.addEventListener("input", async () => {
+
+let q=input.value.trim()
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+try{
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=8`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
+suggestions.innerHTML=""
+refreshAll()
+}
+
+suggestions.appendChild(div)
+})
+
+}catch(err){
+console.error(err)
+}
+
+})
+
 async function loadLocation(){
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
-headers: {"User-Agent":"StormApp (test@test.com)"}
+let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`,{
+headers:{"User-Agent":"StormApp (test@test.com)"}
 })
 let data=await point.json()
 
 let city=data.properties.relativeLocation.properties.city
 let state=data.properties.relativeLocation.properties.state
 
-let countyRes=await fetch(data.properties.county)
-let countyData=await countyRes.json()
-
-let county=countyData.properties.name
-
-locationCard.innerHTML=`<div class="countyName">${county} County</div>
-<div class="cityName">${city}, ${state}</div>`
+locationCard.innerHTML=`${city}, ${state}`
 }
 
 async function loadWeather(){
@@ -382,32 +320,48 @@ wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
 async function loadAlerts(){
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, {
-headers: {"User-Agent":"StormApp (test@test.com)"}
+let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`,{
+headers:{"User-Agent":"StormApp (test@test.com)"}
 })
 let data=await res.json()
 
 let html=""
 let risk="low"
 
-data.features.forEach((a,i)=>{
-let e=a.properties.event
-let style="card"
+data.features.forEach((alert,i)=>{
+let e=alert.properties.event
 
-if(e.includes("Tornado")){
-style+=" tornado"
-risk="high"
-}
-else if(e.includes("Severe Thunderstorm Warning")){
-style+=" severe"
-risk="medium"
-}
+if(e.includes("Tornado")) risk="high"
+else if(e.includes("Severe")) risk="medium"
 
-html+=`<div class="${style}"><b>${e}</b><br>${a.properties.areaDesc}</div>`
+html+=`<div class="card">${e}</div>`
 })
 
-alerts.innerHTML=html || "No active alerts"
+alerts.innerHTML=html || "No alerts"
 updateRisk(risk)
+}
+
+async function loadTicker(){
+let res=await fetch("https://api.weather.gov/alerts/active",{
+headers:{"User-Agent":"StormApp (test@test.com)"}
+})
+let data=await res.json()
+
+let items=[]
+
+data.features.forEach(a=>{
+let e=a.properties.event
+
+if(
+e.includes("Tornado Emergency") ||
+e.includes("Particularly Dangerous Situation") ||
+e.includes("Severe Thunderstorm Warning")
+){
+items.push(`⚠ ${e}`)
+}
+})
+
+ticker.innerText=items.join(" • ") || "No major alerts"
 }
 
 function updateRisk(level){
@@ -423,23 +377,6 @@ else{
 riskLevel.className="riskBox low"
 riskLevel.innerText="Severe Weather Risk: LOW"
 }
-
-updateLogoPulse(level)
-}
-
-async function loadTicker(){
-let res=await fetch("https://api.weather.gov/alerts/active", {
-headers: {"User-Agent":"StormApp (test@test.com)"}
-})
-let data=await res.json()
-
-let text=""
-
-data.features.slice(0,10).forEach(a=>{
-text+=`⚠ ${a.properties.event} • `
-})
-
-ticker.innerText=text || "No alerts"
 }
 
 </script>
