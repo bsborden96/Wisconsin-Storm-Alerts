@@ -281,15 +281,26 @@ suggestions.appendChild(div)
 })
 
 async function loadLocation(){
+
 let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`,{
 headers:{"User-Agent":"StormApp (test@test.com)"}
 })
-let data=await point.json()
+let pointData=await point.json()
 
-let city=data.properties.relativeLocation.properties.city
-let state=data.properties.relativeLocation.properties.state
+let city=pointData.properties.relativeLocation.properties.city
+let state=pointData.properties.relativeLocation.properties.state
 
-locationCard.innerHTML=`${city}, ${state}`
+/* 🔥 GET COUNTY */
+let countyRes=await fetch(pointData.properties.county)
+let countyData=await countyRes.json()
+
+let county=countyData.properties.name
+
+/* 🔥 DISPLAY */
+locationCard.innerHTML=
+`<div style="font-size:48px;font-weight:bold;">${county} County</div>
+<div style="font-size:26px;">${city}, ${state}</div>`
+
 }
 
 async function loadWeather(){
