@@ -15,38 +15,45 @@ color:white;
 text-align:center;
 }
 
-/* ✅ UPDATED HEADER */
-
+/* HEADER (STICKY) */
 header{
-background:#151c2c;
+background:#0a0f1c;
 padding:20px;
-position:relative;
-z-index:1;
+position:sticky;
+top:0;
+z-index:10000;
 }
 
 .headerContent{
 display:flex;
 align-items:center;
 justify-content:center;
-gap:12px;
 }
 
+/* LOGO */
 .logo{
-height:42px;
+width:400px;
+max-width:90%;
+height:auto;
 }
 
-.titleText{
-font-size:32px;
-font-weight:bold;
+/* LOGO PULSE */
+@keyframes logoPulse{
+0%{transform:scale(1);}
+50%{transform:scale(1.1);}
+100%{transform:scale(1);}
 }
 
-/* ✅ MENU (unchanged but clean) */
+.logo.alert{
+animation:logoPulse 0.8s infinite;
+}
 
+/* MENU */
 .menuIcon{
 position:absolute;
 top:16px;
 left:18px;
-font-size:48px;
+font-size:60px;
 cursor:pointer;
 z-index:20001;
 }
@@ -59,7 +66,6 @@ left:18px;
 background:#111827;
 border-radius:14px;
 padding:16px;
-text-align:left;
 z-index:20001;
 }
 
@@ -73,7 +79,6 @@ font-weight:bold;
 }
 
 /* SEARCH */
-
 .searchBox{
 margin:30px auto;
 max-width:600px;
@@ -97,6 +102,7 @@ border-radius:8px;
 max-height:220px;
 overflow-y:auto;
 font-size:20px;
+z-index:9999;
 }
 
 .suggestions div{
@@ -104,6 +110,7 @@ padding:12px;
 cursor:pointer;
 }
 
+/* LAYOUT */
 .section{
 max-width:1000px;
 margin:auto;
@@ -118,11 +125,13 @@ margin-top:20px;
 font-size:22px;
 }
 
+/* ALERT GLOW */
 .tornado{
 background:#7a0000;
 padding:20px;
 margin-top:18px;
 border-radius:10px;
+animation:glowRed 1s infinite alternate;
 }
 
 .severe{
@@ -130,6 +139,17 @@ background:#8a4b00;
 padding:20px;
 margin-top:18px;
 border-radius:10px;
+animation:glowOrange 1.5s infinite alternate;
+}
+
+@keyframes glowRed{
+from{box-shadow:0 0 10px rgba(255,0,0,0.4);}
+to{box-shadow:0 0 25px rgba(255,0,0,1);}
+}
+
+@keyframes glowOrange{
+from{box-shadow:0 0 8px rgba(255,140,0,0.4);}
+to{box-shadow:0 0 20px rgba(255,140,0,1);}
 }
 
 .distance{
@@ -151,16 +171,14 @@ font-size:20px;
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
-<a href="index.html">Home</a>
-<a href="tracking.html">Storm Tracker</a>
-<a href="winter.html">Winter Center</a>
+<a href="index.html" onclick="toggleMenu()">Home</a>
+<a href="tracking.html" onclick="toggleMenu()">Storm Tracker</a>
+<a href="winter.html" onclick="toggleMenu()">Winter Center</a>
 </div>
 
-<!-- ✅ UPDATED HEADER WITH LOGO -->
 <header>
 <div class="headerContent">
 <img src="logo.png" class="logo">
-<span class="titleText">Storm Tracker</span>
 </div>
 </header>
 
@@ -180,8 +198,18 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
-let lat
-let lon
+function updateLogoAlert(hasTornado){
+let logo=document.querySelector(".logo")
+if(!logo) return
+
+if(hasTornado){
+logo.classList.add("alert")
+}else{
+logo.classList.remove("alert")
+}
+}
+
+let lat, lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
@@ -190,7 +218,6 @@ loadStorms()
 })
 
 /* SEARCH */
-
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
@@ -203,7 +230,7 @@ suggestions.innerHTML=""
 return
 }
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=10`)
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=10`)
 let data=await res.json()
 
 suggestions.innerHTML=""
@@ -228,185 +255,46 @@ suggestions.appendChild(div)
 })
 
 /* DISTANCE */
-
 function distance(lat1,lon1,lat2,lon2){
-
 let R=6371
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
 
-let a=
-Math.sin(dLat/2)*Math.sin(dLat/2)+
+let a=Math.sin(dLat/2)**2+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.sin(dLon/2)*Math.sin(dLon/2)
+Math.sin(dLon/2)**2
 
 let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
-
-let km=R*c
-
-return km*0.621371
-
-}
-
-/* DIRECTION */
-
-function direction(lat1,lon1,lat2,lon2){
-
-let dLon=(lon2-lon1)
-
-let y=Math.sin(dLon*Math.PI/180)*Math.cos(lat2*Math.PI/180)
-
-let x=
-Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
-Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-Math.cos(dLon*Math.PI/180)
-
-let brng=Math.atan2(y,x)*180/Math.PI
-
-let dirs=["N","NE","E","SE","S","SW","W","NW"]
-
-return dirs[Math.round(brng/45)&7]
-
-}
-
-/* MOVEMENT */
-
-function getMovement(text){
-
-let match=text.match(/moving\s+([a-zA-Z]+)\s+at\s+(\d+)/i)
-
-if(match){
-return {dir:match[1].toUpperCase(),speed:parseInt(match[2])}
-}
-
-return null
-
-}
-
-function isHeadingToward(stormDir,targetDir){
-
-let dirs=["N","NE","E","SE","S","SW","W","NW"]
-
-let stormIndex=dirs.indexOf(stormDir)
-let targetIndex=dirs.indexOf(targetDir)
-
-if(stormIndex==-1 || targetIndex==-1) return true
-
-let diff=Math.abs(stormIndex-targetIndex)
-
-return diff<=2
-
-}
-
-/* WIND + HAIL */
-
-function getWind(text){
-let match=text.match(/(\d+)\s?mph/i)
-if(match){return match[1]+" mph"}
-return "Unknown"
-}
-
-function getHail(text){
-let match=text.match(/(\d+(\.\d+)?)\s?inch/i)
-if(match){return match[1]+" in"}
-return "Unknown"
+return (R*c)*0.621371
 }
 
 /* LOAD STORMS */
-
 async function loadStorms(){
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let storms=[]
 let html=""
 let found=false
+let tornadoActive=false
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
-
 if(!event.includes("Tornado") && !event.includes("Severe Thunderstorm")) return
 
-storms.push(alert)
+if(event.includes("Tornado")) tornadoActive=true
 
-})
-
-storms.sort((a,b)=>{
-
-let ea=a.properties.event
-let eb=b.properties.event
-
-if(ea.includes("Emergency")) return -1
-if(eb.includes("Emergency")) return 1
-
-if(ea.includes("Tornado") && !eb.includes("Tornado")) return -1
-if(eb.includes("Tornado") && !ea.includes("Tornado")) return 1
-
-return 0
-
-})
-
-storms.forEach(alert=>{
-
-let geo=alert.geometry
-if(!geo) return
-
-let coord=geo.coordinates[0][0]
-
-let sLat=coord[1]
-let sLon=coord[0]
-
-let miles=distance(lat,lon,sLat,sLon)
-
-let dir=direction(sLat,sLon,lat,lon)
-
-let desc=alert.properties.description
-
-let movement=getMovement(desc)
-
-let headingToward=true
-let arrival=""
-
-if(movement){
-
-headingToward=isHeadingToward(movement.dir,dir)
-
-let minutes=Math.round((miles/movement.speed)*60)
-
-arrival="Arrival: ~"+minutes+" minutes"
-
-}
-
-if(miles<250 && headingToward){
-
-found=true
-
-let style="severe"
-if(alert.properties.event.includes("Tornado")) style="tornado"
+let style=event.includes("Tornado")?"tornado":"severe"
 
 html+=`
-
 <div class="${style}">
-
-<b>${alert.properties.event}</b>
-
-<div class="distance">
-${Math.round(miles)} miles ${dir}
-</div>
-
-<div class="info">${arrival}</div>
-<div class="info">Wind: ${getWind(desc)}</div>
-<div class="info">Hail: ${getHail(desc)}</div>
-
+<b>${event}</b>
 ${alert.properties.areaDesc}
-
 </div>
-
 `
 
-}
+found=true
 
 })
 
@@ -416,6 +304,7 @@ html='<div class="card">No severe storms near this location</div>'
 
 document.getElementById("storms").innerHTML=html
 
+updateLogoAlert(tornadoActive)
 }
 
 setInterval(loadStorms,60000)
