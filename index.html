@@ -1,10 +1,7 @@
 <!DOCTYPE html>
 <html>
-<header>
-<div class="headerContent">
-<img src="logo.PNG" class="logo">
-</div>
-</header>
+<head>
+<title>US Storm Alerts</title>
 
 <style>
 
@@ -15,8 +12,6 @@ background:#0a0f1c;
 color:white;
 text-align:center;
 }
-
-/* ✅ UPDATED HEADER */
 
 header{
 background:#151c2c;
@@ -29,19 +24,36 @@ z-index:1;
 display:flex;
 align-items:center;
 justify-content:center;
-gap:12px;
 }
 
+/* LOGO */
 .logo{
-height:42px;
+height:60px;
+width:auto;
+filter: drop-shadow(0 0 8px rgba(0,255,150,0.4));
+transition: all 0.3s ease;
 }
 
-.titleText{
-font-size:32px;
-font-weight:bold;
+/* Pulse animations */
+@keyframes logoPulse{
+0%{transform:scale(1); filter: drop-shadow(0 0 6px rgba(0,255,150,0.3));}
+50%{transform:scale(1.12); filter: drop-shadow(0 0 16px rgba(0,255,150,0.9));}
+100%{transform:scale(1); filter: drop-shadow(0 0 6px rgba(0,255,150,0.3));}
 }
 
-/* TORNADO ALERT POPUP */
+@keyframes logoPulseStrong{
+0%{transform:scale(1); filter: drop-shadow(0 0 8px rgba(255,0,0,0.4));}
+50%{transform:scale(1.18); filter: drop-shadow(0 0 22px rgba(255,0,0,1));}
+100%{transform:scale(1); filter: drop-shadow(0 0 8px rgba(255,0,0,0.4));}
+}
+
+.logo.pulse{
+animation:logoPulse 1.5s infinite;
+}
+
+.logo.pulseStrong{
+animation:logoPulseStrong 1s infinite;
+}
 
 .tornadoPopup{
 display:none;
@@ -92,8 +104,6 @@ border-radius:8px;
 cursor:pointer;
 }
 
-/* MENU */
-
 .menuIcon{
 position:absolute;
 top:18px;
@@ -124,8 +134,6 @@ padding:16px;
 font-weight:bold;
 }
 
-/* TICKER */
-
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
@@ -146,8 +154,6 @@ animation:scrollTicker 30s linear infinite;
 0%{left:100%}
 100%{left:-100%}
 }
-
-/* SEARCH */
 
 .searchBox{
 margin:30px auto;
@@ -182,8 +188,6 @@ cursor:pointer;
 background:#374151;
 }
 
-/* LAYOUT */
-
 .section{
 max-width:1000px;
 margin:auto;
@@ -205,8 +209,6 @@ font-weight:bold;
 font-size:30px;
 }
 
-/* RISK */
-
 .riskBox{
 margin-top:20px;
 padding:20px;
@@ -218,8 +220,6 @@ font-weight:bold;
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
-
-/* WEATHER */
 
 .weatherGrid{
 display:grid;
@@ -238,8 +238,6 @@ border-radius:12px;
 font-size:48px;
 font-weight:bold;
 }
-
-/* ALERTS */
 
 .card{
 background:#111;
@@ -268,24 +266,15 @@ text-align:left;
 
 <div id="tornadoPopup" class="tornadoPopup">
 <div class="tornadoBox">
-
-<div class="tornadoTitle">
-🚨 TORNADO WARNING 🚨
-</div>
-
+<div class="tornadoTitle">🚨 TORNADO WARNING 🚨</div>
 <div class="tornadoText">
 Seek shelter immediately.<br><br>
-
 Go to an interior room on the lowest floor of a sturdy building.<br>
 Stay away from windows and protect your head and neck.<br><br>
-
 If you are in a mobile home, leave immediately and move to a sturdy shelter.<br><br>
-
-If you are in a car, do NOT try to outrun the tornado. Drive to the nearest strong building or shelter.
+If you are in a car, do NOT try to outrun the tornado.
 </div>
-
 <button class="closeBtn" onclick="closeTornado()">Dismiss</button>
-
 </div>
 </div>
 
@@ -297,11 +286,9 @@ If you are in a car, do NOT try to outrun the tornado. Drive to the nearest stro
 <a href="winter.html">Winter Center</a>
 </div>
 
-<!-- ✅ UPDATED HEADER WITH LOGO -->
 <header>
 <div class="headerContent">
-<img src="logo.png" class="logo">
-<span class="titleText">US Storm Alerts</span>
+<img src="logo.png" class="logo" id="logo">
 </div>
 </header>
 
@@ -315,57 +302,26 @@ If you are in a car, do NOT try to outrun the tornado. Drive to the nearest stro
 </div>
 
 <div class="section">
-
-<div id="locationCard" class="locationCard">
-Detecting location...
-</div>
-
-<div id="riskLevel" class="riskBox low">
-Severe Weather Risk: LOW
-</div>
-
+<div id="locationCard" class="locationCard">Detecting location...</div>
+<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
 </div>
 
 <div class="section">
-
 <h2>Current Conditions</h2>
-
 <div class="weatherGrid">
-
-<div class="weatherCard">
-Temperature
-<div id="temp" class="weatherValue">--</div>
+<div class="weatherCard">Temperature<div id="temp" class="weatherValue">--</div></div>
+<div class="weatherCard">Humidity<div id="humidity" class="weatherValue">--</div></div>
+<div class="weatherCard">Dew Point<div id="dew" class="weatherValue">--</div></div>
+<div class="weatherCard">Wind<div id="wind" class="weatherValue">--</div></div>
 </div>
-
-<div class="weatherCard">
-Humidity
-<div id="humidity" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-Dew Point
-<div id="dew" class="weatherValue">--</div>
-</div>
-
-<div class="weatherCard">
-Wind
-<div id="wind" class="weatherValue">--</div>
-</div>
-
-</div>
-
 </div>
 
 <div class="section">
-
 <h2>Active Alerts</h2>
 <div id="alerts">Loading alerts...</div>
-
 </div>
 
 <script>
-
-/* YOUR SCRIPT IS 100% UNCHANGED BELOW */
 
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
@@ -407,13 +363,8 @@ let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
 input.addEventListener("input",async()=>{
-
 let q=input.value
-
-if(q.length<2){
-suggestions.innerHTML=""
-return
-}
+if(q.length<2){suggestions.innerHTML="";return}
 
 let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=20`)
 let data=await res.json()
@@ -421,11 +372,8 @@ let data=await res.json()
 suggestions.innerHTML=""
 
 data.forEach(place=>{
-
 let div=document.createElement("div")
-
 div.innerText=place.display_name
-
 div.onclick=()=>{
 lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
@@ -433,15 +381,11 @@ input.value=place.display_name
 suggestions.innerHTML=""
 refreshAll()
 }
-
 suggestions.appendChild(div)
-
 })
-
 })
 
 async function loadLocation(){
-
 let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let pointData=await point.json()
 
@@ -456,25 +400,20 @@ let county=countyData.properties.name
 document.getElementById("locationCard").innerHTML=
 `<div class="countyName">${county} County</div>
 <div class="cityName">${city}, ${state}</div>`
-
 }
 
 async function loadWeather(){
-
 let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let data=await res.json()
-
 let c=data.current
 
 temp.innerText=Math.round(c.temperature_2m)+"°F"
 dew.innerText=Math.round(c.dewpoint_2m)+"°F"
 humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
-
 }
 
 async function loadAlerts(){
-
 let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let data=await res.json()
 
@@ -482,7 +421,6 @@ let html=""
 let risk="low"
 
 data.features.forEach((alert,i)=>{
-
 let e=alert.properties.event
 let style="card"
 
@@ -505,9 +443,7 @@ html+=`
 <div id="detail${i}" class="alertDetails">
 ${alert.properties.description}
 </div>
-</div>
-`
-
+</div>`
 })
 
 if(html===""){
@@ -516,7 +452,6 @@ html='<div class="card none">No active alerts for this location</div>'
 
 alerts.innerHTML=html
 updateRisk(risk)
-
 }
 
 function toggleAlert(id){
@@ -525,7 +460,6 @@ el.style.display=(el.style.display==="block")?"none":"block"
 }
 
 function updateRisk(level){
-
 let box=document.getElementById("riskLevel")
 
 if(level==="high"){
@@ -541,10 +475,22 @@ box.className="riskBox low"
 box.innerText="Severe Weather Risk: LOW"
 }
 
+updateLogoPulse(level)
+}
+
+function updateLogoPulse(level){
+let logo=document.getElementById("logo")
+logo.classList.remove("pulse","pulseStrong")
+
+if(level==="high"){
+logo.classList.add("pulseStrong")
+}
+else if(level==="medium"){
+logo.classList.add("pulse")
+}
 }
 
 async function loadTicker(){
-
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
@@ -554,7 +500,6 @@ let watch=[]
 let severe=[]
 
 data.features.forEach(a=>{
-
 let e=a.properties.event
 let text=`⚠ ${e} — ${a.properties.areaDesc}`
 
@@ -562,23 +507,18 @@ if(e.includes("Tornado Emergency")) emergency.push(text)
 else if(e.includes("Tornado Warning")) warning.push(text)
 else if(e.includes("Tornado Watch")) watch.push(text)
 else if(e.includes("Severe Thunderstorm Warning")) severe.push(text)
-
 })
 
 let ordered=[...emergency,...warning,...watch,...severe]
 
 let tickerText=""
-
-ordered.forEach(a=>{
-tickerText+=a+" • "
-})
+ordered.forEach(a=>{tickerText+=a+" • "})
 
 if(tickerText===""){
 tickerText="No active tornado or severe thunderstorm alerts across the United States • "
 }
 
 ticker.innerText=tickerText
-
 }
 
 loadTicker()
