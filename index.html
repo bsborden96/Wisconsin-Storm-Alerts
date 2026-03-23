@@ -7,23 +7,28 @@
     
 <style>
 
+/* BODY */
 body{
 margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
 text-align:center;
+padding-top:110px;   /* 🔥 prevents overlap from fixed header */
 }
 
-/* HEADER */
+/* HEADER (LOCKED AT TOP) */
 header{
-background:transparent;
-padding:10px 0;
-position:sticky;
+position:fixed;          /* 🔥 FIX */
 top:0;
+left:0;
+width:100%;
 z-index:10000;
+background:#0a0f1c;
+padding:10px 0;
 }
 
+/* CENTER LOGO */
 .headerContent{
 display:flex;
 align-items:center;
@@ -31,9 +36,10 @@ justify-content:center;
 width:100%;
 }
 
+/* LOGO */
 .logo{
 width:400px;
-maxwidth: 96vw;
+max-width:96vw;          /* 🔥 FIXED TYPO */
 height:auto;
 display:block;
 margin:auto;
@@ -41,11 +47,10 @@ margin:auto;
 
 /* HAMBURGER MENU ICON */
 .menuIcon{
-position:fixed;
+position:fixed;          /* 🔥 stays in place */
 left:15px;
-top:350px;
-transform:translateY(-50%);
-font-size:150px;
+top:25px;                /* 🔥 move to top */
+font-size:80px;          /* 🔥 cleaner size */
 cursor:pointer;
 z-index:30000;
 }
@@ -53,10 +58,9 @@ z-index:30000;
 /* MENU PANEL */
 .menuPanel{
 display:none;
-position:fixed;
-left:70px;
-top:355px;
-transform:none;
+position:fixed;          /* 🔥 stays in place */
+left:20px;
+top:100px;               /* 🔥 aligns under header */
 background:#111827;
 border-radius:14px;
 padding:20px;
