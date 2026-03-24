@@ -26,25 +26,27 @@ margin:20px auto 10px auto;  /* 🔥 top spacing */
 }
 
 /* HAMBURGER MENU ICON */
+/* HAMBURGER MENU ICON */
 .menuIcon{
 position:fixed;
+top:20px;
 left:15px;
-top:25px;
-font-size:55px;
+font-size:70px;
 cursor:pointer;
-z-index:30000;
+z-index:99999;   /* 🔥 always on top */
 }
 
 /* MENU PANEL */
 .menuPanel{
 display:none;
 position:fixed;
-left:20px;
-top:100px;
+top:90px;        /* 🔥 directly under icon */
+left:15px;
 background:#111827;
 border-radius:14px;
 padding:20px;
-z-index:30000;
+z-index:99999;   /* 🔥 above everything */
+min-width:220px;
 }
 
 /* MENU LINKS */
@@ -52,8 +54,8 @@ z-index:30000;
 display:block;
 color:white;
 text-decoration:none;
-font-size:28px;
-padding:16px;
+font-size:26px;
+padding:14px;
 font-weight:bold;
 }
 
