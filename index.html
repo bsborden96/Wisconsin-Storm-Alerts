@@ -14,12 +14,12 @@ font-family:Arial;
 background:#0a0f1c;
 color:white;
 text-align:center;
-padding-top:110px;   /* 🔥 prevents overlap from fixed header */
+padding-top:0;   /* 🔥 FIXED */
 }
 
 /* HEADER (LOCKED AT TOP) */
 header{
-position:fixed;          /* 🔥 FIX */
+position:fixed;
 top:0;
 left:0;
 width:100%;
@@ -39,7 +39,7 @@ width:100%;
 /* LOGO */
 .logo{
 width:400px;
-max-width:96vw;          /* 🔥 FIXED TYPO */
+max-width:96vw;
 height:auto;
 display:block;
 margin:auto;
@@ -47,10 +47,10 @@ margin:auto;
 
 /* HAMBURGER MENU ICON */
 .menuIcon{
-position:fixed;          /* 🔥 stays in place */
+position:fixed;
 left:15px;
-top:25px;                /* 🔥 move to top */
-font-size:80px;          /* 🔥 cleaner size */
+top:25px;
+font-size:80px;
 cursor:pointer;
 z-index:30000;
 }
@@ -58,9 +58,9 @@ z-index:30000;
 /* MENU PANEL */
 .menuPanel{
 display:none;
-position:fixed;          /* 🔥 stays in place */
+position:fixed;
 left:20px;
-top:100px;               /* 🔥 aligns under header */
+top:100px;
 background:#111827;
 border-radius:14px;
 padding:20px;
@@ -83,6 +83,7 @@ background:#7a0000;
 overflow:hidden;
 white-space:nowrap;
 padding:12px 0;
+margin-top:110px;   /* 🔥 FIX — pushes below header */
 }
 
 .ticker{
@@ -299,13 +300,11 @@ let pointData=await point.json()
 let city=pointData.properties.relativeLocation.properties.city
 let state=pointData.properties.relativeLocation.properties.state
 
-/* 🔥 GET COUNTY */
 let countyRes=await fetch(pointData.properties.county)
 let countyData=await countyRes.json()
 
 let county=countyData.properties.name
 
-/* 🔥 DISPLAY */
 locationCard.innerHTML=
 `<div style="font-size:48px;font-weight:bold;">${county} County</div>
 <div style="font-size:26px;">${city}, ${state}</div>`
