@@ -14,36 +14,15 @@ font-family:Arial;
 background:#0a0f1c;
 color:white;
 text-align:center;
-padding-top:140px;   /* 🔥 FIXED spacing for header */
 }
 
-/* HEADER (LOCKED AT TOP) */
-header{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-z-index:10000;
-background:#0a0f1c;
-padding:10px 0;
-box-shadow:0 4px 20px rgba(0,0,0,0.6); /* 🔥 clean separation */
-}
-
-/* CENTER LOGO */
-.headerContent{
-display:flex;
-align-items:center;
-justify-content:center;
-width:100%;
-}
-
-/* LOGO */
+/* LOGO (NOW NORMAL TOP ELEMENT) */
 .logo{
-width:300px;           /* 🔥 updated size */
+width:300px;
 max-width:96vw;
 height:auto;
 display:block;
-margin:auto;
+margin:20px auto 10px auto;  /* 🔥 top spacing */
 }
 
 /* HAMBURGER MENU ICON */
@@ -201,11 +180,8 @@ font-size:22px;
 <a href="winter.html" onclick="toggleMenu()">Winter Center</a>
 </div>
 
-<header>
-<div class="headerContent">
+<!-- 🔥 LOGO (NO HEADER ANYMORE) -->
 <img src="logo.PNG" class="logo" id="logo">
-</div>
-</header>
 
 <div class="tickerWrap">
 <div id="ticker" class="ticker">Loading alerts...</div>
