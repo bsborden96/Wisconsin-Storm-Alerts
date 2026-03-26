@@ -56,19 +56,27 @@ padding:14px;
 font-weight:bold;
 }
 
+/* 🔥 UNIFIED WIDTH (FIXES YOUR UI ISSUE) */
+.container{
+max-width:600px;
+margin:auto;
+width:92%;
+}
+
 /* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
 white-space:nowrap;
 padding:12px 0;
+margin-top:10px;
 }
 
 .ticker{
 display:inline-block;
 white-space:nowrap;
 font-size:20px;
-animation:scroll 50s linear infinite; /* 🔥 FIXED SPEED */
+animation:scroll 80s linear infinite; /* 🔥 SMOOTH */
 }
 
 @keyframes scroll{
@@ -78,8 +86,7 @@ animation:scroll 50s linear infinite; /* 🔥 FIXED SPEED */
 
 /* SEARCH */
 .searchBox{
-margin:30px auto;
-max-width:600px;
+margin:20px auto;
 position:relative;
 }
 
@@ -100,15 +107,6 @@ max-height:260px;
 overflow-y:auto;
 font-size:20px;
 z-index:9999;
-}
-
-.suggestions div{
-padding:12px;
-cursor:pointer;
-}
-
-.suggestions div:hover{
-background:#374151;
 }
 
 /* LAYOUT */
@@ -175,13 +173,16 @@ font-size:22px;
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
-<a href="index.html" onclick="toggleMenu()">Home</a>
-<a href="tracking.html" onclick="toggleMenu()">Storm Tracker</a>
-<a href="winter.html" onclick="toggleMenu()">Winter Center</a>
+<a href="index.html">Home</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
 </div>
 
 <!-- LOGO -->
 <img src="logo.PNG" class="logo">
+
+<!-- 🔥 WRAPPED FOR SAME WIDTH -->
+<div class="container">
 
 <!-- TICKER -->
 <div class="tickerWrap">
@@ -190,8 +191,10 @@ font-size:22px;
 
 <!-- SEARCH -->
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city, town, or village">
+<input id="searchInput" placeholder="Search any US city">
 <div id="suggestions" class="suggestions"></div>
+</div>
+
 </div>
 
 <!-- LOCATION -->
@@ -203,11 +206,10 @@ font-size:22px;
 <!-- WEATHER -->
 <div class="section">
 <h2>Current Conditions</h2>
-
 <div class="weatherGrid">
-<div class="weatherCard">Temperature<div id="temp" class="weatherValue">--</div></div>
+<div class="weatherCard">Temp<div id="temp" class="weatherValue">--</div></div>
 <div class="weatherCard">Humidity<div id="humidity" class="weatherValue">--</div></div>
-<div class="weatherCard">Dew Point<div id="dew" class="weatherValue">--</div></div>
+<div class="weatherCard">Dew<div id="dew" class="weatherValue">--</div></div>
 <div class="weatherCard">Wind<div id="wind" class="weatherValue">--</div></div>
 </div>
 </div>
@@ -226,7 +228,7 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
-/* 🔥 LOAD TICKER IMMEDIATELY */
+/* 🔥 INSTANT LOAD */
 loadTicker()
 
 /* GEO */
@@ -244,138 +246,67 @@ loadWeather()
 loadAlerts()
 }
 
-/* SEARCH */
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-
-input.addEventListener("input", async () => {
-let q=input.value.trim()
-if(q.length<2){suggestions.innerHTML="";return}
-
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=8`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
-suggestions.innerHTML=""
-refreshAll()
-}
-
-suggestions.appendChild(div)
-})
-})
-
-async function loadLocation(){
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`,{
-headers:{"User-Agent":"StormApp (test@test.com)"}
-})
-let pointData=await point.json()
-
-let city=pointData.properties.relativeLocation.properties.city
-let state=pointData.properties.relativeLocation.properties.state
-
-let countyRes=await fetch(pointData.properties.county)
-let countyData=await countyRes.json()
-
-let county=countyData.properties.name
-
-document.getElementById("locationCard").innerHTML=
-`<div style="font-size:48px;font-weight:bold;">${county} County</div>
-<div style="font-size:26px;">${city}, ${state}</div>`
-}
-
-async function loadWeather(){
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
-let data=await res.json()
-
-let c=data.current
-
-document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
-document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
-document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
-document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
-}
-
-async function loadAlerts(){
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`,{
-headers:{"User-Agent":"StormApp (test@test.com)"}
-})
-let data=await res.json()
-
-let html=""
-let risk="low"
-
-data.features.forEach(a=>{
-let e=a.properties.event
-
-if(e.includes("Tornado")) risk="high"
-else if(e.includes("Severe")) risk="medium"
-
-html+=`<div class="card">${e}</div>`
-})
-
-document.getElementById("alerts").innerHTML=html || "No alerts"
-updateRisk(risk)
-}
-
-/* 🔥 TICKER */
+/* 🔥 SMART SORT + CACHE */
 async function loadTicker(){
+
+let tickerEl = document.getElementById("ticker")
+
+/* 🔥 INSTANT CACHE LOAD */
+let cached = localStorage.getItem("tickerCache")
+if(cached){
+tickerEl.innerText = cached
+}
 
 try{
 
 let res=await fetch("https://api.weather.gov/alerts/active",{
-headers:{"User-Agent":"StormApp (test@test.com)"}
+headers:{"User-Agent":"StormApp"}
 })
 
 let data=await res.json()
 
-let items=[]
-
-data.features.forEach(a=>{
+let alerts = data.features.map(a=>{
 let e=a.properties.event || ""
+let desc=(a.properties.description || "").toLowerCase()
 let area=a.properties.areaDesc || "Unknown"
 
-if(
-e.includes("Tornado") ||
-e.includes("Severe Thunderstorm Warning") ||
-e.includes("Watch")
-){
-items.push(`⚠ ${e} — ${area}`)
+/* 🔥 PRIORITY SCORE */
+let score=0
+
+if(desc.includes("particularly dangerous situation")) score=5
+else if(e.includes("Tornado Warning")) score=4
+else if(e.includes("Tornado Watch")) score=3
+else if(e.includes("Severe Thunderstorm Warning")) score=2
+else score=1
+
+return {
+text:`⚠ ${e} — ${area}`,
+score
 }
 })
 
-document.getElementById("ticker").innerText = items.length
-? items.join(" • ")
+/* 🔥 SORT BY SEVERITY */
+alerts.sort((a,b)=>b.score-a.score)
+
+/* 🔥 LIMIT */
+let topAlerts = alerts.slice(0,8).map(a=>a.text)
+
+let finalText = topAlerts.length
+? topAlerts.join(" • ")
 : "No major alerts across the United States"
 
+tickerEl.innerText = finalText
+
+localStorage.setItem("tickerCache", finalText)
+
 }catch(err){
-document.getElementById("ticker").innerText="Error loading alerts"
+tickerEl.innerText="Error loading alerts"
 }
 
 }
 
-function updateRisk(level){
-if(level==="high"){
-riskLevel.className="riskBox high"
-riskLevel.innerText="Severe Weather Risk: HIGH"
-}
-else if(level==="medium"){
-riskLevel.className="riskBox medium"
-riskLevel.innerText="Severe Weather Risk: MODERATE"
-}
-else{
-riskLevel.className="riskBox low"
-riskLevel.innerText="Severe Weather Risk: LOW"
-}
-}
+/* AUTO REFRESH */
+setInterval(loadTicker, 60000)
 
 </script>
 
