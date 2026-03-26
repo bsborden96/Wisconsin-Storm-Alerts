@@ -324,6 +324,7 @@ updateRisk(risk)
 }
 
 async function loadTicker(){
+
 let res=await fetch("https://api.weather.gov/alerts/active",{
 headers:{"User-Agent":"StormApp (test@test.com)"}
 })
@@ -332,18 +333,25 @@ let data=await res.json()
 let items=[]
 
 data.features.forEach(a=>{
+
 let e=a.properties.event
 
+/* 🔥 BETTER DETECTION */
 if(
-e.includes("Tornado Emergency") ||
-e.includes("Particularly Dangerous Situation") ||
-e.includes("Severe Thunderstorm Warning")
+e.includes("Tornado") || 
+e.includes("Severe Thunderstorm") ||
+e.includes("Flash Flood") ||
+e.includes("Particularly Dangerous Situation")
 ){
-items.push(`⚠ ${e}`)
+items.push(`⚠ ${e} — ${a.properties.areaDesc}`)
 }
+
 })
 
-ticker.innerText=items.join(" • ") || "No major alerts"
+ticker.innerText = items.length
+? items.join(" • ")
+: "No major alerts"
+
 }
 
 function updateRisk(level){
