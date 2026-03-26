@@ -173,7 +173,7 @@ text-align:left;
 <div class="container">
 
 <div class="tickerWrap">
-<div id="ticker" class="ticker">⚠ Initializing weather alerts…</div>
+<div id="ticker" class="ticker">⚠ Initializing alerts…</div>
 </div>
 
 <div class="searchBox">
@@ -211,44 +211,50 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 TICKER (FIXED + INSTANT) */
+/* 🔥 WEATHER CHANNEL STYLE TICKER */
 async function loadTicker(){
 
-let ticker=document.getElementById("ticker")
+let ticker = document.getElementById("ticker")
 
-/* ALWAYS SHOW TEXT */
-ticker.innerText="⚠ Monitoring U.S. severe weather..."
-
-let cache=localStorage.getItem("tickerCache")
-if(cache) ticker.innerText=cache
+ticker.innerText = "⚠ Monitoring U.S. alerts..."
 
 try{
-let r=await fetch("https://api.weather.gov/alerts/active")
-let d=await r.json()
+let res = await fetch("https://api.weather.gov/alerts/active")
+let data = await res.json()
 
-let arr=d.features.map(a=>{
-let e=a.properties.event||""
-let area=a.properties.areaDesc||""
+let alerts = data.features.map(a=>{
 
-let score=0
-if(e.includes("Tornado")) score=3
-else if(e.includes("Severe")) score=2
+let event = a.properties.event || "Alert"
+let area = a.properties.areaDesc || "Unknown"
 
-return {text:`⚠ ${e} — ${area}`,score}
+/* CLEAN LOCATION */
+let location = area.split(";")[0].trim()
+
+/* PRIORITY */
+let score = 0
+if(event.includes("Tornado")) score = 3
+else if(event.includes("Severe Thunderstorm")) score = 2
+else if(event.includes("Watch")) score = 1
+
+return {
+text:`⚠ ${event} — ${location}`,
+score
+}
+
 })
 
-arr.sort((a,b)=>b.score-a.score)
+alerts.sort((a,b)=>b.score-a.score)
 
-let top=arr.slice(0,6).map(a=>a.text)
+let top = alerts.slice(0,8).map(a=>a.text)
 
-let final=top.length?top.join(" • "):"No major alerts"
-
-ticker.innerText=final
-localStorage.setItem("tickerCache",final)
+ticker.innerText = top.length
+? top.join(" • ")
+: "No active severe alerts in the United States"
 
 }catch{
-if(!cache) ticker.innerText="Unable to load alerts"
+ticker.innerText = "Unable to load alerts"
 }
+
 }
 
 loadTicker()
@@ -269,7 +275,7 @@ loadWeather()
 loadAlerts()
 }
 
-/* LOCATION (WITH COUNTY) */
+/* LOCATION WITH COUNTY */
 async function loadLocation(){
 try{
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
@@ -325,9 +331,9 @@ html+=`<div class="card" style="background:${bg}">
 </div>`
 })
 
-alerts.innerHTML=html||"No alerts"
+alerts.innerHTML = html || "No alerts"
 
-/* FIXED RISK BOX */
+/* RISK BOX FIX */
 let box=document.getElementById("riskLevel")
 
 if(risk==="high"){
@@ -345,7 +351,7 @@ box.innerText="Severe Weather Risk: LOW"
 
 }
 
-/* 🔥 PREDICTIVE SEARCH (FIXED + FAST) */
+/* 🔥 PREDICTIVE SEARCH (WORKING) */
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
@@ -362,7 +368,6 @@ suggestions.innerHTML=""
 return
 }
 
-/* 🔥 DEBOUNCE (prevents spam + fixes iPhone lag) */
 debounce=setTimeout(async ()=>{
 
 try{
