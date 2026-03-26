@@ -16,36 +16,35 @@ color:white;
 text-align:center;
 }
 
-/* LOGO (NOW NORMAL TOP ELEMENT) */
+/* LOGO */
 .logo{
 width:300px;
 max-width:96vw;
 height:auto;
 display:block;
-margin:20px auto 10px auto;  /* 🔥 top spacing */
+margin:20px auto 10px auto;
 }
 
-/* HAMBURGER MENU ICON */
-/* HAMBURGER MENU ICON */
+/* MENU ICON */
 .menuIcon{
 position:fixed;
 top:20px;
 left:15px;
 font-size:70px;
 cursor:pointer;
-z-index:99999;   /* 🔥 always on top */
+z-index:999999;
 }
 
 /* MENU PANEL */
 .menuPanel{
 display:none;
 position:fixed;
-top:90px;        /* 🔥 directly under icon */
+top:90px;
 left:15px;
 background:#111827;
 border-radius:14px;
 padding:20px;
-z-index:99999;   /* 🔥 above everything */
+z-index:999999;
 min-width:220px;
 }
 
@@ -69,12 +68,14 @@ padding:12px 0;
 
 .ticker{
 display:inline-block;
+white-space:nowrap;
 font-size:20px;
+padding-left:100%;   /* 🔥 FIX */
 animation:scroll 30s linear infinite;
 }
 
 @keyframes scroll{
-0%{transform:translateX(100%)}
+0%{transform:translateX(0)}
 100%{transform:translateX(-100%)}
 }
 
@@ -173,7 +174,7 @@ font-size:22px;
 
 <body>
 
-<!-- HAMBURGER MENU -->
+<!-- MENU -->
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
@@ -182,23 +183,27 @@ font-size:22px;
 <a href="winter.html" onclick="toggleMenu()">Winter Center</a>
 </div>
 
-<!-- 🔥 LOGO (NO HEADER ANYMORE) -->
-<img src="logo.PNG" class="logo" id="logo">
+<!-- LOGO -->
+<img src="logo.PNG" class="logo">
 
+<!-- TICKER -->
 <div class="tickerWrap">
 <div id="ticker" class="ticker">Loading alerts...</div>
 </div>
 
+<!-- SEARCH -->
 <div class="searchBox">
 <input id="searchInput" placeholder="Search any US city, town, or village">
 <div id="suggestions" class="suggestions"></div>
 </div>
 
+<!-- LOCATION -->
 <div class="section">
 <div id="locationCard" class="locationCard">Detecting location...</div>
 <div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
 </div>
 
+<!-- WEATHER -->
 <div class="section">
 <h2>Current Conditions</h2>
 
@@ -210,6 +215,7 @@ font-size:22px;
 </div>
 </div>
 
+<!-- ALERTS -->
 <div class="section">
 <h2>Active Alerts</h2>
 <div id="alerts">Loading alerts...</div>
@@ -283,10 +289,9 @@ let countyData=await countyRes.json()
 
 let county=countyData.properties.name
 
-locationCard.innerHTML=
+document.getElementById("locationCard").innerHTML=
 `<div style="font-size:48px;font-weight:bold;">${county} County</div>
 <div style="font-size:26px;">${city}, ${state}</div>`
-
 }
 
 async function loadWeather(){
@@ -295,10 +300,10 @@ let data=await res.json()
 
 let c=data.current
 
-temp.innerText=Math.round(c.temperature_2m)+"°F"
-dew.innerText=Math.round(c.dewpoint_2m)+"°F"
-humidity.innerText=c.relative_humidity_2m+"%"
-wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+document.getElementById("temp").innerText=Math.round(c.temperature_2m)+"°F"
+document.getElementById("dew").innerText=Math.round(c.dewpoint_2m)+"°F"
+document.getElementById("humidity").innerText=c.relative_humidity_2m+"%"
+document.getElementById("wind").innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
 async function loadAlerts(){
@@ -319,51 +324,60 @@ else if(e.includes("Severe")) risk="medium"
 html+=`<div class="card">${e}</div>`
 })
 
-alerts.innerHTML=html || "No alerts"
+document.getElementById("alerts").innerHTML=html || "No alerts"
 updateRisk(risk)
 }
 
 async function loadTicker(){
 
-let res = await fetch("https://api.weather.gov/alerts/active",{
+try{
+
+let res=await fetch("https://api.weather.gov/alerts/active",{
 headers:{"User-Agent":"StormApp (test@test.com)"}
 })
 
-let data = await res.json()
+let data=await res.json()
 
-let items = []
+let items=[]
 
 data.features.forEach(a=>{
 
-let e = a.properties.event || ""
-let desc = (a.properties.description || "").toLowerCase()
-let area = a.properties.areaDesc || "Unknown"
+let e=a.properties.event || ""
+let desc=(a.properties.description || "").toLowerCase()
+let area=a.properties.areaDesc || "Unknown"
 
-/* 🚨 PDS (REAL DETECTION) */
+/* PDS */
 if(desc.includes("particularly dangerous situation")){
 items.push(`🚨 PDS ${e} — ${area}`)
 }
 
-/* 🌪️ TORNADO (covers warnings + emergencies automatically) */
+/* Tornado */
 else if(e.includes("Tornado")){
 items.push(`🌪️ ${e} — ${area}`)
 }
 
-/* ⛈️ SEVERE THUNDERSTORM WARNING */
+/* Severe */
 else if(e.includes("Severe Thunderstorm Warning")){
 items.push(`⛈️ ${e} — ${area}`)
 }
 
-/* 🌪️ WATCHES */
+/* Watch */
 else if(e.includes("Watch")){
 items.push(`🌪️ ${e} — ${area}`)
 }
 
 })
 
-ticker.innerText = items.length
+document.getElementById("ticker").innerText = items.length
 ? items.join(" • ")
 : "No major alerts across the United States"
+
+}catch(err){
+
+document.getElementById("ticker").innerText="Error loading alerts"
+console.error(err)
+
+}
 
 }
 
