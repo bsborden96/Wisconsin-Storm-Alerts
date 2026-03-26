@@ -328,61 +328,41 @@ async function loadTicker(){
 let res = await fetch("https://api.weather.gov/alerts/active",{
 headers:{"User-Agent":"StormApp (test@test.com)"}
 })
+
 let data = await res.json()
 
-let emergency=[]
-let pds=[]
-let tornadoWarn=[]
-let tornadoWatch=[]
-let severe=[]
+let items = []
 
 data.features.forEach(a=>{
 
-let e = a.properties.event
-let desc = a.properties.description || ""
-let area = a.properties.areaDesc || "Unknown Area"
+let e = a.properties.event || ""
+let desc = (a.properties.description || "").toLowerCase()
+let area = a.properties.areaDesc || "Unknown"
 
-/* 🚨 TORNADO EMERGENCY */
-if(e.includes("Tornado Emergency")){
-emergency.push(`🚨 ${e} — ${area}`)
+/* 🚨 PDS (REAL DETECTION) */
+if(desc.includes("particularly dangerous situation")){
+items.push(`🚨 PDS ${e} — ${area}`)
 }
 
-/* 🚨 PDS TORNADO WARNING */
-else if(
-e.includes("Tornado Warning") &&
-desc.toLowerCase().includes("particularly dangerous situation")
-){
-pds.push(`🚨 PDS Tornado Warning — ${area}`)
-}
-
-/* 🌪️ TORNADO WARNING */
-else if(e.includes("Tornado Warning")){
-tornadoWarn.push(`🌪️ ${e} — ${area}`)
-}
-
-/* 🌪️ TORNADO WATCH */
-else if(e.includes("Tornado Watch")){
-tornadoWatch.push(`🌪️ ${e} — ${area}`)
+/* 🌪️ TORNADO (covers warnings + emergencies automatically) */
+else if(e.includes("Tornado")){
+items.push(`🌪️ ${e} — ${area}`)
 }
 
 /* ⛈️ SEVERE THUNDERSTORM WARNING */
 else if(e.includes("Severe Thunderstorm Warning")){
-severe.push(`⛈️ ${e} — ${area}`)
+items.push(`⛈️ ${e} — ${area}`)
+}
+
+/* 🌪️ WATCHES */
+else if(e.includes("Watch")){
+items.push(`🌪️ ${e} — ${area}`)
 }
 
 })
 
-/* 🔥 PRIORITY ORDER */
-let ordered = [
-...emergency,
-...pds,
-...tornadoWarn,
-...tornadoWatch,
-...severe
-]
-
-ticker.innerText = ordered.length
-? ordered.join(" • ")
+ticker.innerText = items.length
+? items.join(" • ")
 : "No major alerts across the United States"
 
 }
