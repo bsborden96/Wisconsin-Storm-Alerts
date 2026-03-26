@@ -4,10 +4,9 @@
 <title>US Storm Alerts</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+
 <style>
 
-/* BODY */
 body{
 margin:0;
 font-family:Arial;
@@ -16,13 +15,11 @@ color:white;
 text-align:center;
 }
 
-/* LOGO */
 .logo{
 width:300px;
 max-width:96vw;
-height:auto;
-display:block;
 margin:20px auto 10px auto;
+display:block;
 }
 
 /* MENU */
@@ -30,9 +27,9 @@ margin:20px auto 10px auto;
 position:fixed;
 top:20px;
 left:15px;
-font-size:70px;
-cursor:pointer;
+font-size:60px;
 z-index:999999;
+cursor:pointer;
 }
 
 .menuPanel{
@@ -41,22 +38,20 @@ position:fixed;
 top:90px;
 left:15px;
 background:#111827;
-border-radius:14px;
 padding:20px;
+border-radius:14px;
 z-index:999999;
-min-width:220px;
 }
 
 .menuPanel a{
 display:block;
+font-size:24px;
+padding:12px;
 color:white;
 text-decoration:none;
-font-size:26px;
-padding:14px;
-font-weight:bold;
 }
 
-/* CONTAINER (ALIGNS TICKER + SEARCH) */
+/* CONTAINER */
 .container{
 max-width:600px;
 margin:auto;
@@ -67,16 +62,14 @@ width:92%;
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
-white-space:nowrap;
-padding:12px 0;
-margin-top:10px;
+padding:10px 0;
 }
 
 .ticker{
-display:inline-block;
 white-space:nowrap;
-font-size:20px;
+display:inline-block;
 animation:scroll 80s linear infinite;
+font-size:18px;
 }
 
 @keyframes scroll{
@@ -86,14 +79,14 @@ animation:scroll 80s linear infinite;
 
 /* SEARCH */
 .searchBox{
-margin:20px auto;
+margin-top:15px;
 position:relative;
 }
 
 .searchBox input{
 width:100%;
 padding:14px;
-font-size:22px;
+font-size:20px;
 border-radius:8px;
 border:none;
 }
@@ -103,72 +96,67 @@ position:absolute;
 background:#1f2937;
 width:100%;
 border-radius:8px;
-max-height:260px;
+max-height:250px;
 overflow-y:auto;
-font-size:20px;
 z-index:9999;
+text-align:left;
 }
 
-/* LAYOUT */
+.suggestions div{
+padding:12px;
+cursor:pointer;
+}
+
+.suggestions div:hover{
+background:#374151;
+}
+
+/* CARDS */
 .section{
+padding:25px;
 max-width:1000px;
 margin:auto;
-padding:30px;
 }
 
 .locationCard{
 background:#111827;
-padding:30px;
-border-radius:14px;
+padding:25px;
+border-radius:12px;
 }
 
-/* RISK */
-.riskBox{
+.weatherGrid{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
 margin-top:20px;
+}
+
+.weatherCard{
+background:#0f172a;
 padding:20px;
 border-radius:10px;
-font-size:26px;
-font-weight:bold;
+}
+
+.weatherValue{
+font-size:36px;
+}
+
+.card{
+margin-top:12px;
+padding:16px;
+border-radius:10px;
+text-align:left;
 }
 
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
-/* WEATHER */
-.weatherGrid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:20px;
-margin-top:30px;
-}
-
-.weatherCard{
-background:#0f172a;
-padding:24px;
-border-radius:12px;
-}
-
-.weatherValue{
-font-size:40px;
-font-weight:bold;
-}
-
-/* ALERTS */
-.card{
-padding:20px;
-margin-top:16px;
-border-radius:12px;
-font-size:20px;
-text-align:left;
-}
-
 </style>
 </head>
 
 <body>
 
-<!-- MENU -->
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
@@ -177,10 +165,8 @@ text-align:left;
 <a href="winter.html">Winter Center</a>
 </div>
 
-<!-- LOGO -->
 <img src="logo.PNG" class="logo">
 
-<!-- TOP UI -->
 <div class="container">
 
 <div class="tickerWrap">
@@ -188,19 +174,17 @@ text-align:left;
 </div>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city">
+<input id="searchInput" placeholder="Search US city">
 <div id="suggestions" class="suggestions"></div>
 </div>
 
 </div>
 
-<!-- LOCATION -->
 <div class="section">
 <div id="locationCard" class="locationCard">Loading location...</div>
-<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
+<div id="riskLevel" class="card low">Severe Weather Risk: LOW</div>
 </div>
 
-<!-- WEATHER -->
 <div class="section">
 <h2>Current Conditions</h2>
 <div class="weatherGrid">
@@ -211,7 +195,6 @@ text-align:left;
 </div>
 </div>
 
-<!-- ALERTS -->
 <div class="section">
 <h2>Active Alerts</h2>
 <div id="alerts">Loading alerts...</div>
@@ -221,118 +204,21 @@ text-align:left;
 
 /* MENU */
 function toggleMenu(){
-let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
+let p=document.getElementById("menuPanel")
+p.style.display = p.style.display==="block" ? "none":"block"
 }
 
-/* 🔥 INSTANT TICKER LOAD */
-loadTicker()
-
-/* GEO WITH FALLBACK */
-let lat=43.0
-let lon=-88.7
-
-navigator.geolocation.getCurrentPosition(pos=>{
-lat=pos.coords.latitude
-lon=pos.coords.longitude
-refreshAll()
-},()=>{
-refreshAll()
-})
-
-function refreshAll(){
-loadLocation()
-loadWeather()
-loadAlerts()
-}
-
-/* LOCATION */
-async function loadLocation(){
-try{
-let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
-let data=await point.json()
-
-let city=data.properties.relativeLocation.properties.city
-let state=data.properties.relativeLocation.properties.state
-
-let countyRes=await fetch(data.properties.county)
-let countyData=await countyRes.json()
-
-let county=countyData.properties.name
-
-locationCard.innerHTML=
-`<div style="font-size:40px;font-weight:bold;">${county} County</div>
-<div style="color:#aaa;">${city}, ${state}</div>`
-
-}catch{
-locationCard.innerHTML="Location unavailable"
-}
-}
-
-/* WEATHER */
-async function loadWeather(){
-let res=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
-let data=await res.json()
-
-let c=data.current
-
-temp.innerText=Math.round(c.temperature_2m)+"°F"
-dew.innerText=Math.round(c.dewpoint_2m)+"°F"
-humidity.innerText=c.relative_humidity_2m+"%"
-wind.innerText=Math.round(c.wind_speed_10m)+" mph"
-}
-
-/* ALERTS (CLEAN + SORTED) */
-async function loadAlerts(){
-
-let res=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
-let data=await res.json()
-
-let arr=data.features
-
-arr.sort((a,b)=>{
-if(a.properties.event.includes("Tornado")) return -1
-if(b.properties.event.includes("Tornado")) return 1
-if(a.properties.event.includes("Severe")) return -1
-if(b.properties.event.includes("Severe")) return 1
-return 0
-})
-
-let html=""
-
-arr.slice(0,6).forEach(a=>{
-
-let e=a.properties.event
-let area=a.properties.areaDesc
-
-let bg="#1f2937"
-
-if(e.includes("Tornado")) bg="#7a0000"
-else if(e.includes("Severe")) bg="#8a4b00"
-
-html+=`
-<div class="card" style="background:${bg}">
-<b>${e}</b><br>
-<span style="color:#ccc">${area}</span>
-</div>
-`
-
-})
-
-alerts.innerHTML=html || "No alerts nearby"
-
-}
-
-/* 🔥 TICKER (FAST + SMART) */
+/* 🔥 TICKER (BULLETPROOF) */
 async function loadTicker(){
 
-let tickerEl=document.getElementById("ticker")
+let el=document.getElementById("ticker")
 
-let cached=localStorage.getItem("tickerCache")
-if(cached) tickerEl.innerText=cached
+el.innerText="⚠ Loading U.S. weather alerts…"
+
+let cache=localStorage.getItem("tickerCache")
+if(cache) el.innerText=cache
 
 try{
-
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
@@ -346,29 +232,124 @@ else if(e.includes("Tornado Warning")) score=4
 else if(e.includes("Tornado Watch")) score=3
 else if(e.includes("Severe")) score=2
 
-return {
-text:`⚠ ${e} — ${a.properties.areaDesc}`,
-score
-}
+return {text:`⚠ ${e} — ${a.properties.areaDesc}`,score}
 })
 
 arr.sort((a,b)=>b.score-a.score)
 
 let top=arr.slice(0,8).map(a=>a.text)
 
-let final=top.length
-? top.join(" • ")
-: "No major alerts across the United States"
+let final=top.length?top.join(" • "):"No major alerts across the United States"
 
-tickerEl.innerText=final
+el.innerText=final
 localStorage.setItem("tickerCache",final)
 
 }catch{
-tickerEl.innerText="Error loading alerts"
+if(!cache) el.innerText="Unable to load alerts"
+}
+
+}
+
+loadTicker()
+setInterval(loadTicker,60000)
+
+/* GEO */
+let lat=43, lon=-88
+
+navigator.geolocation.getCurrentPosition(pos=>{
+lat=pos.coords.latitude
+lon=pos.coords.longitude
+refreshAll()
+},()=>refreshAll())
+
+function refreshAll(){
+loadLocation()
+loadWeather()
+loadAlerts()
+}
+
+/* LOCATION */
+async function loadLocation(){
+try{
+let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let d=await p.json()
+
+let city=d.properties.relativeLocation.properties.city
+let state=d.properties.relativeLocation.properties.state
+
+locationCard.innerHTML=`<b>${city}, ${state}</b>`
+}catch{
+locationCard.innerText="Location unavailable"
 }
 }
 
-setInterval(loadTicker,60000)
+/* WEATHER */
+async function loadWeather(){
+let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let d=await r.json()
+
+let c=d.current
+temp.innerText=Math.round(c.temperature_2m)+"°F"
+dew.innerText=Math.round(c.dewpoint_2m)+"°F"
+humidity.innerText=c.relative_humidity_2m+"%"
+wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+}
+
+/* ALERTS */
+async function loadAlerts(){
+let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let d=await r.json()
+
+let html=""
+
+d.features.slice(0,6).forEach(a=>{
+let e=a.properties.event
+let bg=e.includes("Tornado")?"#7a0000":e.includes("Severe")?"#8a4b00":"#1f2937"
+
+html+=`<div class="card" style="background:${bg}"><b>${e}</b><br>${a.properties.areaDesc}</div>`
+})
+
+alerts.innerHTML=html||"No alerts"
+}
+
+/* 🔥 FIXED SEARCH */
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+
+input.addEventListener("input", async ()=>{
+let q=input.value.trim()
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+try{
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(p=>{
+let div=document.createElement("div")
+div.innerText=p.display_name
+
+div.onclick=()=>{
+lat=parseFloat(p.lat)
+lon=parseFloat(p.lon)
+input.value=p.display_name
+suggestions.innerHTML=""
+refreshAll()
+}
+
+suggestions.appendChild(div)
+})
+
+}catch{
+suggestions.innerHTML=""
+}
+
+})
 
 </script>
 
