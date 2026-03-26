@@ -25,7 +25,7 @@ display:block;
 margin:20px auto 10px auto;
 }
 
-/* MENU ICON */
+/* MENU */
 .menuIcon{
 position:fixed;
 top:20px;
@@ -35,7 +35,6 @@ cursor:pointer;
 z-index:999999;
 }
 
-/* MENU PANEL */
 .menuPanel{
 display:none;
 position:fixed;
@@ -48,7 +47,6 @@ z-index:999999;
 min-width:220px;
 }
 
-/* MENU LINKS */
 .menuPanel a{
 display:block;
 color:white;
@@ -70,12 +68,11 @@ padding:12px 0;
 display:inline-block;
 white-space:nowrap;
 font-size:20px;
-padding-left:100%;   /* 🔥 FIX */
-animation:scroll 30s linear infinite;
+animation:scroll 50s linear infinite; /* 🔥 FIXED SPEED */
 }
 
 @keyframes scroll{
-0%{transform:translateX(0)}
+0%{transform:translateX(100%)}
 100%{transform:translateX(-100%)}
 }
 
@@ -188,7 +185,7 @@ font-size:22px;
 
 <!-- TICKER -->
 <div class="tickerWrap">
-<div id="ticker" class="ticker">Loading alerts...</div>
+<div id="ticker" class="ticker">⚠ Loading U.S. weather alerts…</div>
 </div>
 
 <!-- SEARCH -->
@@ -229,6 +226,9 @@ let panel=document.getElementById("menuPanel")
 panel.style.display=(panel.style.display==="block")?"none":"block"
 }
 
+/* 🔥 LOAD TICKER IMMEDIATELY */
+loadTicker()
+
 /* GEO */
 let lat, lon
 
@@ -242,7 +242,6 @@ function refreshAll(){
 loadLocation()
 loadWeather()
 loadAlerts()
-loadTicker()
 }
 
 /* SEARCH */
@@ -275,7 +274,6 @@ suggestions.appendChild(div)
 })
 
 async function loadLocation(){
-
 let point=await fetch(`https://api.weather.gov/points/${lat},${lon}`,{
 headers:{"User-Agent":"StormApp (test@test.com)"}
 })
@@ -328,6 +326,7 @@ document.getElementById("alerts").innerHTML=html || "No alerts"
 updateRisk(risk)
 }
 
+/* 🔥 TICKER */
 async function loadTicker(){
 
 try{
@@ -341,31 +340,16 @@ let data=await res.json()
 let items=[]
 
 data.features.forEach(a=>{
-
 let e=a.properties.event || ""
-let desc=(a.properties.description || "").toLowerCase()
 let area=a.properties.areaDesc || "Unknown"
 
-/* PDS */
-if(desc.includes("particularly dangerous situation")){
-items.push(`🚨 PDS ${e} — ${area}`)
+if(
+e.includes("Tornado") ||
+e.includes("Severe Thunderstorm Warning") ||
+e.includes("Watch")
+){
+items.push(`⚠ ${e} — ${area}`)
 }
-
-/* Tornado */
-else if(e.includes("Tornado")){
-items.push(`🌪️ ${e} — ${area}`)
-}
-
-/* Severe */
-else if(e.includes("Severe Thunderstorm Warning")){
-items.push(`⛈️ ${e} — ${area}`)
-}
-
-/* Watch */
-else if(e.includes("Watch")){
-items.push(`🌪️ ${e} — ${area}`)
-}
-
 })
 
 document.getElementById("ticker").innerText = items.length
@@ -373,10 +357,7 @@ document.getElementById("ticker").innerText = items.length
 : "No major alerts across the United States"
 
 }catch(err){
-
 document.getElementById("ticker").innerText="Error loading alerts"
-console.error(err)
-
 }
 
 }
