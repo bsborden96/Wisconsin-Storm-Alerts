@@ -68,7 +68,7 @@ padding:10px 0;
 white-space:nowrap;
 display:inline-block;
 font-size:18px;
-animation:scroll 70s linear infinite;
+animation:scroll 120s linear infinite; /* 🔥 slower */
 }
 
 @keyframes scroll{
@@ -173,7 +173,7 @@ text-align:left;
 <div class="container">
 
 <div class="tickerWrap">
-<div id="ticker" class="ticker">⚠ Initializing alerts…</div>
+<div id="ticker" class="ticker">⚠ Monitoring U.S. severe weather...</div>
 </div>
 
 <div class="searchBox">
@@ -211,48 +211,68 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 WEATHER CHANNEL STYLE TICKER */
+/* 🔥 FIXED WEATHER CHANNEL TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("ticker")
 
-ticker.innerText = "⚠ Monitoring U.S. alerts..."
+/* LOAD CACHE FIRST */
+let cache = localStorage.getItem("tickerCache")
+if(cache && !ticker.dataset.loaded){
+ticker.innerText = cache
+ticker.dataset.loaded = "true"
+}
 
 try{
+
 let res = await fetch("https://api.weather.gov/alerts/active")
 let data = await res.json()
 
-let alerts = data.features.map(a=>{
+let grouped = {}
+
+data.features.forEach(a=>{
 
 let event = a.properties.event || "Alert"
 let area = a.properties.areaDesc || "Unknown"
 
 /* CLEAN LOCATION */
-let location = area.split(";")[0].trim()
+let counties = area.split(";")[0]
 
-/* PRIORITY */
-let score = 0
-if(event.includes("Tornado")) score = 3
-else if(event.includes("Severe Thunderstorm")) score = 2
-else if(event.includes("Watch")) score = 1
-
-return {
-text:`⚠ ${event} — ${location}`,
-score
+if(!grouped[event]){
+grouped[event] = new Set()
 }
+
+counties.split(",").forEach(c=>{
+grouped[event].add(c.trim())
+})
 
 })
 
-alerts.sort((a,b)=>b.score-a.score)
+let items = []
 
-let top = alerts.slice(0,8).map(a=>a.text)
+Object.keys(grouped).forEach(event=>{
 
-ticker.innerText = top.length
-? top.join(" • ")
-: "No active severe alerts in the United States"
+let counties = Array.from(grouped[event]).slice(0,6)
 
-}catch{
-ticker.innerText = "Unable to load alerts"
+items.push({
+text:`⚠ ${event} — ${counties.join(", ")}`,
+priority: event.includes("Tornado") ? 3 :
+event.includes("Severe") ? 2 : 1
+})
+
+})
+
+items.sort((a,b)=>b.priority-a.priority)
+
+let final = items.slice(0,6).map(i=>i.text).join("   •   ")
+
+if(final && final.length > 10){
+ticker.innerText = final
+localStorage.setItem("tickerCache", final)
+}
+
+}catch(e){
+console.log("Ticker error", e)
 }
 
 }
@@ -275,7 +295,7 @@ loadWeather()
 loadAlerts()
 }
 
-/* LOCATION WITH COUNTY */
+/* LOCATION */
 async function loadLocation(){
 try{
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
@@ -333,7 +353,6 @@ html+=`<div class="card" style="background:${bg}">
 
 alerts.innerHTML = html || "No alerts"
 
-/* RISK BOX FIX */
 let box=document.getElementById("riskLevel")
 
 if(risk==="high"){
@@ -351,7 +370,7 @@ box.innerText="Severe Weather Risk: LOW"
 
 }
 
-/* 🔥 PREDICTIVE SEARCH (WORKING) */
+/* SEARCH */
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
