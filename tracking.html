@@ -13,7 +13,7 @@ background:#0a0f1c;
 color:white;
 text-align:center;
 overflow-x:hidden;
-padding-top:120px; /* 🔥 prevents overlap with fixed header */
+padding-top:0; /* 🔥 auto handled by JS */
 }
 
 /* HEADER (LOCKED) */
@@ -27,7 +27,7 @@ z-index:10000;
 padding:10px 0;
 }
 
-/* LOGO */
+/* LOGO (UNCHANGED) */
 .logo{
 width:300px;
 max-width:95vw;
@@ -193,9 +193,10 @@ color:#00ffcc;
 <img src="logo.PNG" class="logo">
 </header>
 
-<!-- 🔥 LOCATION BOX -->
+<!-- LOCATION -->
 <div id="locationBox" class="locationBox">Detecting location...</div>
 
+<!-- SEARCH -->
 <div class="searchBox">
 <input id="searchInput" placeholder="Search US city or town">
 <div id="suggestions" class="suggestions"></div>
@@ -206,6 +207,15 @@ color:#00ffcc;
 </div>
 
 <script>
+
+/* 🔥 AUTO FIX HEADER OVERLAP */
+function fixHeaderSpacing(){
+let header=document.querySelector("header")
+if(!header) return
+document.body.style.paddingTop = header.offsetHeight + "px"
+}
+window.addEventListener("load", fixHeaderSpacing)
+window.addEventListener("resize", fixHeaderSpacing)
 
 /* MENU */
 function toggleMenu(){
@@ -230,7 +240,7 @@ loadLocation()
 loadStorms()
 })
 
-/* LOCATION DISPLAY */
+/* LOCATION */
 async function loadLocation(){
 try{
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
