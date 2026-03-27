@@ -13,23 +13,26 @@ background:#0a0f1c;
 color:white;
 text-align:center;
 overflow-x:hidden;
+padding-top:120px; /* 🔥 prevents overlap with fixed header */
 }
 
-/* HEADER */
+/* HEADER (LOCKED) */
 header{
-padding:10px 0;
-position:sticky;
+position:fixed;
 top:0;
+left:0;
+width:100%;
+background:#0a0f1c;
 z-index:10000;
+padding:10px 0;
 }
 
+/* LOGO */
 .logo{
 width:300px;
 max-width:95vw;
 margin:auto;
 display:block;
-
-/* 🔥 BASE GLOW */
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 transition: all 0.3s ease;
 }
@@ -43,6 +46,7 @@ transition: all 0.3s ease;
 
 .logo.alert{
 animation:logoPulse 0.8s infinite;
+filter: drop-shadow(0 0 25px red);
 }
 
 /* MENU */
@@ -73,9 +77,19 @@ color:white;
 text-decoration:none;
 }
 
+/* LOCATION BOX */
+.locationBox{
+background:#111827;
+margin:10px auto;
+padding:15px;
+border-radius:10px;
+max-width:400px;
+font-size:18px;
+}
+
 /* SEARCH */
 .searchBox{
-margin:20px auto;
+margin:15px auto;
 width:90%;
 max-width:400px;
 position:relative;
@@ -101,13 +115,14 @@ text-align:left;
 z-index:9999;
 }
 
-/* CARDS */
+/* CONTENT */
 .section{
 padding:20px;
 max-width:1000px;
 margin:auto;
 }
 
+/* CARDS */
 .card{
 background:#111827;
 padding:20px;
@@ -115,20 +130,20 @@ border-radius:12px;
 margin-top:15px;
 }
 
-/* ALERT TYPES */
+/* ALERT STYLES */
 .tornado{
 background:#7a0000;
-border-radius:10px;
 padding:20px;
 margin-top:15px;
+border-radius:10px;
 animation:glowRed 1s infinite alternate;
 }
 
 .severe{
 background:#8a4b00;
-border-radius:10px;
 padding:20px;
 margin-top:15px;
+border-radius:10px;
 animation:glowOrange 1.5s infinite alternate;
 }
 
@@ -178,6 +193,9 @@ color:#00ffcc;
 <img src="logo.PNG" class="logo">
 </header>
 
+<!-- 🔥 LOCATION BOX -->
+<div id="locationBox" class="locationBox">Detecting location...</div>
+
 <div class="searchBox">
 <input id="searchInput" placeholder="Search US city or town">
 <div id="suggestions" class="suggestions"></div>
@@ -208,15 +226,36 @@ let lat, lon
 navigator.geolocation.getCurrentPosition(pos=>{
 lat=pos.coords.latitude
 lon=pos.coords.longitude
+loadLocation()
 loadStorms()
 })
+
+/* LOCATION DISPLAY */
+async function loadLocation(){
+try{
+let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let d=await p.json()
+
+let city=d.properties.relativeLocation.properties.city
+let state=d.properties.relativeLocation.properties.state
+
+let countyRes=await fetch(d.properties.county)
+let countyData=await countyRes.json()
+
+let county=countyData.properties.name
+
+locationBox.innerHTML=`<b>${county} County</b><br>${city}, ${state}`
+
+}catch{
+locationBox.innerText="Location unavailable"
+}
+}
 
 /* SEARCH */
 let input=document.getElementById("searchInput")
 let suggestions=document.getElementById("suggestions")
 
 input.addEventListener("input",async()=>{
-
 let q=input.value.trim()
 
 if(q.length<2){
@@ -238,12 +277,12 @@ lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
 input.value=place.display_name
 suggestions.innerHTML=""
+loadLocation()
 loadStorms()
 }
 
 suggestions.appendChild(div)
 })
-
 })
 
 /* DISTANCE */
@@ -283,13 +322,6 @@ return "N"
 /* HISTORY */
 let stormHistory={}
 
-/* ALERT POP */
-function stormAlert(dist,event){
-if(dist<25){
-alert(`⚠️ ${event}\nStorm within ${Math.round(dist)} miles`)
-}
-}
-
 /* LOAD STORMS */
 async function loadStorms(){
 
@@ -316,7 +348,6 @@ let lon2=center[0]
 
 let dist=distance(lat,lon,lat2,lon2)
 
-/* FIRST PASS */
 if(!stormHistory[id]){
 stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
 return
@@ -333,20 +364,15 @@ let dir=getDirection(prev.lat,prev.lon,lat2,lon2)
 
 stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
 
-/* ONLY TOWARD YOU */
 if(dist>prev.dist) return
 
 if(event.includes("Tornado")) tornadoActive=true
 
-/* IMPACT TIME */
 let impact="Calculating..."
 if(speed>5){
-let hours=dist/speed
-let minutes=Math.round(hours*60)
+let minutes=Math.round((dist/speed)*60)
 impact=`Impact in ~${minutes} min`
 }
-
-stormAlert(dist,event)
 
 storms.push({
 event,
@@ -364,23 +390,17 @@ storms.sort((a,b)=>a.distance-b.distance)
 let html=""
 
 storms.slice(0,6).forEach(s=>{
-
 let style=s.event.includes("Tornado")?"tornado":"severe"
 
 html+=`
 <div class="${style}">
 <b>${s.event}</b>
-
 <div class="distance">${Math.round(s.distance)} miles away</div>
-
 <div class="info">Moving ${s.direction} at ${Math.round(s.speed)} mph</div>
-
 <div class="impact">${s.impact}</div>
-
 <div class="info">${s.area}</div>
 </div>
 `
-
 })
 
 if(!html){
