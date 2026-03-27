@@ -2,7 +2,6 @@
 <html>
 <head>
 <title>Storm Tracker</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -13,33 +12,25 @@ font-family:Arial;
 background:#0a0f1c;
 color:white;
 text-align:center;
+overflow-x:hidden;
 }
 
-/* HEADER (STICKY) */
+/* HEADER */
 header{
-background:transparent;
 padding:10px 0;
 position:sticky;
 top:0;
 z-index:10000;
 }
 
-.headerContent{
-display:flex;
-align-items:center;
-justify-content:center;
-width:100%;
-}
-
 .logo{
-width:400px;
-maxwidth: 95vw;
-height:auto;
-display:block;
+width:300px;
+max-width:95vw;
 margin:auto;
+display:block;
 }
 
-/* LOGO PULSE */
+/* LOGO ALERT */
 @keyframes logoPulse{
 0%{transform:scale(1);}
 50%{transform:scale(1.1);}
@@ -52,95 +43,88 @@ animation:logoPulse 0.8s infinite;
 
 /* MENU */
 .menuIcon{
-position:absolute;
-top:250px;
-left:18px;
-font-size:60px;
-cursor:pointer;
+position:fixed;
+top:20px;
+left:15px;
+font-size:50px;
 z-index:20001;
+cursor:pointer;
 }
 
 .menuPanel{
 display:none;
-position:absolute;
-top:300px;
-left:18px;
+position:fixed;
+top:80px;
+left:15px;
 background:#111827;
-border-radius:14px;
 padding:16px;
+border-radius:14px;
 z-index:20001;
 }
 
 .menuPanel a{
 display:block;
+padding:12px;
 color:white;
 text-decoration:none;
-font-size:26px;
-padding:14px;
-font-weight:bold;
 }
 
 /* SEARCH */
 .searchBox{
-margin:30px auto;
-max-width:300px;
+margin:20px auto;
+width:90%;
+max-width:400px;
 position:relative;
 }
 
 .searchBox input{
 width:100%;
-padding:14px;
-font-size:22px;
-border-radius:8px;
+padding:12px;
+font-size:18px;
 border:none;
+border-radius:8px;
+box-sizing:border-box;
 }
 
 .suggestions{
 position:absolute;
 background:#1f2937;
 width:100%;
-text-align:left;
 border-radius:8px;
 max-height:220px;
 overflow-y:auto;
-font-size:20px;
+text-align:left;
 z-index:9999;
 }
 
-.suggestions div{
-padding:12px;
-cursor:pointer;
-}
-
-/* LAYOUT */
+/* CARDS */
 .section{
+padding:20px;
 max-width:1000px;
 margin:auto;
-padding:30px;
 }
 
 .card{
 background:#111827;
-padding:24px;
+padding:20px;
 border-radius:12px;
-margin-top:20px;
-font-size:22px;
+margin-top:15px;
 }
 
-/* ALERT GLOW */
+/* ALERT TYPES */
 .tornado{
 background:#7a0000;
-padding:20px;
-margin-top:18px;
 border-radius:10px;
+padding:20px;
+margin-top:15px;
 animation:glowRed 1s infinite alternate;
 }
 
 .severe{
 background:#8a4b00;
-padding:20px;
-margin-top:18px;
 border-radius:10px;
+padding:20px;
+margin-top:15px;
 animation:glowOrange 1.5s infinite alternate;
 }
 
@@ -155,14 +139,22 @@ to{box-shadow:0 0 20px rgba(255,140,0,1);}
 }
 
 .distance{
-font-size:28px;
+font-size:22px;
 font-weight:bold;
 margin-top:6px;
 }
 
 .info{
 margin-top:6px;
-font-size:20px;
+font-size:16px;
+opacity:.9;
+}
+
+.impact{
+margin-top:6px;
+font-size:18px;
+font-weight:bold;
+color:#00ffcc;
 }
 
 </style>
@@ -173,19 +165,17 @@ font-size:20px;
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
-<a href="index.html" onclick="toggleMenu()">Home</a>
-<a href="tracking.html" onclick="toggleMenu()">Storm Tracker</a>
-<a href="winter.html" onclick="toggleMenu()">Winter Center</a>
+<a href="index.html">Home</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
 </div>
 
 <header>
-<div class="headerContent">
 <img src="logo.PNG" class="logo">
-</div>
 </header>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="Search any US city or town">
+<input id="searchInput" placeholder="Search US city or town">
 <div id="suggestions" class="suggestions"></div>
 </div>
 
@@ -195,22 +185,20 @@ font-size:20px;
 
 <script>
 
+/* MENU */
 function toggleMenu(){
 let panel=document.getElementById("menuPanel")
-panel.style.display=(panel.style.display==="block")?"none":"block"
+panel.style.display = panel.style.display==="block"?"none":"block"
 }
 
+/* LOGO ALERT */
 function updateLogoAlert(hasTornado){
 let logo=document.querySelector(".logo")
-if(!logo) return
-
-if(hasTornado){
-logo.classList.add("alert")
-}else{
-logo.classList.remove("alert")
-}
+if(hasTornado) logo.classList.add("alert")
+else logo.classList.remove("alert")
 }
 
+/* GEO */
 let lat, lon
 
 navigator.geolocation.getCurrentPosition(pos=>{
@@ -225,20 +213,19 @@ let suggestions=document.getElementById("suggestions")
 
 input.addEventListener("input",async()=>{
 
-let q=input.value
+let q=input.value.trim()
 
 if(q.length<2){
 suggestions.innerHTML=""
 return
 }
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=10`)
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=8`)
 let data=await res.json()
 
 suggestions.innerHTML=""
 
 data.forEach(place=>{
-
 let div=document.createElement("div")
 div.innerText=place.display_name
 
@@ -251,7 +238,6 @@ loadStorms()
 }
 
 suggestions.appendChild(div)
-
 })
 
 })
@@ -270,43 +256,137 @@ let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 return (R*c)*0.621371
 }
 
+/* DIRECTION */
+function getDirection(lat1, lon1, lat2, lon2){
+let y=Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+let x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
+Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180)
+
+let brng=Math.atan2(y,x)*180/Math.PI
+brng=(brng+360)%360
+
+if(brng<22.5) return "N"
+if(brng<67.5) return "NE"
+if(brng<112.5) return "E"
+if(brng<157.5) return "SE"
+if(brng<202.5) return "S"
+if(brng<247.5) return "SW"
+if(brng<292.5) return "W"
+if(brng<337.5) return "NW"
+return "N"
+}
+
+/* HISTORY */
+let stormHistory={}
+
+/* ALERT POP */
+function stormAlert(dist,event){
+if(dist<25){
+alert(`⚠️ ${event}\nStorm within ${Math.round(dist)} miles`)
+}
+}
+
 /* LOAD STORMS */
 async function loadStorms(){
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
-let html=""
-let found=false
+let storms=[]
 let tornadoActive=false
+let now=Date.now()
 
 data.features.forEach(alert=>{
 
 let event=alert.properties.event
+let coords=alert.geometry?.coordinates
+
+if(!coords) return
 if(!event.includes("Tornado") && !event.includes("Severe Thunderstorm")) return
+
+let id=alert.id
+
+let center=coords[0][0]
+let lat2=center[1]
+let lon2=center[0]
+
+let dist=distance(lat,lon,lat2,lon2)
+
+/* FIRST PASS */
+if(!stormHistory[id]){
+stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
+return
+}
+
+let prev=stormHistory[id]
+
+let timeDiff=(now-prev.time)/3600000
+if(timeDiff===0) return
+
+let moveDist=distance(prev.lat,prev.lon,lat2,lon2)
+let speed=moveDist/timeDiff
+let dir=getDirection(prev.lat,prev.lon,lat2,lon2)
+
+stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
+
+/* ONLY TOWARD YOU */
+if(dist>prev.dist) return
 
 if(event.includes("Tornado")) tornadoActive=true
 
-let style=event.includes("Tornado")?"tornado":"severe"
+/* IMPACT TIME */
+let impact="Calculating..."
+if(speed>5){
+let hours=dist/speed
+let minutes=Math.round(hours*60)
+impact=`Impact in ~${minutes} min`
+}
 
-html+=`
-<div class="${style}">
-<b>${event}</b>
-${alert.properties.areaDesc}
-</div>
-`
+stormAlert(dist,event)
 
-found=true
+storms.push({
+event,
+area:alert.properties.areaDesc,
+distance:dist,
+speed:speed,
+direction:dir,
+impact:impact
+})
 
 })
 
-if(!found){
-html='<div class="card">No severe storms near this location</div>'
+storms.sort((a,b)=>a.distance-b.distance)
+
+let html=""
+
+storms.slice(0,6).forEach(s=>{
+
+let style=s.event.includes("Tornado")?"tornado":"severe"
+
+html+=`
+<div class="${style}">
+<b>${s.event}</b>
+
+<div class="distance">${Math.round(s.distance)} miles away</div>
+
+<div class="info">Moving ${s.direction} at ${Math.round(s.speed)} mph</div>
+
+<div class="impact">${s.impact}</div>
+
+<div class="info">${s.area}</div>
+</div>
+`
+
+})
+
+if(!html){
+html='<div class="card">No storms moving toward your location</div>'
 }
 
 document.getElementById("storms").innerHTML=html
 
 updateLogoAlert(tornadoActive)
+
 }
 
 setInterval(loadStorms,60000)
