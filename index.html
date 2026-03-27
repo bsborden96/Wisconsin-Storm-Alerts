@@ -20,6 +20,10 @@ width:300px;
 max-width:96vw;
 margin:20px auto;
 display:block;
+transition: all 0.4s ease;
+
+/* default glow */
+filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
 /* MENU */
@@ -152,7 +156,7 @@ text-align:left;
 <a href="winter.html">Winter Center</a>
 </div>
 
-<img src="logo.PNG" class="logo">
+<img src="logo.PNG" class="logo" id="logo">
 
 <!-- TICKER -->
 <div class="tickerWrap">
@@ -194,7 +198,25 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 FINAL TICKER */
+/* 🔥 LOGO GLOW CONTROL */
+function updateLogoGlow(level){
+
+let logo = document.getElementById("logo")
+if(!logo) return
+
+if(level === "high"){
+logo.style.filter = "drop-shadow(0 0 25px rgba(255,0,0,0.9))"
+}
+else if(level === "medium"){
+logo.style.filter = "drop-shadow(0 0 20px rgba(255,140,0,0.8))"
+}
+else{
+logo.style.filter = "drop-shadow(0 0 15px rgba(0,255,150,0.6))"
+}
+
+}
+
+/* 🔥 TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("tickerContent")
@@ -382,9 +404,12 @@ box.className="riskBox low"
 box.innerText="Severe Weather Risk: LOW"
 }
 
+/* 🔥 APPLY GLOW */
+updateLogoGlow(risk)
+
 }
 
-/* 🔥 SEARCH FIX */
+/* SEARCH */
 let input = document.getElementById("searchInput")
 let suggestions = document.getElementById("suggestions")
 
