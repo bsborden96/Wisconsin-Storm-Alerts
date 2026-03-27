@@ -21,8 +21,6 @@ max-width:96vw;
 margin:20px auto;
 display:block;
 transition: all 0.4s ease;
-
-/* default glow */
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
@@ -54,22 +52,33 @@ color:white;
 text-decoration:none;
 }
 
+/* POPUP ALERT */
+.popup{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+background:#b91c1c;
+color:white;
+padding:15px;
+font-weight:bold;
+z-index:99999;
+display:none;
+}
+
 /* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
-width:100%;
 }
 
 .tickerTrack{
 display:flex;
 white-space:nowrap;
-will-change: transform;
 }
 
 .tickerTrack span{
 padding-right:100px;
-font-size:18px;
 }
 
 /* SEARCH */
@@ -148,6 +157,8 @@ text-align:left;
 
 <body>
 
+<div id="popup" class="popup"></div>
+
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
 <div id="menuPanel" class="menuPanel">
@@ -158,11 +169,10 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- TICKER -->
 <div class="tickerWrap">
-  <div class="tickerTrack" id="tickerTrack">
-    <span id="tickerContent">⚠ Loading alerts...</span>
-  </div>
+<div class="tickerTrack">
+<span id="tickerContent">Loading alerts...</span>
+</div>
 </div>
 
 <div class="searchBox">
@@ -198,123 +208,38 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 LOGO GLOW CONTROL */
+/* LOGO GLOW */
 function updateLogoGlow(level){
-
-let logo = document.getElementById("logo")
-if(!logo) return
-
-if(level === "high"){
-logo.style.filter = "drop-shadow(0 0 25px rgba(255,0,0,0.9))"
-}
-else if(level === "medium"){
-logo.style.filter = "drop-shadow(0 0 20px rgba(255,140,0,0.8))"
-}
-else{
-logo.style.filter = "drop-shadow(0 0 15px rgba(0,255,150,0.6))"
+let logo=document.getElementById("logo")
+if(level==="high") logo.style.filter="drop-shadow(0 0 25px red)"
+else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
+else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 }
 
+/* POPUP */
+function showPopup(text){
+let p=document.getElementById("popup")
+p.innerText=text
+p.style.display="block"
+
+setTimeout(()=>{p.style.display="none"},8000)
 }
 
-/* 🔥 TICKER */
+/* TICKER (simple stable) */
 async function loadTicker(){
+let t=document.getElementById("tickerContent")
 
-let ticker = document.getElementById("tickerContent")
-let track = document.getElementById("tickerTrack")
+let res=await fetch("https://api.weather.gov/alerts/active")
+let d=await res.json()
 
-try{
+let arr=[]
 
-let res = await fetch("https://api.weather.gov/alerts/active")
-let data = await res.json()
-
-let groups = {
-"TORNADO EMERGENCY": new Set(),
-"PDS TORNADO WARNING": new Set(),
-"TORNADO WARNING": new Set(),
-"TORNADO WATCH": new Set(),
-"SEVERE THUNDERSTORM WARNING": new Set()
-}
-
-data.features.forEach(a=>{
-
-let event = a.properties.event || ""
-let desc = (a.properties.description || "").toLowerCase()
-let area = a.properties.areaDesc || ""
-
-area.split(";").forEach(c=>{
-let county = c.trim()
-
-if(desc.includes("tornado emergency")){
-groups["TORNADO EMERGENCY"].add(county)
-}
-else if(desc.includes("particularly dangerous situation")){
-groups["PDS TORNADO WARNING"].add(county)
-}
-else if(event.includes("Tornado Warning")){
-groups["TORNADO WARNING"].add(county)
-}
-else if(event.includes("Tornado Watch")){
-groups["TORNADO WATCH"].add(county)
-}
-else if(event.includes("Severe Thunderstorm Warning")){
-groups["SEVERE THUNDERSTORM WARNING"].add(county)
-}
-
+d.features.slice(0,10).forEach(a=>{
+arr.push(`⚠ ${a.properties.event}`)
 })
 
-})
-
-let order = [
-"TORNADO EMERGENCY",
-"PDS TORNADO WARNING",
-"TORNADO WARNING",
-"TORNADO WATCH",
-"SEVERE THUNDERSTORM WARNING"
-]
-
-let parts = []
-
-order.forEach(type=>{
-let list = Array.from(groups[type])
-if(list.length > 0){
-parts.push(`⚠ ${type} — ${list.join(", ")}`)
+t.innerText=arr.join(" • ")
 }
-})
-
-let final = parts.join("   •   ")
-
-if(final.length < 5){
-final = "No major severe weather alerts across the United States"
-}
-
-ticker.innerText = final + "   •   " + final
-
-let pos = 0
-let speed = 1
-
-if(window.tickerAnim) cancelAnimationFrame(window.tickerAnim)
-
-function animate(){
-pos -= speed
-track.style.transform = `translateX(${pos}px)`
-
-if(Math.abs(pos) > ticker.offsetWidth/2){
-pos = 0
-}
-
-window.tickerAnim = requestAnimationFrame(animate)
-}
-
-animate()
-
-}catch{
-ticker.innerText = "⚠ Unable to load alerts"
-}
-
-}
-
-loadTicker()
-setInterval(loadTicker,300000)
 
 /* GEO */
 let lat=43, lon=-88
@@ -329,11 +254,11 @@ function loadAll(){
 loadLocation()
 loadWeather()
 loadAlerts()
+loadTicker()
 }
 
 /* LOCATION */
 async function loadLocation(){
-try{
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let d=await p.json()
 
@@ -346,10 +271,6 @@ let countyData=await countyRes.json()
 let county=countyData.properties.name
 
 locationCard.innerHTML=`<b>${county} County</b><br>${city}, ${state}`
-
-}catch{
-locationCard.innerText="Location unavailable"
-}
 }
 
 /* WEATHER */
@@ -364,7 +285,7 @@ humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
-/* ALERTS */
+/* ALERTS + POPUP */
 async function loadAlerts(){
 
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
@@ -372,63 +293,75 @@ let d=await r.json()
 
 let html=""
 let risk="low"
+let triggered=false
 
-d.features.slice(0,5).forEach(a=>{
+d.features.forEach(a=>{
+
 let e=a.properties.event
+let desc=a.properties.description || ""
 
-if(e.includes("Tornado")) risk="high"
-else if(e.includes("Severe")) risk="medium"
+if(desc.toLowerCase().includes("tornado emergency")){
+e="TORNADO EMERGENCY"
+risk="high"
+}
+else if(desc.toLowerCase().includes("particularly dangerous")){
+e="PDS TORNADO WARNING"
+risk="high"
+}
+else if(e.includes("Tornado")){
+risk="high"
+}
+else if(e.includes("Severe")){
+if(risk!=="high") risk="medium"
+}
 
-let bg=e.includes("Tornado")?"#7a0000":
-e.includes("Severe")?"#8a4b00":"#1f2937"
+/* 🔥 POPUP TRIGGER */
+if(!triggered && (e.includes("Tornado") || e.includes("Severe"))){
+showPopup(`⚠ ${e} affecting your area`)
+triggered=true
+}
 
-html+=`<div class="card" style="background:${bg}">
-<b>${e}</b><br>${a.properties.areaDesc}
-</div>`
+html+=`
+<div class="card">
+<b>${e}</b><br>
+${desc.replace(/\n/g,"<br>")}
+</div>
+`
+
 })
 
-alerts.innerHTML = html || "No alerts"
+alerts.innerHTML=html || "No alerts"
 
-let box=document.getElementById("riskLevel")
-
+/* RISK BOX */
 if(risk==="high"){
-box.className="riskBox high"
-box.innerText="Severe Weather Risk: HIGH"
+riskLevel.className="riskBox high"
+riskLevel.innerText="Severe Weather Risk: HIGH"
 }
 else if(risk==="medium"){
-box.className="riskBox medium"
-box.innerText="Severe Weather Risk: MODERATE"
+riskLevel.className="riskBox medium"
+riskLevel.innerText="Severe Weather Risk: MODERATE"
 }
 else{
-box.className="riskBox low"
-box.innerText="Severe Weather Risk: LOW"
+riskLevel.className="riskBox low"
+riskLevel.innerText="Severe Weather Risk: LOW"
 }
 
-/* 🔥 APPLY GLOW */
 updateLogoGlow(risk)
 
 }
 
 /* SEARCH */
-let input = document.getElementById("searchInput")
-let suggestions = document.getElementById("suggestions")
-
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
 let debounce
 
-input.addEventListener("input", ()=>{
-
+input.addEventListener("input",()=>{
 clearTimeout(debounce)
+let q=input.value.trim()
 
-let q = input.value.trim()
+if(q.length<2){suggestions.innerHTML="";return}
 
-if(q.length < 2){
-suggestions.innerHTML = ""
-return
-}
-
-debounce = setTimeout(async ()=>{
-
-try{
+debounce=setTimeout(async()=>{
 let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
 let data=await res.json()
 
@@ -448,13 +381,7 @@ loadAll()
 
 suggestions.appendChild(div)
 })
-
-}catch{
-suggestions.innerHTML=""
-}
-
 },300)
-
 })
 
 </script>
