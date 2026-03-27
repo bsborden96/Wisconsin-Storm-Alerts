@@ -15,17 +15,16 @@ text-align:center;
 overflow-x:hidden;
 }
 
-/* 🔥 LOGO (NORMAL FLOW) */
+/* LOGO */
 .logo{
 width:300px;
 max-width:95vw;
 margin:20px auto;
 display:block;
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
-transition: all 0.3s ease;
 }
 
-/* LOGO ALERT */
+/* ALERT PULSE */
 @keyframes logoPulse{
 0%{transform:scale(1);}
 50%{transform:scale(1.1);}
@@ -154,7 +153,6 @@ margin-top:6px;
 .info{
 margin-top:6px;
 font-size:16px;
-opacity:.9;
 }
 
 .impact{
@@ -177,7 +175,6 @@ color:#00ffcc;
 <a href="winter.html">Winter Center</a>
 </div>
 
-<!-- 🔥 LOGO (SCROLLS NATURALLY) -->
 <img src="logo.PNG" class="logo">
 
 <div id="locationBox" class="locationBox">Detecting location...</div>
@@ -271,26 +268,140 @@ suggestions.appendChild(div)
 })
 })
 
-/* BASIC STORMS (UNCHANGED SAFE VERSION) */
+/* DISTANCE */
+function distance(lat1,lon1,lat2,lon2){
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+let a=Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)**2
+let c=2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
+return (R*c)*0.621371
+}
+
+/* DIRECTION */
+function getDirection(lat1, lon1, lat2, lon2){
+let y=Math.sin((lon2-lon1)*Math.PI/180)*Math.cos(lat2*Math.PI/180)
+let x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
+Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos((lon2-lon1)*Math.PI/180)
+
+let brng=Math.atan2(y,x)*180/Math.PI
+brng=(brng+360)%360
+
+if(brng<22.5) return "N"
+if(brng<67.5) return "NE"
+if(brng<112.5) return "E"
+if(brng<157.5) return "SE"
+if(brng<202.5) return "S"
+if(brng<247.5) return "SW"
+if(brng<292.5) return "W"
+if(brng<337.5) return "NW"
+return "N"
+}
+
+/* TRACKING */
+let stormHistory={}
+
+function severityRank(event){
+if(event.includes("Tornado")) return 3
+if(event.includes("Severe")) return 2
+return 1
+}
+
+/* LOAD STORMS */
 async function loadStorms(){
+
 let res=await fetch("https://api.weather.gov/alerts/active")
 let data=await res.json()
 
+let storms=[]
+let tornadoActive=false
+let now=Date.now()
+
+data.features.forEach(alert=>{
+
+let event=alert.properties.event
+let coords=alert.geometry?.coordinates
+
+if(!coords) return
+if(!event.includes("Tornado") && !event.includes("Severe")) return
+
+let id=alert.id
+let center=coords[0][0]
+let lat2=center[1]
+let lon2=center[0]
+
+let dist=distance(lat,lon,lat2,lon2)
+
+if(!stormHistory[id]){
+stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
+return
+}
+
+let prev=stormHistory[id]
+let timeDiff=(now-prev.time)/3600000
+if(timeDiff===0) return
+
+let moveDist=distance(prev.lat,prev.lon,lat2,lon2)
+let speed=moveDist/timeDiff
+let dir=getDirection(prev.lat,prev.lon,lat2,lon2)
+
+stormHistory[id]={lat:lat2,lon:lon2,time:now,dist:dist}
+
+/* ONLY MOVING TOWARD */
+if(dist>prev.dist) return
+
+if(event.includes("Tornado")) tornadoActive=true
+
+let impact="Calculating..."
+if(speed>5){
+let minutes=Math.round((dist/speed)*60)
+impact=`Impact in ~${minutes} min`
+}
+
+storms.push({
+event,
+area:alert.properties.areaDesc,
+distance:dist,
+speed:speed,
+direction:dir,
+impact:impact,
+severity:severityRank(event)
+})
+
+})
+
+/* 🔥 SORT BY SEVERITY FIRST THEN DISTANCE */
+storms.sort((a,b)=>{
+if(b.severity!==a.severity) return b.severity-a.severity
+return a.distance-b.distance
+})
+
 let html=""
 
-data.features.slice(0,6).forEach(a=>{
-let e=a.properties.event
-let style=e.includes("Tornado")?"tornado":"severe"
+storms.slice(0,6).forEach(s=>{
+let style=s.event.includes("Tornado")?"tornado":"severe"
 
 html+=`
 <div class="${style}">
-<b>${e}</b>
-<div class="info">${a.properties.areaDesc}</div>
+<b>${s.event}</b>
+<div class="distance">${Math.round(s.distance)} miles away</div>
+<div class="info">Moving ${s.direction} at ${Math.round(s.speed)} mph</div>
+<div class="impact">${s.impact}</div>
+<div class="info">${s.area}</div>
 </div>
 `
 })
 
-document.getElementById("storms").innerHTML = html || "<div class='card'>No storms</div>"
+if(!html){
+html='<div class="card">No storms moving toward your location</div>'
+}
+
+document.getElementById("storms").innerHTML=html
+
+updateLogoAlert(tornadoActive)
+
 }
 
 setInterval(loadStorms,60000)
