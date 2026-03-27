@@ -57,25 +57,6 @@ margin:auto;
 width:92%;
 }
 
-/* 🔥 TICKER (SMOOTH VERSION) */
-.tickerWrap{
-background:#7a0000;
-overflow:hidden;
-padding:10px 0;
-}
-
-.ticker{
-white-space:nowrap;
-display:inline-block;
-font-size:18px;
-animation:scroll 90s linear infinite; /* 🔥 smooth speed */
-}
-
-@keyframes scroll{
-0%{transform:translateX(100%)}
-100%{transform:translateX(-100%)}
-}
-
 /* SEARCH */
 .searchBox{
 margin-top:10px;
@@ -172,10 +153,6 @@ text-align:left;
 
 <div class="container">
 
-<div class="tickerWrap">
-<div id="ticker" class="ticker">⚠ Loading alerts...</div>
-</div>
-
 <div class="searchBox">
 <input id="searchInput" placeholder="Search US city">
 <div id="suggestions" class="suggestions"></div>
@@ -210,46 +187,6 @@ function toggleMenu(){
 let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
-
-/* 🔥 SIMPLE SMOOTH TICKER */
-async function loadTicker(){
-
-let ticker = document.getElementById("ticker")
-
-try{
-
-let res = await fetch("https://api.weather.gov/alerts/active")
-let data = await res.json()
-
-let arr = []
-
-data.features.slice(0,10).forEach(a=>{
-
-let event = a.properties.event || "Alert"
-let area = a.properties.areaDesc || "Unknown"
-
-/* CLEAN LOCATION */
-let location = area.split(";")[0]
-
-arr.push(`⚠ ${event} — ${location}`)
-
-})
-
-let final = arr.join("   •   ")
-
-if(final.length > 10){
-ticker.innerText = final
-}
-
-}catch{
-ticker.innerText = "⚠ Unable to load alerts"
-}
-
-}
-
-/* LOAD + SLOW REFRESH */
-loadTicker()
-setInterval(loadTicker,180000) // 🔥 every 3 minutes
 
 /* GEO */
 let lat=43, lon=-88
