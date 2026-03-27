@@ -52,7 +52,7 @@ color:white;
 text-decoration:none;
 }
 
-/* 🔥 CENTER POPUP */
+/* POPUP */
 .popup{
 position:fixed;
 top:50%;
@@ -64,10 +64,18 @@ padding:25px;
 border-radius:12px;
 width:85%;
 max-width:400px;
-font-weight:bold;
 z-index:99999;
 display:none;
 box-shadow:0 0 20px rgba(255,0,0,0.7);
+text-align:left;
+}
+
+.popupClose{
+position:absolute;
+top:8px;
+right:12px;
+font-size:20px;
+cursor:pointer;
 }
 
 /* TICKER */
@@ -163,7 +171,11 @@ text-align:left;
 
 <body>
 
-<div id="popup" class="popup"></div>
+<!-- POPUP -->
+<div id="popup" class="popup">
+<div class="popupClose" id="popupClose">✖</div>
+<div id="popupText"></div>
+</div>
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
@@ -175,7 +187,7 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- 🔥 WORKING TICKER -->
+<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -213,6 +225,45 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
+/* POPUP */
+function showPopup(type){
+
+let p=document.getElementById("popup")
+let text=document.getElementById("popupText")
+
+let message=""
+
+if(type.includes("Tornado")){
+message=`🌪️ ${type}
+
+TAKE COVER NOW
+• Basement or interior room
+• Stay away from windows
+• Cover your head`
+}
+else if(type.includes("Severe")){
+message=`⛈️ ${type}
+
+SEEK SHELTER
+• Move indoors immediately
+• Avoid windows`
+}
+
+text.innerText=message
+p.style.display="block"
+}
+
+document.getElementById("popupClose").onclick=()=>{
+document.getElementById("popup").style.display="none"
+}
+
+window.onclick=function(e){
+let p=document.getElementById("popup")
+if(e.target===p){
+p.style.display="none"
+}
+}
+
 /* LOGO GLOW */
 function updateLogoGlow(level){
 let logo=document.getElementById("logo")
@@ -221,52 +272,35 @@ else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
 else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 }
 
-/* 🔥 CENTER POPUP WITH INSTRUCTIONS */
-function showPopup(type){
-
-let p=document.getElementById("popup")
-
-let message=""
-
-if(type.includes("Tornado")){
-message = `🌪️ ${type}
-
-TAKE COVER NOW
-• Go to a basement or interior room
-• Stay away from windows
-• Cover your head
-
-This is life-threatening.`
-}
-else if(type.includes("Severe")){
-message = `⛈️ ${type}
-
-SEEK SHELTER
-• Move indoors immediately
-• Avoid windows
-• Secure loose items outside`
-}
-
-p.innerText = message
-p.style.display="block"
-
-setTimeout(()=>{p.style.display="none"},9000)
-}
-
-/* 🔥 FIXED TICKER */
+/* TICKER */
 async function loadTicker(){
+
 let t=document.getElementById("tickerContent")
 
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
+let priority=[
+"Tornado Warning",
+"Tornado Watch",
+"Severe Thunderstorm Warning"
+]
+
 let arr=[]
 
-d.features.slice(0,8).forEach(a=>{
-arr.push(`⚠ ${a.properties.event}`)
+priority.forEach(p=>{
+d.features.forEach(a=>{
+let e=a.properties.event || ""
+if(e.includes(p)){
+arr.push(`⚠ ${p}`)
+}
+})
 })
 
-t.innerText=arr.join("   •   ")
+arr=[...new Set(arr)]
+
+t.innerText=arr.length?arr.join("   •   "):"No major severe weather alerts"
+
 }
 
 /* GEO */
@@ -313,7 +347,7 @@ humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
-/* ALERTS + POPUP */
+/* ALERTS */
 async function loadAlerts(){
 
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
@@ -328,23 +362,14 @@ d.features.forEach(a=>{
 let e=a.properties.event
 let desc=a.properties.description || ""
 
-if(desc.toLowerCase().includes("tornado emergency")){
-e="TORNADO EMERGENCY"
-risk="high"
-}
-else if(desc.toLowerCase().includes("particularly dangerous")){
-e="PDS TORNADO WARNING"
-risk="high"
-}
-else if(e.includes("Tornado")){
+if(e.includes("Tornado")){
 risk="high"
 }
 else if(e.includes("Severe")){
 if(risk!=="high") risk="medium"
 }
 
-/* 🔥 POPUP */
-if(!triggered && (e.includes("Tornado") || e.includes("Severe"))){
+if(!triggered && (e.includes("Tornado")||e.includes("Severe"))){
 showPopup(e)
 triggered=true
 }
@@ -358,9 +383,8 @@ ${desc.replace(/\n/g,"<br>")}
 
 })
 
-alerts.innerHTML=html || "No alerts"
+alerts.innerHTML=html||"No alerts"
 
-/* RISK */
 if(risk==="high"){
 riskLevel.className="riskBox high"
 riskLevel.innerText="Severe Weather Risk: HIGH"
