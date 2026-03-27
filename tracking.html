@@ -13,10 +13,9 @@ background:#0a0f1c;
 color:white;
 text-align:center;
 overflow-x:hidden;
-padding-top:0; /* 🔥 auto handled by JS */
 }
 
-/* HEADER (LOCKED) */
+/* HEADER (LOCKED PROPERLY) */
 header{
 position:fixed;
 top:0;
@@ -75,6 +74,11 @@ display:block;
 padding:12px;
 color:white;
 text-decoration:none;
+}
+
+/* 🔥 MAIN CONTENT FIX */
+.mainContent{
+margin-top:120px; /* 🔥 pushes everything below header */
 }
 
 /* LOCATION BOX */
@@ -193,10 +197,11 @@ color:#00ffcc;
 <img src="logo.PNG" class="logo">
 </header>
 
-<!-- LOCATION -->
+<!-- 🔥 WRAPPED CONTENT -->
+<div class="mainContent">
+
 <div id="locationBox" class="locationBox">Detecting location...</div>
 
-<!-- SEARCH -->
 <div class="searchBox">
 <input id="searchInput" placeholder="Search US city or town">
 <div id="suggestions" class="suggestions"></div>
@@ -206,16 +211,9 @@ color:#00ffcc;
 <div id="storms"></div>
 </div>
 
-<script>
+</div>
 
-/* 🔥 AUTO FIX HEADER OVERLAP */
-function fixHeaderSpacing(){
-let header=document.querySelector("header")
-if(!header) return
-document.body.style.paddingTop = header.offsetHeight + "px"
-}
-window.addEventListener("load", fixHeaderSpacing)
-window.addEventListener("resize", fixHeaderSpacing)
+<script>
 
 /* MENU */
 function toggleMenu(){
