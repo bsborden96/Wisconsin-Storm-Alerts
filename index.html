@@ -146,7 +146,6 @@ text-align:left;
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
-<!-- 🔥 FIXED MENU LINKS -->
 <div id="menuPanel" class="menuPanel">
 <a href="index.html">Home</a>
 <a href="tracking.html">Storm Tracker</a>
@@ -195,7 +194,7 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 FINAL CLEAN TICKER */
+/* 🔥 FINAL TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("tickerContent")
@@ -254,13 +253,10 @@ let order = [
 let parts = []
 
 order.forEach(type=>{
-
 let list = Array.from(groups[type])
-
 if(list.length > 0){
 parts.push(`⚠ ${type} — ${list.join(", ")}`)
 }
-
 })
 
 let final = parts.join("   •   ")
@@ -271,9 +267,8 @@ final = "No major severe weather alerts across the United States"
 
 ticker.innerText = final + "   •   " + final
 
-/* SPEED */
 let pos = 0
-let speed = 1   // 🔥 smooth readable
+let speed = 1
 
 if(window.tickerAnim) cancelAnimationFrame(window.tickerAnim)
 
@@ -388,6 +383,54 @@ box.innerText="Severe Weather Risk: LOW"
 }
 
 }
+
+/* 🔥 SEARCH FIX */
+let input = document.getElementById("searchInput")
+let suggestions = document.getElementById("suggestions")
+
+let debounce
+
+input.addEventListener("input", ()=>{
+
+clearTimeout(debounce)
+
+let q = input.value.trim()
+
+if(q.length < 2){
+suggestions.innerHTML = ""
+return
+}
+
+debounce = setTimeout(async ()=>{
+
+try{
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
+suggestions.innerHTML=""
+loadAll()
+}
+
+suggestions.appendChild(div)
+})
+
+}catch{
+suggestions.innerHTML=""
+}
+
+},300)
+
+})
 
 </script>
 
