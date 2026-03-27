@@ -52,18 +52,22 @@ color:white;
 text-decoration:none;
 }
 
-/* POPUP ALERT */
+/* 🔥 CENTER POPUP */
 .popup{
 position:fixed;
-top:0;
-left:0;
-width:100%;
-background:#b91c1c;
+top:50%;
+left:50%;
+transform:translate(-50%,-50%);
+background:#7a0000;
 color:white;
-padding:15px;
+padding:25px;
+border-radius:12px;
+width:85%;
+max-width:400px;
 font-weight:bold;
 z-index:99999;
 display:none;
+box-shadow:0 0 20px rgba(255,0,0,0.7);
 }
 
 /* TICKER */
@@ -73,12 +77,14 @@ overflow:hidden;
 }
 
 .tickerTrack{
-display:flex;
+display:inline-block;
 white-space:nowrap;
+animation:scroll 60s linear infinite;
 }
 
-.tickerTrack span{
-padding-right:100px;
+@keyframes scroll{
+0%{transform:translateX(100%)}
+100%{transform:translateX(-100%)}
 }
 
 /* SEARCH */
@@ -169,10 +175,9 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
+<!-- 🔥 WORKING TICKER -->
 <div class="tickerWrap">
-<div class="tickerTrack">
-<span id="tickerContent">Loading alerts...</span>
-</div>
+<div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
 
 <div class="searchBox">
@@ -216,16 +221,39 @@ else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
 else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 }
 
-/* POPUP */
-function showPopup(text){
-let p=document.getElementById("popup")
-p.innerText=text
-p.style.display="block"
+/* 🔥 CENTER POPUP WITH INSTRUCTIONS */
+function showPopup(type){
 
-setTimeout(()=>{p.style.display="none"},8000)
+let p=document.getElementById("popup")
+
+let message=""
+
+if(type.includes("Tornado")){
+message = `🌪️ ${type}
+
+TAKE COVER NOW
+• Go to a basement or interior room
+• Stay away from windows
+• Cover your head
+
+This is life-threatening.`
+}
+else if(type.includes("Severe")){
+message = `⛈️ ${type}
+
+SEEK SHELTER
+• Move indoors immediately
+• Avoid windows
+• Secure loose items outside`
 }
 
-/* TICKER (simple stable) */
+p.innerText = message
+p.style.display="block"
+
+setTimeout(()=>{p.style.display="none"},9000)
+}
+
+/* 🔥 FIXED TICKER */
 async function loadTicker(){
 let t=document.getElementById("tickerContent")
 
@@ -234,11 +262,11 @@ let d=await res.json()
 
 let arr=[]
 
-d.features.slice(0,10).forEach(a=>{
+d.features.slice(0,8).forEach(a=>{
 arr.push(`⚠ ${a.properties.event}`)
 })
 
-t.innerText=arr.join(" • ")
+t.innerText=arr.join("   •   ")
 }
 
 /* GEO */
@@ -315,9 +343,9 @@ else if(e.includes("Severe")){
 if(risk!=="high") risk="medium"
 }
 
-/* 🔥 POPUP TRIGGER */
+/* 🔥 POPUP */
 if(!triggered && (e.includes("Tornado") || e.includes("Severe"))){
-showPopup(`⚠ ${e} affecting your area`)
+showPopup(e)
 triggered=true
 }
 
@@ -332,7 +360,7 @@ ${desc.replace(/\n/g,"<br>")}
 
 alerts.innerHTML=html || "No alerts"
 
-/* RISK BOX */
+/* RISK */
 if(risk==="high"){
 riskLevel.className="riskBox high"
 riskLevel.innerText="Severe Weather Risk: HIGH"
