@@ -57,7 +57,7 @@ margin:auto;
 width:92%;
 }
 
-/* TICKER */
+/* 🔥 TICKER (SMOOTH VERSION) */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
@@ -68,7 +68,7 @@ padding:10px 0;
 white-space:nowrap;
 display:inline-block;
 font-size:18px;
-animation:scroll 120s linear infinite; /* 🔥 slower */
+animation:scroll 90s linear infinite; /* 🔥 smooth speed */
 }
 
 @keyframes scroll{
@@ -173,7 +173,7 @@ text-align:left;
 <div class="container">
 
 <div class="tickerWrap">
-<div id="ticker" class="ticker">⚠ Monitoring U.S. severe weather...</div>
+<div id="ticker" class="ticker">⚠ Loading alerts...</div>
 </div>
 
 <div class="searchBox">
@@ -211,74 +211,45 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 FIXED WEATHER CHANNEL TICKER */
+/* 🔥 SIMPLE SMOOTH TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("ticker")
-
-/* LOAD CACHE FIRST */
-let cache = localStorage.getItem("tickerCache")
-if(cache && !ticker.dataset.loaded){
-ticker.innerText = cache
-ticker.dataset.loaded = "true"
-}
 
 try{
 
 let res = await fetch("https://api.weather.gov/alerts/active")
 let data = await res.json()
 
-let grouped = {}
+let arr = []
 
-data.features.forEach(a=>{
+data.features.slice(0,10).forEach(a=>{
 
 let event = a.properties.event || "Alert"
 let area = a.properties.areaDesc || "Unknown"
 
 /* CLEAN LOCATION */
-let counties = area.split(";")[0]
+let location = area.split(";")[0]
 
-if(!grouped[event]){
-grouped[event] = new Set()
-}
-
-counties.split(",").forEach(c=>{
-grouped[event].add(c.trim())
-})
+arr.push(`⚠ ${event} — ${location}`)
 
 })
 
-let items = []
+let final = arr.join("   •   ")
 
-Object.keys(grouped).forEach(event=>{
-
-let counties = Array.from(grouped[event]).slice(0,6)
-
-items.push({
-text:`⚠ ${event} — ${counties.join(", ")}`,
-priority: event.includes("Tornado") ? 3 :
-event.includes("Severe") ? 2 : 1
-})
-
-})
-
-items.sort((a,b)=>b.priority-a.priority)
-
-let final = items.slice(0,6).map(i=>i.text).join("   •   ")
-
-if(final && final.length > 10){
+if(final.length > 10){
 ticker.innerText = final
-localStorage.setItem("tickerCache", final)
 }
 
-}catch(e){
-console.log("Ticker error", e)
+}catch{
+ticker.innerText = "⚠ Unable to load alerts"
 }
 
 }
 
+/* LOAD + SLOW REFRESH */
 loadTicker()
-setInterval(loadTicker,60000)
+setInterval(loadTicker,180000) // 🔥 every 3 minutes
 
 /* GEO */
 let lat=43, lon=-88
