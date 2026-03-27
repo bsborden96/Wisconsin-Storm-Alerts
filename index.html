@@ -60,11 +60,11 @@ width:100%;
 .tickerTrack{
 display:flex;
 white-space:nowrap;
-animation:scroll 35s linear infinite;
+animation:scroll 30s linear infinite; /* 🔥 faster */
 }
 
 .tickerTrack span{
-padding-right:120px;
+padding-right:100px;
 font-size:18px;
 }
 
@@ -199,7 +199,7 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 WEATHER CHANNEL TICKER */
+/* 🔥 FAST CLEAN TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("tickerContent")
@@ -258,8 +258,20 @@ order.forEach(type=>{
 let list = Array.from(groups[type])
 
 if(list.length > 0){
-let counties = list.slice(0,6).join(", ")
-parts.push(`⚠ ${type} — ${counties}`)
+
+/* 🔥 LIMIT COUNTIES */
+let counties = list.slice(0,3).join(", ")
+
+/* 🔥 SHORT LABELS */
+let shortType = type
+.replace("SEVERE THUNDERSTORM WARNING","SVR T-STORM")
+.replace("TORNADO WARNING","TOR WARNING")
+.replace("TORNADO WATCH","TOR WATCH")
+.replace("PDS TORNADO WARNING","PDS TOR")
+.replace("TORNADO EMERGENCY","TOR EMERGENCY")
+
+parts.push(`⚠ ${shortType} — ${counties}`)
+
 }
 
 })
@@ -270,6 +282,7 @@ if(final.length < 5){
 final = "No major severe weather alerts across the United States"
 }
 
+/* 🔥 DUPLICATE FOR SMOOTH LOOP */
 ticker.innerText = final + "   •   " + final
 
 }catch{
