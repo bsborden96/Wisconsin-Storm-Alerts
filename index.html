@@ -50,7 +50,7 @@ color:white;
 text-decoration:none;
 }
 
-/* 🔥 TICKER */
+/* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
@@ -146,15 +146,16 @@ text-align:left;
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
 
+<!-- 🔥 FIXED MENU LINKS -->
 <div id="menuPanel" class="menuPanel">
-<a href="#">Home</a>
-<a href="#">Storm Tracker</a>
-<a href="#">Winter Center</a>
+<a href="index.html">Home</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
 </div>
 
 <img src="logo.PNG" class="logo">
 
-<!-- 🔥 TICKER -->
+<!-- TICKER -->
 <div class="tickerWrap">
   <div class="tickerTrack" id="tickerTrack">
     <span id="tickerContent">⚠ Loading alerts...</span>
@@ -194,7 +195,7 @@ let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* 🔥 PIXEL-BASED FAST TICKER */
+/* 🔥 FINAL CLEAN TICKER */
 async function loadTicker(){
 
 let ticker = document.getElementById("tickerContent")
@@ -219,7 +220,8 @@ let event = a.properties.event || ""
 let desc = (a.properties.description || "").toLowerCase()
 let area = a.properties.areaDesc || ""
 
-let county = area.split(";")[0]
+area.split(";").forEach(c=>{
+let county = c.trim()
 
 if(desc.includes("tornado emergency")){
 groups["TORNADO EMERGENCY"].add(county)
@@ -239,6 +241,8 @@ groups["SEVERE THUNDERSTORM WARNING"].add(county)
 
 })
 
+})
+
 let order = [
 "TORNADO EMERGENCY",
 "PDS TORNADO WARNING",
@@ -254,18 +258,7 @@ order.forEach(type=>{
 let list = Array.from(groups[type])
 
 if(list.length > 0){
-
-let counties = list.slice(0,3).join(", ")
-
-let shortType = type
-.replace("SEVERE THUNDERSTORM WARNING","SVR T-STORM")
-.replace("TORNADO WARNING","TOR WARNING")
-.replace("TORNADO WATCH","TOR WATCH")
-.replace("PDS TORNADO WARNING","PDS TOR")
-.replace("TORNADO EMERGENCY","TOR EMERGENCY")
-
-parts.push(`⚠ ${shortType} — ${counties}`)
-
+parts.push(`⚠ ${type} — ${list.join(", ")}`)
 }
 
 })
@@ -276,14 +269,12 @@ if(final.length < 5){
 final = "No major severe weather alerts across the United States"
 }
 
-/* DUPLICATE TEXT */
 ticker.innerText = final + "   •   " + final
 
-/* 🔥 SPEED CONTROL */
+/* SPEED */
 let pos = 0
-let speed = 2.5   // 🔥 CHANGE THIS (3 = fast, 4 = crazy fast)
+let speed = 1   // 🔥 smooth readable
 
-/* STOP OLD ANIMATION */
 if(window.tickerAnim) cancelAnimationFrame(window.tickerAnim)
 
 function animate(){
@@ -356,7 +347,7 @@ humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 }
 
-/* ALERTS + RISK */
+/* ALERTS */
 async function loadAlerts(){
 
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
@@ -397,54 +388,6 @@ box.innerText="Severe Weather Risk: LOW"
 }
 
 }
-
-/* SEARCH */
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-
-let debounce
-
-input.addEventListener("input", ()=>{
-
-clearTimeout(debounce)
-
-let q=input.value.trim()
-
-if(q.length<2){
-suggestions.innerHTML=""
-return
-}
-
-debounce=setTimeout(async ()=>{
-
-try{
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
-suggestions.innerHTML=""
-loadAll()
-}
-
-suggestions.appendChild(div)
-})
-
-}catch{
-suggestions.innerHTML=""
-}
-
-},300)
-
-})
 
 </script>
 
