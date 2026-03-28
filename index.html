@@ -251,7 +251,8 @@ Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br><br>
 
 <b>Live Sounding</b><br>
-<img id="soundingImg" style="width:100%;border-radius:10px;">
+<iframe id="soundingFrame"
+style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>
 
 </div>
 </div>
@@ -534,35 +535,8 @@ t.innerText = parts.length
 }
 
 /* SOUNDING (FIXED SOURCE) */
-function loadSounding(){
-
-/* round location for model grid */
-let latR = lat.toFixed(2)
-let lonR = lon.toFixed(2)
-
-/* model = RAP (fast + reliable) */
-let now = new Date()
-
-let year = now.getUTCFullYear()
-let month = String(now.getUTCMonth()+1).padStart(2,'0')
-let day = String(now.getUTCDate()).padStart(2,'0')
-let hour = String(now.getUTCHours()).padStart(2,'0')
-
-/* COD model sounding URL */
-let url = `https://weather.cod.edu/analysis/models/rap/forecast/skewt.php?lat=${latR}&lon=${lonR}&date=${year}${month}${day}&hour=${hour}&fhour=0`
-
-let img = document.getElementById("soundingImg")
-
-/* fallback to SPC if COD fails */
-img.onerror = function(){
-img.src = "https://www.spc.noaa.gov/exper/soundings/12z/MPX.gif"
-}
-
-/* force refresh (prevents caching issues) */
-img.src = url + "&rand=" + Math.random()
-
-}
-
+<iframe id="soundingFrame"
+style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>
 /* SEARCH */
 searchInput.addEventListener("input",async()=>{
 let q=searchInput.value.trim()
