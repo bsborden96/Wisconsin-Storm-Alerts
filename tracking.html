@@ -364,7 +364,7 @@ let arr=[]
 
 priority.forEach(p=>{
 d.features.forEach(a=>{
-if(a.properties.event.includes(p)){
+if((a.properties.event || "").includes(p)){
 arr.push(`⚠ ${p}`)
 }
 })
@@ -470,7 +470,7 @@ let triggered=false
 
 d.features.forEach(a=>{
 
-let e=a.properties.event
+let e = a.properties.event || ""
 let desc=a.properties.description || ""
 
 if(e.includes("Tornado")) risk="high"
