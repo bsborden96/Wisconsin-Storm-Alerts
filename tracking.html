@@ -356,8 +356,18 @@ else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 async function loadTicker(){
 let t=document.getElementById("tickerContent")
 
-let res=await fetch("https://api.weather.gov/alerts/active")
-let d=await res.json()
+let res = await fetch("https://api.weather.gov/alerts/active", {
+headers: {
+"User-Agent": "USStormAlertsApp (youremail@example.com)"
+}
+})
+
+if(!res.ok){
+document.getElementById("tickerContent").innerText = "Alert feed unavailable"
+return
+}
+
+let d = await res.json()
 
 let priority=["Tornado Warning","Tornado Watch","Severe Thunderstorm Warning"]
 let arr=[]
@@ -391,20 +401,28 @@ loadTicker()
 
 /* LOCATION */
 async function loadLocation(){
+try{
 let p = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
 headers: {
 "User-Agent": "USStormAlertsApp (youremail@example.com)"
 }
 })
-let d=await p.json()
 
-let city=d.properties.relativeLocation.properties.city
-let state=d.properties.relativeLocation.properties.state
+if(!p.ok) throw new Error("Bad response")
+
+let d = await p.json()
+
+let city=d.properties?.relativeLocation?.properties?.city || "Unknown"
+let state=d.properties?.relativeLocation?.properties?.state || ""
 
 let countyRes=await fetch(d.properties.county)
 let countyData=await countyRes.json()
 
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
+}catch(e){
+locationCard.innerText="Location unavailable"
+console.error("Location error:", e)
+}
 }
 
 /* WEATHER */
