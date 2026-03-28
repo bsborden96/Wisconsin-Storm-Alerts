@@ -484,11 +484,29 @@ if(buckets.severe.length) parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buck
 t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
 }
 
-/* FIX — COMMENTED (NOT DELETED) */
-/*
-<iframe id="soundingFrame"
-style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>
-*/
+let locationCard = document.getElementById("locationCard")
+let temp = document.getElementById("temp")
+let humidity = document.getElementById("humidity")
+let dew = document.getElementById("dew")
+let wind = document.getElementById("wind")
+let feels = document.getElementById("feels")
+let pressure = document.getElementById("pressure")
+let moistureLevel = document.getElementById("moistureLevel")
+let humidityFeel = document.getElementById("humidityFeel")
+let stormFuel = document.getElementById("stormFuel")
+let gusts = document.getElementById("gusts")
+let windDir = document.getElementById("windDir")
+
+let torRisk = document.getElementById("torRisk")
+let sevRisk = document.getElementById("sevRisk")
+let instability = document.getElementById("instability")
+let sndMoisture = document.getElementById("sndMoisture")
+let sndLift = document.getElementById("sndLift")
+let sndWind = document.getElementById("sndWind")
+
+let alerts = document.getElementById("alerts")
+let riskLevel = document.getElementById("riskLevel")
+let riskText = document.getElementById("riskText")
 
 /* FIX — ADDED */
 function loadSounding(){
