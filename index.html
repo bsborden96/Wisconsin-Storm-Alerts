@@ -366,6 +366,7 @@ locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, 
 
 /* WEATHER */
 async function loadWeather(){
+
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
 let c=d.current
@@ -374,6 +375,8 @@ let t=Math.round(c.temperature_2m)
 let dewV=Math.round(c.dewpoint_2m)
 let hum=c.relative_humidity_2m
 let windV=Math.round(c.wind_speed_10m)
+let pressureVal=Math.round(c.surface_pressure)
+let windDirVal=c.wind_direction_10m
 
 temp.innerText=t+"°F"
 dew.innerText=dewV+"°F"
@@ -381,6 +384,7 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
+/* COLORS */
 temp.className=""
 if(t<32) temp.classList.add("tempCold")
 else if(t<50) temp.classList.add("tempCool")
@@ -388,13 +392,20 @@ else if(t<70) temp.classList.add("tempMild")
 else if(t<85) temp.classList.add("tempWarm")
 else temp.classList.add("tempHot")
 
-moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":"Normal"
-humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":"Comfortable"
-stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":"Moderate"
+pressure.innerText=pressureVal+" mb"
+moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
+humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
+stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
 gusts.innerText=(windV+5)+" mph"
-windDir.innerText="N"
 
-/* STORM INTEL */
+/* WIND DIR */
+let dir="N"
+if(windDirVal>45 && windDirVal<=135) dir="E"
+else if(windDirVal>135 && windDirVal<=225) dir="S"
+else if(windDirVal>225 && windDirVal<=315) dir="W"
+windDir.innerText=dir
+
+/* STORM */
 torRisk.innerText=dewV>70 && windV>20?"High":"Low"
 sevRisk.innerText=dewV>60?"Moderate":"Low"
 instability.innerText=dewV>65?"High":"Low"
@@ -402,10 +413,12 @@ instability.innerText=dewV>65?"High":"Low"
 sndMoisture.innerText=dewV>70?"Very High":"Moderate"
 sndLift.innerText=t>85?"Strong":"Weak"
 sndWind.innerText=windV>20?"Strong":"Weak"
+
 }
 
 /* ALERTS */
 async function loadAlerts(){
+
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
@@ -414,8 +427,9 @@ let risk="low"
 let triggered=false
 
 d.features.forEach(a=>{
+
 let e=a.properties.event
-let desc=a.properties.description||""
+let desc=a.properties.description || ""
 
 let style="alertOther"
 if(e.includes("Tornado")) style="alertTornado"
@@ -433,13 +447,16 @@ html+=`
 <div class="alertCard ${style}" onclick="toggleCard(this)">
 <b>${e}</b>
 <div class="weatherDetails">${desc.replace(/\n/g,"<br>")}</div>
-</div>`
+</div>
+`
+
 })
 
 alerts.innerHTML=html||"No alerts"
 
 riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
 riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+
 }
 
 /* TICKER */
@@ -449,34 +466,38 @@ let d=await r.json()
 tickerContent.innerText=d.features.map(a=>a.properties.event).slice(0,10).join(" • ")
 }
 
-/* SOUNDING */
+/* SOUNDING (FIXED SOURCE) */
 function loadSounding(){
-let hour=new Date().getUTCHours()
+let now=new Date()
+let hour=now.getUTCHours()
 let cycle=hour<12?"00":"12"
-soundingImg.src=`https://www.spc.noaa.gov/exper/soundings/${cycle}z/MPX.gif`
+
+let url=`https://weather.uwyo.edu/cgi-bin/sounding?region=naconf&TYPE=GIF%3ASKEWT&YEAR=${now.getUTCFullYear()}&MONTH=${String(now.getUTCMonth()+1).padStart(2,'0')}&FROM=${String(now.getUTCDate()).padStart(2,'0')}${cycle}&TO=${String(now.getUTCDate()).padStart(2,'0')}${cycle}&STNM=72649`
+
+soundingImg.src=url
 }
 
 /* SEARCH */
 searchInput.addEventListener("input",async()=>{
-let q=searchInput.value
+let q=searchInput.value.trim()
 if(q.length<2){suggestions.innerHTML="";return}
 
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=5`)
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
 let data=await res.json()
 
 suggestions.innerHTML=""
 
 data.forEach(p=>{
-let d=document.createElement("div")
-d.innerText=p.display_name
-d.onclick=()=>{
+let div=document.createElement("div")
+div.innerText=p.display_name
+div.onclick=()=>{
 lat=parseFloat(p.lat)
 lon=parseFloat(p.lon)
 searchInput.value=p.display_name
 suggestions.innerHTML=""
 loadAll()
 }
-suggestions.appendChild(d)
+suggestions.appendChild(div)
 })
 })
 
