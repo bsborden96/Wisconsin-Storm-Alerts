@@ -391,7 +391,11 @@ loadTicker()
 
 /* LOCATION */
 async function loadLocation(){
-let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let p = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
+headers: {
+"User-Agent": "USStormAlertsApp (youremail@example.com)"
+}
+})
 let d=await p.json()
 
 let city=d.properties.relativeLocation.properties.city
@@ -453,7 +457,11 @@ windDir.innerText=dir
 /* ALERTS */
 async function loadAlerts(){
 
-let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+let r = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, {
+headers: {
+"User-Agent": "USStormAlertsApp (youremail@example.com)"
+}
+})
 let d=await r.json()
 
 let html=""
