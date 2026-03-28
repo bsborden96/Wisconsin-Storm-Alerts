@@ -200,6 +200,7 @@ text-align:left;
 
 <body>
 
+<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -215,6 +216,7 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
+<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -238,29 +240,30 @@ text-align:left;
 Temp<div id="temp">--</div>
 <div class="weatherDetails">
 Feels Like: <span id="feels">--</span><br>
-Condition: <span id="condition">--</span>
+Pressure: <span id="pressure">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Humidity<div id="humidity">--</div>
 <div class="weatherDetails">
-Comfort: <span id="humidityDesc">--</span><br>
-Dew Point: <span id="dewDetail">--</span>
+Moisture Level: <span id="moistureLevel">--</span><br>
+Air Feel: <span id="humidityFeel">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Dew<div id="dew">--</div>
 <div class="weatherDetails">
-Air Feel: <span id="dewDesc">--</span>
+Storm Fuel: <span id="stormFuel">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Wind<div id="wind">--</div>
 <div class="weatherDetails">
-Wind Impact: <span id="windDesc">--</span>
+Direction: <span id="windDir">--</span><br>
+Gusts: <span id="gusts">--</span>
 </div>
 </div>
 
@@ -337,6 +340,7 @@ else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 /* TICKER */
 async function loadTicker(){
 let t=document.getElementById("tickerContent")
+
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
@@ -387,7 +391,7 @@ locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, 
 /* WEATHER */
 async function loadWeather(){
 
-let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
 
 let c=d.current
@@ -396,6 +400,8 @@ let t=Math.round(c.temperature_2m)
 let dewV=Math.round(c.dewpoint_2m)
 let hum=c.relative_humidity_2m
 let windV=Math.round(c.wind_speed_10m)
+let pressureVal=Math.round(c.surface_pressure)
+let windDirVal=c.wind_direction_10m
 
 temp.innerText=t+"°F"
 dew.innerText=dewV+"°F"
@@ -403,25 +409,35 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-/* COLOR */
-temp.className=""
+/* TEMP COLOR FIX */
+temp.classList.remove("tempCold","tempCool","tempMild","tempWarm","tempHot")
+
 if(t<32) temp.classList.add("tempCold")
 else if(t<50) temp.classList.add("tempCool")
 else if(t<70) temp.classList.add("tempMild")
 else if(t<85) temp.classList.add("tempWarm")
 else temp.classList.add("tempHot")
 
-/* INFO */
-humidityDesc.innerText=hum>70?"Very Humid":hum>55?"Humid":hum<30?"Dry":"Comfortable"
-dewDesc.innerText=dewV>70?"Oppressive":dewV>65?"Muggy":dewV>55?"Slightly Humid":dewV<40?"Dry":"Comfortable"
-dewDetail.innerText=dewV+"°F"
-windDesc.innerText=windV>25?"Very Windy":windV>15?"Windy":windV>8?"Breezy":"Light"
-condition.innerText=(hum>70&&t>75)?"Humid / Storm Possible":windV>20?"Windy Conditions":"Clear"
+/* REAL DATA */
+pressure.innerText=pressureVal+" mb"
+moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
+humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
+stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
+gusts.innerText=(windV+5)+" mph"
+
+/* WIND DIR */
+let dir="N"
+if(windDirVal>45 && windDirVal<=135) dir="E"
+else if(windDirVal>135 && windDirVal<=225) dir="S"
+else if(windDirVal>225 && windDirVal<=315) dir="W"
+
+windDir.innerText=dir
 
 }
 
 /* ALERTS */
 async function loadAlerts(){
+
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
@@ -430,8 +446,9 @@ let risk="low"
 let triggered=false
 
 d.features.forEach(a=>{
+
 let e=a.properties.event
-let desc=a.properties.description||""
+let desc=a.properties.description || ""
 
 if(e.includes("Tornado")) risk="high"
 else if(e.includes("Severe") && risk!=="high") risk="medium"
@@ -441,7 +458,13 @@ showPopup(e)
 triggered=true
 }
 
-html+=`<div class="card"><b>${e}</b><br>${desc.replace(/\n/g,"<br>")}</div>`
+html+=`
+<div class="card">
+<b>${e}</b><br>
+${desc.replace(/\n/g,"<br>")}
+</div>
+`
+
 })
 
 alerts.innerHTML=html||"No alerts"
@@ -450,6 +473,7 @@ riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"l
 riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
 
 updateLogoGlow(risk)
+
 }
 
 /* SEARCH */
@@ -460,6 +484,7 @@ let debounce
 input.addEventListener("input",()=>{
 clearTimeout(debounce)
 let q=input.value.trim()
+
 if(q.length<2){suggestions.innerHTML="";return}
 
 debounce=setTimeout(async()=>{
@@ -471,6 +496,7 @@ suggestions.innerHTML=""
 data.forEach(place=>{
 let div=document.createElement("div")
 div.innerText=place.display_name
+
 div.onclick=()=>{
 lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
@@ -478,6 +504,7 @@ input.value=place.display_name
 suggestions.innerHTML=""
 loadAll()
 }
+
 suggestions.appendChild(div)
 })
 },300)
