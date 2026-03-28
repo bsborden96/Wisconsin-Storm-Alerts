@@ -139,12 +139,30 @@ padding:20px;
 border-radius:10px;
 }
 
+/* 🔥 RISK BOX */
 .riskBox{
 margin-top:10px;
 padding:15px;
 border-radius:10px;
 font-size:22px;
 font-weight:bold;
+cursor:pointer;
+transition:all 0.3s ease;
+}
+
+.riskBox .weatherDetails{
+opacity:0;
+max-height:0;
+overflow:hidden;
+transition:all 0.3s ease;
+font-size:16px;
+text-align:left;
+}
+
+.riskBox.active .weatherDetails{
+opacity:1;
+max-height:500px;
+margin-top:10px;
 }
 
 .low{background:#1f3b1f}
@@ -178,7 +196,7 @@ transition:all 0.3s ease;
 
 .weatherCard.active .weatherDetails{
 opacity:1;
-max-height:300px;
+max-height:200px;
 }
 
 /* TEMP COLORS */
@@ -187,12 +205,6 @@ max-height:300px;
 .tempMild{color:#00ff99;}
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
-
-/* STORM COLORS */
-.stormLow{color:#00ff99;}
-.stormMod{color:#ffcc00;}
-.stormHigh{color:#ff6600;}
-.stormExtreme{color:#ff0000;}
 
 .card{
 margin-top:10px;
@@ -206,6 +218,7 @@ text-align:left;
 
 <body>
 
+<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -221,6 +234,7 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
+<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -232,7 +246,33 @@ text-align:left;
 
 <div class="section">
 <div id="locationCard" class="locationCard">Loading location...</div>
-<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
+
+<!-- 🌪️ CLICKABLE RISK BOX -->
+<div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
+Severe Weather Risk: <span id="riskText">LOW</span>
+
+<div class="weatherDetails">
+
+<div id="stormLevel">--</div><br>
+
+Tornado Risk: <span id="torRisk">--</span><br>
+Severe Risk: <span id="sevRisk">--</span><br>
+Instability: <span id="instability">--</span><br><br>
+
+<b>Sounding Breakdown</b><br>
+Surface Moisture: <span id="sndMoisture">--</span><br>
+Lift Potential: <span id="sndLift">--</span><br>
+Wind Energy: <span id="sndWind">--</span><br><br>
+
+<b>Key</b><br>
+Low = Minimal storm support<br>
+Moderate = Storms possible<br>
+High = Severe storms likely<br>
+Extreme = Tornado-capable
+
+</div>
+</div>
+
 </div>
 
 <div class="section">
@@ -271,29 +311,6 @@ Gusts: <span id="gusts">--</span>
 </div>
 </div>
 
-<!-- 🌪️ STORM PROBABILITY -->
-<div class="weatherCard" onclick="toggleCard(this)">
-Storm Probability
-<div id="stormLevel">--</div>
-
-<div class="weatherDetails">
-Tornado Risk: <span id="torRisk">--</span><br>
-Severe Risk: <span id="sevRisk">--</span><br>
-Instability: <span id="instability">--</span><br><br>
-
-<b>Sounding Breakdown</b><br>
-Surface Moisture: <span id="sndMoisture">--</span><br>
-Lift Potential: <span id="sndLift">--</span><br>
-Wind Energy: <span id="sndWind">--</span><br><br>
-
-<b>Key</b><br>
-Low = Minimal storm support<br>
-Moderate = Storms possible<br>
-High = Severe storms likely<br>
-Extreme = Tornado-capable
-</div>
-</div>
-
 </div>
 </div>
 
@@ -304,9 +321,9 @@ Extreme = Tornado-capable
 
 <script>
 
-/* EXPAND */
+/* TOGGLE */
 function toggleCard(card){
-document.querySelectorAll(".weatherCard").forEach(c=>{
+document.querySelectorAll(".weatherCard, .riskBox").forEach(c=>{
 if(c!==card) c.classList.remove("active")
 })
 card.classList.toggle("active")
@@ -349,13 +366,6 @@ document.getElementById("popupClose").onclick=()=>{
 document.getElementById("popup").style.display="none"
 }
 
-window.onclick=function(e){
-let p=document.getElementById("popup")
-if(e.target===p){
-p.style.display="none"
-}
-}
-
 /* LOGO GLOW */
 function updateLogoGlow(level){
 let logo=document.getElementById("logo")
@@ -367,7 +377,6 @@ else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 /* TICKER */
 async function loadTicker(){
 let t=document.getElementById("tickerContent")
-
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
@@ -459,23 +468,19 @@ windDir.innerText=dir
 
 /* 🌪️ STORM INTELLIGENCE */
 let stormLevelText="Low"
-let stormClass="stormLow"
 let instabilityLevel="Low"
 
 if(dewV>70 && t>80){
 instabilityLevel="Extreme"
 stormLevelText="Extreme"
-stormClass="stormExtreme"
 }
 else if(dewV>65 && t>75){
 instabilityLevel="High"
 stormLevelText="High"
-stormClass="stormHigh"
 }
 else if(dewV>60){
 instabilityLevel="Moderate"
 stormLevelText="Moderate"
-stormClass="stormMod"
 }
 
 let tor="Low"
@@ -492,8 +497,6 @@ sndLift.innerText = t>85?"Strong":t>75?"Moderate":"Weak"
 sndWind.innerText = windV>20?"Strong Shear":windV>10?"Moderate":"Weak"
 
 stormLevel.innerText=stormLevelText
-stormLevel.className=stormClass
-
 torRisk.innerText=tor
 sevRisk.innerText=sev
 instability.innerText=instabilityLevel
@@ -535,7 +538,7 @@ ${desc.replace(/\n/g,"<br>")}
 alerts.innerHTML=html||"No alerts"
 
 riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
-riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
 
 updateLogoGlow(risk)
 
