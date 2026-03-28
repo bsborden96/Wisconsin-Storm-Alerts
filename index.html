@@ -535,13 +535,32 @@ t.innerText = parts.length
 
 /* SOUNDING (FIXED SOURCE) */
 function loadSounding(){
-let now=new Date()
-let hour=now.getUTCHours()
-let cycle=hour<12?"00":"12"
 
-let url=`https://weather.uwyo.edu/cgi-bin/sounding?region=naconf&TYPE=GIF%3ASKEWT&YEAR=${now.getUTCFullYear()}&MONTH=${String(now.getUTCMonth()+1).padStart(2,'0')}&FROM=${String(now.getUTCDate()).padStart(2,'0')}${cycle}&TO=${String(now.getUTCDate()).padStart(2,'0')}${cycle}&STNM=72649`
+/* round location for model grid */
+let latR = lat.toFixed(2)
+let lonR = lon.toFixed(2)
 
-soundingImg.src=url
+/* model = RAP (fast + reliable) */
+let now = new Date()
+
+let year = now.getUTCFullYear()
+let month = String(now.getUTCMonth()+1).padStart(2,'0')
+let day = String(now.getUTCDate()).padStart(2,'0')
+let hour = String(now.getUTCHours()).padStart(2,'0')
+
+/* COD model sounding URL */
+let url = `https://weather.cod.edu/analysis/models/rap/forecast/skewt.php?lat=${latR}&lon=${lonR}&date=${year}${month}${day}&hour=${hour}&fhour=0`
+
+let img = document.getElementById("soundingImg")
+
+/* fallback to SPC if COD fails */
+img.onerror = function(){
+img.src = "https://www.spc.noaa.gov/exper/soundings/12z/MPX.gif"
+}
+
+/* force refresh (prevents caching issues) */
+img.src = url + "&rand=" + Math.random()
+
 }
 
 /* SEARCH */
