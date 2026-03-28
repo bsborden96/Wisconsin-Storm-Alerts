@@ -304,6 +304,10 @@ Gusts: <span id="gusts">--</span>
 
 <script>
 
+let searchInput = document.getElementById("searchInput")
+let suggestions = document.getElementById("suggestions")
+let popupClose = document.getElementById("popupClose")
+
 /* TOGGLE */
 function toggleCard(card){
 document.querySelectorAll(".weatherCard, .riskBox, .alertCard").forEach(c=>{
@@ -332,7 +336,9 @@ text.innerText="⛈️ "+type+"\n\nSEEK SHELTER"
 p.style.display="block"
 }
 
-popupClose.onclick=()=>popup.style.display="none"
+popupClose.onclick = () => {
+document.getElementById("popup").style.display = "none"
+}
 
 /* GEO */
 let lat=43, lon=-88
