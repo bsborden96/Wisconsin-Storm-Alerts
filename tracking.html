@@ -139,40 +139,24 @@ padding:20px;
 border-radius:10px;
 }
 
-/* RISK BOX */
 .riskBox{
 margin-top:10px;
 padding:15px;
 border-radius:10px;
 font-size:22px;
 font-weight:bold;
-cursor:pointer;
 }
 
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
-/* EXPAND */
-.weatherDetails{
-opacity:0;
-max-height:0;
-overflow:hidden;
-transition:0.3s;
-text-align:left;
-}
-
-.active .weatherDetails{
-opacity:1;
-max-height:900px;
-margin-top:10px;
-}
-
 /* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:10px;
+margin-top:20px;
 }
 
 .weatherCard{
@@ -180,6 +164,21 @@ background:#0f172a;
 padding:15px;
 border-radius:10px;
 cursor:pointer;
+transition:all 0.3s ease;
+}
+
+.weatherDetails{
+margin-top:10px;
+font-size:15px;
+opacity:0;
+max-height:0;
+overflow:hidden;
+transition:all 0.3s ease;
+}
+
+.weatherCard.active .weatherDetails{
+opacity:1;
+max-height:200px;
 }
 
 /* TEMP COLORS */
@@ -189,24 +188,19 @@ cursor:pointer;
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
 
-/* ALERTS */
-.alertCard{
+.card{
 margin-top:10px;
 padding:15px;
 border-radius:10px;
 text-align:left;
-cursor:pointer;
 }
-
-.alertTornado{background:#7a0000;}
-.alertSevere{background:#8a4b00;}
-.alertOther{background:#1f2937;}
 
 </style>
 </head>
 
 <body>
 
+<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -222,6 +216,7 @@ cursor:pointer;
 
 <img src="logo.PNG" class="logo" id="logo">
 
+<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -233,29 +228,7 @@ cursor:pointer;
 
 <div class="section">
 <div id="locationCard" class="locationCard">Loading location...</div>
-
-<div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
-Severe Weather Risk: <span id="riskText">LOW</span>
-
-<div class="weatherDetails">
-
-<div id="stormLevel">--</div><br>
-
-Tornado Risk: <span id="torRisk">--</span><br>
-Severe Risk: <span id="sevRisk">--</span><br>
-Instability: <span id="instability">--</span><br><br>
-
-<b>Sounding Breakdown</b><br>
-Surface Moisture: <span id="sndMoisture">--</span><br>
-Lift Potential: <span id="sndLift">--</span><br>
-Wind Energy: <span id="sndWind">--</span><br><br>
-
-<b>Live Sounding</b><br>
-<iframe id="soundingFrame"
-style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>
-
-</div>
-</div>
+<div id="riskLevel" class="riskBox low">Severe Weather Risk: LOW</div>
 </div>
 
 <div class="section">
@@ -304,63 +277,88 @@ Gusts: <span id="gusts">--</span>
 
 <script>
 
-let searchInput = document.getElementById("searchInput")
-let suggestions = document.getElementById("suggestions")
-let popupClose = document.getElementById("popupClose")
-
-let locationCard = document.getElementById("locationCard")
-let temp = document.getElementById("temp")
-let humidity = document.getElementById("humidity")
-let dew = document.getElementById("dew")
-let wind = document.getElementById("wind")
-let feels = document.getElementById("feels")
-let pressure = document.getElementById("pressure")
-let moistureLevel = document.getElementById("moistureLevel")
-let humidityFeel = document.getElementById("humidityFeel")
-let stormFuel = document.getElementById("stormFuel")
-let gusts = document.getElementById("gusts")
-let windDir = document.getElementById("windDir")
-
-let torRisk = document.getElementById("torRisk")
-let sevRisk = document.getElementById("sevRisk")
-let instability = document.getElementById("instability")
-let sndMoisture = document.getElementById("sndMoisture")
-let sndLift = document.getElementById("sndLift")
-let sndWind = document.getElementById("sndWind")
-
-let alerts = document.getElementById("alerts")
-let riskLevel = document.getElementById("riskLevel")
-let riskText = document.getElementById("riskText")
-
+/* EXPAND */
 function toggleCard(card){
-document.querySelectorAll(".weatherCard, .riskBox, .alertCard").forEach(c=>{
+document.querySelectorAll(".weatherCard").forEach(c=>{
 if(c!==card) c.classList.remove("active")
 })
 card.classList.toggle("active")
 }
 
+/* MENU */
 function toggleMenu(){
 let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
+/* POPUP */
 function showPopup(type){
 let p=document.getElementById("popup")
 let text=document.getElementById("popupText")
 
+let message=""
+
 if(type.includes("Tornado")){
-text.innerText="🌪️ "+type+"\n\nTAKE COVER NOW"
-}else{
-text.innerText="⛈️ "+type+"\n\nSEEK SHELTER"
+message=`🌪️ ${type}
+
+TAKE COVER NOW
+• Basement or interior room
+• Stay away from windows
+• Cover your head`
+}
+else if(type.includes("Severe")){
+message=`⛈️ ${type}
+
+SEEK SHELTER
+• Move indoors immediately
+• Avoid windows`
 }
 
+text.innerText=message
 p.style.display="block"
 }
 
-popupClose.onclick = () => {
-document.getElementById("popup").style.display = "none"
+document.getElementById("popupClose").onclick=()=>{
+document.getElementById("popup").style.display="none"
 }
 
+window.onclick=function(e){
+let p=document.getElementById("popup")
+if(e.target===p){
+p.style.display="none"
+}
+}
+
+/* LOGO GLOW */
+function updateLogoGlow(level){
+let logo=document.getElementById("logo")
+if(level==="high") logo.style.filter="drop-shadow(0 0 25px red)"
+else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
+else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
+}
+
+/* TICKER */
+async function loadTicker(){
+let t=document.getElementById("tickerContent")
+
+let res=await fetch("https://api.weather.gov/alerts/active")
+let d=await res.json()
+
+let priority=["Tornado Warning","Tornado Watch","Severe Thunderstorm Warning"]
+let arr=[]
+
+priority.forEach(p=>{
+d.features.forEach(a=>{
+if(a.properties.event.includes(p)){
+arr.push(`⚠ ${p}`)
+}
+})
+})
+
+t.innerText=[...new Set(arr)].join("   •   ")||"No major severe weather alerts"
+}
+
+/* GEO */
 let lat=43, lon=-88
 
 navigator.geolocation.getCurrentPosition(p=>{
@@ -374,9 +372,9 @@ loadLocation()
 loadWeather()
 loadAlerts()
 loadTicker()
-loadSounding()
 }
 
+/* LOCATION */
 async function loadLocation(){
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let d=await p.json()
@@ -390,9 +388,12 @@ let countyData=await countyRes.json()
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
 }
 
+/* WEATHER */
 async function loadWeather(){
+
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
+
 let c=d.current
 
 let t=Math.round(c.temperature_2m)
@@ -408,28 +409,35 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
+/* TEMP COLOR FIX */
+temp.classList.remove("tempCold","tempCool","tempMild","tempWarm","tempHot")
+
+if(t<32) temp.classList.add("tempCold")
+else if(t<50) temp.classList.add("tempCool")
+else if(t<70) temp.classList.add("tempMild")
+else if(t<85) temp.classList.add("tempWarm")
+else temp.classList.add("tempHot")
+
+/* REAL DATA */
 pressure.innerText=pressureVal+" mb"
 moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
 humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
 stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
 gusts.innerText=(windV+5)+" mph"
 
+/* WIND DIR */
 let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
 else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
+
 windDir.innerText=dir
 
-torRisk.innerText=dewV>70 && windV>20?"High":"Low"
-sevRisk.innerText=dewV>60?"Moderate":"Low"
-instability.innerText=dewV>65?"High":"Low"
-
-sndMoisture.innerText=dewV>70?"Very High":"Moderate"
-sndLift.innerText=t>85?"Strong":"Weak"
-sndWind.innerText=windV>20?"Strong":"Weak"
 }
 
+/* ALERTS */
 async function loadAlerts(){
+
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
@@ -438,12 +446,9 @@ let risk="low"
 let triggered=false
 
 d.features.forEach(a=>{
+
 let e=a.properties.event
 let desc=a.properties.description || ""
-
-let style="alertOther"
-if(e.includes("Tornado")) style="alertTornado"
-else if(e.includes("Severe")) style="alertSevere"
 
 if(e.includes("Tornado")) risk="high"
 else if(e.includes("Severe") && risk!=="high") risk="medium"
@@ -454,92 +459,55 @@ triggered=true
 }
 
 html+=`
-<div class="alertCard ${style}" onclick="toggleCard(this)">
-<b>${e}</b>
-<div class="weatherDetails">${desc.replace(/\n/g,"<br>")}</div>
+<div class="card">
+<b>${e}</b><br>
+${desc.replace(/\n/g,"<br>")}
 </div>
 `
+
 })
 
 alerts.innerHTML=html||"No alerts"
 
 riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
-riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+
+updateLogoGlow(risk)
+
 }
 
-async function loadTicker(){
-let t=document.getElementById("tickerContent")
-let res=await fetch("https://api.weather.gov/alerts/active")
-let d=await res.json()
+/* SEARCH */
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+let debounce
 
-let buckets={emergency:[],pds:[],tornado:[],watch:[],severe:[]}
+input.addEventListener("input",()=>{
+clearTimeout(debounce)
+let q=input.value.trim()
 
-d.features.forEach(a=>{
-let e=a.properties.event || ""
-let area=a.properties.areaDesc || ""
-let counties = area.split(";").map(c=>c.trim())
-
-if(e.includes("Tornado Emergency")) buckets.emergency.push(...counties)
-else if(e.includes("Particularly Dangerous Situation")) buckets.pds.push(...counties)
-else if(e.includes("Tornado Warning")) buckets.tornado.push(...counties)
-else if(e.includes("Tornado Watch")) buckets.watch.push(...counties)
-else if(e.includes("Severe Thunderstorm Warning")) buckets.severe.push(...counties)
-})
-
-for(let key in buckets){
-buckets[key]=[...new Set(buckets[key])]
-}
-
-let parts=[]
-if(buckets.emergency.length) parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
-if(buckets.pds.length) parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
-if(buckets.tornado.length) parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
-if(buckets.watch.length) parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
-if(buckets.severe.length) parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
-
-t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
-}
-
-function loadSounding(){
-let latR = lat.toFixed(2)
-let lonR = lon.toFixed(2)
-let now = new Date()
-let year = now.getUTCFullYear()
-let month = String(now.getUTCMonth()+1).padStart(2,'0')
-let day = String(now.getUTCDate()).padStart(2,'0')
-let hour = now.getUTCHours()
-let cycle = Math.floor(hour / 3) * 3
-cycle = String(cycle).padStart(2,'0')
-
-let url = `https://weather.cod.edu/analysis/models/rap/forecast/skewt.php?lat=${latR}&lon=${lonR}&date=${year}${month}${day}&hour=${cycle}&fhour=0`
-
-let frame = document.getElementById("soundingFrame")
-if(frame){
-frame.src = url + "&rand=" + Math.random()
-}
-}
-
-searchInput.addEventListener("input",async()=>{
-let q=searchInput.value.trim()
 if(q.length<2){suggestions.innerHTML="";return}
 
+debounce=setTimeout(async()=>{
 let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
 let data=await res.json()
 
 suggestions.innerHTML=""
 
-data.forEach(p=>{
+data.forEach(place=>{
 let div=document.createElement("div")
-div.innerText=p.display_name
+div.innerText=place.display_name
+
 div.onclick=()=>{
-lat=parseFloat(p.lat)
-lon=parseFloat(p.lon)
-searchInput.value=p.display_name
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
 suggestions.innerHTML=""
 loadAll()
 }
+
 suggestions.appendChild(div)
 })
+},300)
 })
 
 </script>
