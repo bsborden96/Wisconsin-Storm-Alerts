@@ -483,7 +483,42 @@ riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium
 updateLogoGlow(risk)
 }
 
-/* SEARCH stays same */
+/* SEARCH (RESTORED) */
+let input=document.getElementById("searchInput")
+let suggestions=document.getElementById("suggestions")
+let debounce
+
+input.addEventListener("input",()=>{
+clearTimeout(debounce)
+let q=input.value.trim()
+
+if(q.length<2){
+suggestions.innerHTML=""
+return
+}
+
+debounce=setTimeout(async()=>{
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+lat=parseFloat(place.lat)
+lon=parseFloat(place.lon)
+input.value=place.display_name
+suggestions.innerHTML=""
+loadAll()
+}
+
+suggestions.appendChild(div)
+})
+},300)
+})
 
 </script>
 
