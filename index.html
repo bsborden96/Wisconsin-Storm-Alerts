@@ -12,7 +12,7 @@ font-family:Arial;
 background:#0a0f1c;
 color:white;
 text-align:center;
-overflow-x:hidden;   /* 🔥 FIX SIDE SCROLL */
+overflow-x:hidden;
 }
 
 /* LOGO */
@@ -83,14 +83,14 @@ cursor:pointer;
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
-width:100%;   /* 🔥 FULL WIDTH */
+width:100%;
 }
 
 .tickerTrack{
 display:inline-block;
 white-space:nowrap;
 animation:scroll 60s linear infinite;
-min-width:100%;   /* 🔥 FORCE FULL WIDTH */
+min-width:100%;
 }
 
 @keyframes scroll{
@@ -101,8 +101,8 @@ min-width:100%;   /* 🔥 FORCE FULL WIDTH */
 /* SEARCH */
 .searchBox{
 margin:10px auto;
-width:92%;          /* 🔥 RESPONSIVE */
-max-width:500px;    /* 🔥 SMALLER */
+width:92%;
+max-width:500px;
 position:relative;
 }
 
@@ -112,7 +112,7 @@ padding:12px;
 font-size:18px;
 border-radius:8px;
 border:none;
-box-sizing:border-box;   /* 🔥 FIX OVERFLOW */
+box-sizing:border-box;
 }
 
 .suggestions{
@@ -151,6 +151,7 @@ font-weight:bold;
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
+/* 🔥 WEATHER GRID */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -158,12 +159,30 @@ gap:10px;
 margin-top:20px;
 }
 
+/* 🔥 WEATHER CARD */
 .weatherCard{
 background:#0f172a;
 padding:15px;
 border-radius:10px;
+cursor:pointer;
+transition:all 0.3s ease;
 }
 
+.weatherDetails{
+margin-top:10px;
+font-size:15px;
+opacity:0;
+max-height:0;
+overflow:hidden;
+transition:all 0.3s ease;
+}
+
+.weatherCard.active .weatherDetails{
+opacity:1;
+max-height:200px;
+}
+
+/* ALERTS */
 .card{
 margin-top:10px;
 padding:15px;
@@ -209,11 +228,41 @@ text-align:left;
 
 <div class="section">
 <h2>Current Conditions</h2>
+
 <div class="weatherGrid">
-<div class="weatherCard">Temp<div id="temp">--</div></div>
-<div class="weatherCard">Humidity<div id="humidity">--</div></div>
-<div class="weatherCard">Dew<div id="dew">--</div></div>
-<div class="weatherCard">Wind<div id="wind">--</div></div>
+
+<div class="weatherCard" onclick="toggleCard(this)">
+Temp<div id="temp">--</div>
+<div class="weatherDetails">
+Feels Like: <span id="feels">--</span><br>
+Updated live from station
+</div>
+</div>
+
+<div class="weatherCard" onclick="toggleCard(this)">
+Humidity<div id="humidity">--</div>
+<div class="weatherDetails">
+Comfort level indicator<br>
+Higher = more humid
+</div>
+</div>
+
+<div class="weatherCard" onclick="toggleCard(this)">
+Dew<div id="dew">--</div>
+<div class="weatherDetails">
+Moisture in air<br>
+Key severe weather signal
+</div>
+</div>
+
+<div class="weatherCard" onclick="toggleCard(this)">
+Wind<div id="wind">--</div>
+<div class="weatherDetails">
+Surface wind speed<br>
+Gusts may be higher
+</div>
+</div>
+
 </div>
 </div>
 
@@ -223,6 +272,14 @@ text-align:left;
 </div>
 
 <script>
+
+/* 🔥 EXPAND CARDS */
+function toggleCard(card){
+document.querySelectorAll(".weatherCard").forEach(c=>{
+if(c!==card) c.classList.remove("active")
+})
+card.classList.toggle("active")
+}
 
 /* MENU */
 function toggleMenu(){
@@ -347,6 +404,9 @@ temp.innerText=Math.round(c.temperature_2m)+"°F"
 dew.innerText=Math.round(c.dewpoint_2m)+"°F"
 humidity.innerText=c.relative_humidity_2m+"%"
 wind.innerText=Math.round(c.wind_speed_10m)+" mph"
+
+/* 🔥 EXTRA DATA */
+feels.innerText=Math.round(c.temperature_2m)+"°F"
 }
 
 /* ALERTS */
