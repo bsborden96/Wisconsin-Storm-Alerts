@@ -461,9 +461,76 @@ riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
 
 /* TICKER */
 async function loadTicker(){
-let r=await fetch("https://api.weather.gov/alerts/active")
-let d=await r.json()
-tickerContent.innerText=d.features.map(a=>a.properties.event).slice(0,10).join(" • ")
+
+let t=document.getElementById("tickerContent")
+
+let res=await fetch("https://api.weather.gov/alerts/active")
+let d=await res.json()
+
+let buckets={
+emergency:[],
+pds:[],
+tornado:[],
+watch:[],
+severe:[]
+}
+
+d.features.forEach(a=>{
+let e=a.properties.event || ""
+let area=a.properties.areaDesc || ""
+
+/* split ALL counties properly */
+let counties = area.split(";").map(c=>c.trim())
+
+if(e.includes("Tornado Emergency")){
+buckets.emergency.push(...counties)
+}
+else if(e.includes("Particularly Dangerous Situation")){
+buckets.pds.push(...counties)
+}
+else if(e.includes("Tornado Warning")){
+buckets.tornado.push(...counties)
+}
+else if(e.includes("Tornado Watch")){
+buckets.watch.push(...counties)
+}
+else if(e.includes("Severe Thunderstorm Warning")){
+buckets.severe.push(...counties)
+}
+
+})
+
+/* remove duplicates */
+for(let key in buckets){
+buckets[key]=[...new Set(buckets[key])]
+}
+
+let parts=[]
+
+if(buckets.emergency.length){
+parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
+}
+
+if(buckets.pds.length){
+parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
+}
+
+if(buckets.tornado.length){
+parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
+}
+
+if(buckets.watch.length){
+parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
+}
+
+if(buckets.severe.length){
+parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
+}
+
+t.innerText = parts.length 
+? parts.join("   •   ") 
+: "No major severe weather alerts"
+
 }
 
 /* SOUNDING (FIXED SOURCE) */
