@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
 body{
 margin:0;
 font-family:Arial;
@@ -14,8 +13,6 @@ color:white;
 text-align:center;
 overflow-x:hidden;
 }
-
-/* LOGO */
 .logo{
 width:300px;
 max-width:96vw;
@@ -24,8 +21,6 @@ display:block;
 transition: all 0.4s ease;
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
-
-/* MENU */
 .menuIcon{
 position:fixed;
 top:15px;
@@ -34,7 +29,6 @@ font-size:50px;
 z-index:9999;
 cursor:pointer;
 }
-
 .menuPanel{
 display:none;
 position:fixed;
@@ -45,15 +39,12 @@ padding:15px;
 border-radius:10px;
 z-index:9999;
 }
-
 .menuPanel a{
 display:block;
 padding:10px;
 color:white;
 text-decoration:none;
 }
-
-/* POPUP */
 .popup{
 position:fixed;
 top:50%;
@@ -70,7 +61,6 @@ display:none;
 box-shadow:0 0 20px rgba(255,0,0,0.7);
 text-align:left;
 }
-
 .popupClose{
 position:absolute;
 top:8px;
@@ -78,34 +68,27 @@ right:12px;
 font-size:20px;
 cursor:pointer;
 }
-
-/* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
 width:100%;
 }
-
 .tickerTrack{
 display:inline-block;
 white-space:nowrap;
 animation:scroll 60s linear infinite;
 min-width:100%;
 }
-
 @keyframes scroll{
 0%{transform:translateX(100%)}
 100%{transform:translateX(-100%)}
 }
-
-/* SEARCH */
 .searchBox{
 margin:10px auto;
 width:92%;
 max-width:500px;
 position:relative;
 }
-
 .searchBox input{
 width:100%;
 padding:12px;
@@ -114,7 +97,6 @@ border-radius:8px;
 border:none;
 box-sizing:border-box;
 }
-
 .suggestions{
 position:absolute;
 background:#1f2937;
@@ -125,20 +107,16 @@ overflow-y:auto;
 z-index:9999;
 text-align:left;
 }
-
-/* SECTIONS */
 .section{
 padding:20px;
 max-width:1000px;
 margin:auto;
 }
-
 .locationCard{
 background:#111827;
 padding:20px;
 border-radius:10px;
 }
-
 .riskBox{
 margin-top:10px;
 padding:15px;
@@ -146,19 +124,15 @@ border-radius:10px;
 font-size:22px;
 font-weight:bold;
 }
-
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
-
-/* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:10px;
 margin-top:20px;
 }
-
 .weatherCard{
 background:#0f172a;
 padding:15px;
@@ -166,7 +140,6 @@ border-radius:10px;
 cursor:pointer;
 transition:all 0.3s ease;
 }
-
 .weatherDetails{
 margin-top:10px;
 font-size:15px;
@@ -175,32 +148,26 @@ max-height:0;
 overflow:hidden;
 transition:all 0.3s ease;
 }
-
 .weatherCard.active .weatherDetails{
 opacity:1;
 max-height:200px;
 }
-
-/* TEMP COLORS */
 .tempCold{color:#4da6ff;}
 .tempCool{color:#00ccff;}
 .tempMild{color:#00ff99;}
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
-
 .card{
 margin-top:10px;
 padding:15px;
 border-radius:10px;
 text-align:left;
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -216,7 +183,6 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -235,7 +201,6 @@ text-align:left;
 <h2>Current Conditions</h2>
 
 <div class="weatherGrid">
-
 <div class="weatherCard" onclick="toggleCard(this)">
 Temp<div id="temp">--</div>
 <div class="weatherDetails">
@@ -266,7 +231,6 @@ Direction: <span id="windDir">--</span><br>
 Gusts: <span id="gusts">--</span>
 </div>
 </div>
-
 </div>
 </div>
 
@@ -292,7 +256,6 @@ let windDir = document.getElementById("windDir")
 let alerts = document.getElementById("alerts")
 let riskLevel = document.getElementById("riskLevel")
 
-/* EXPAND */
 function toggleCard(card){
 document.querySelectorAll(".weatherCard").forEach(c=>{
 if(c!==card) c.classList.remove("active")
@@ -300,87 +263,26 @@ if(c!==card) c.classList.remove("active")
 card.classList.toggle("active")
 }
 
-/* MENU */
 function toggleMenu(){
 let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* POPUP */
 function showPopup(type){
 let p=document.getElementById("popup")
 let text=document.getElementById("popupText")
 
-let message=""
-
 if(type.includes("Tornado")){
-message=`🌪️ ${type}
-
-TAKE COVER NOW
-• Basement or interior room
-• Stay away from windows
-• Cover your head`
-}
-else if(type.includes("Severe")){
-message=`⛈️ ${type}
-
-SEEK SHELTER
-• Move indoors immediately
-• Avoid windows`
+text.innerText=`🌪️ ${type}\n\nTAKE COVER NOW`
+}else{
+text.innerText=`⛈️ ${type}\n\nSEEK SHELTER`
 }
 
-text.innerText=message
 p.style.display="block"
 }
 
 document.getElementById("popupClose").onclick=()=>{
 document.getElementById("popup").style.display="none"
-}
-
-window.onclick=function(e){
-let p=document.getElementById("popup")
-if(e.target===p){
-p.style.display="none"
-}
-}
-
-/* LOGO GLOW */
-function updateLogoGlow(level){
-let logo=document.getElementById("logo")
-if(level==="high") logo.style.filter="drop-shadow(0 0 25px red)"
-else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
-else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
-}
-
-/* TICKER */
-async function loadTicker(){
-let t=document.getElementById("tickerContent")
-
-let res = await fetch("https://api.weather.gov/alerts/active", {
-headers: {
-"User-Agent": "USStormAlertsApp (youremail@example.com)"
-}
-})
-
-if(!res.ok){
-document.getElementById("tickerContent").innerText = "Alert feed unavailable"
-return
-}
-
-let d = await res.json()
-
-let priority=["Tornado Warning","Tornado Watch","Severe Thunderstorm Warning"]
-let arr=[]
-
-priority.forEach(p=>{
-d.features.forEach(a=>{
-if((a.properties.event || "").includes(p)){
-arr.push(`⚠ ${p}`)
-}
-})
-})
-
-t.innerText=[...new Set(arr)].join("   •   ")||"No major severe weather alerts"
 }
 
 /* GEO */
@@ -403,12 +305,9 @@ loadTicker()
 async function loadLocation(){
 try{
 let p = await fetch(`https://api.weather.gov/points/${lat},${lon}`, {
-headers: {
-"User-Agent": "USStormAlertsApp (youremail@example.com)"
-}
+headers: {"User-Agent": "USStormAlertsApp"}
 })
-
-if(!p.ok) throw new Error("Bad response")
+if(!p.ok) throw new Error()
 
 let d = await p.json()
 
@@ -419,15 +318,14 @@ let countyRes=await fetch(d.properties.county)
 let countyData=await countyRes.json()
 
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
-}catch(e){
+}catch{
 locationCard.innerText="Location unavailable"
-console.error("Location error:", e)
 }
 }
 
 /* WEATHER */
 async function loadWeather(){
-
+try{
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
 
@@ -446,111 +344,85 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-/* TEMP COLOR FIX */
-temp.classList.remove("tempCold","tempCool","tempMild","tempWarm","tempHot")
-
-if(t<32) temp.classList.add("tempCold")
-else if(t<50) temp.classList.add("tempCool")
-else if(t<70) temp.classList.add("tempMild")
-else if(t<85) temp.classList.add("tempWarm")
-else temp.classList.add("tempHot")
-
-/* REAL DATA */
 pressure.innerText=pressureVal+" mb"
-moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
-humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
-stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
+moistureLevel.innerText=hum>70?"Very Moist":"Normal"
+humidityFeel.innerText=hum>60?"Muggy":"Comfortable"
+stormFuel.innerText=dewV>65?"High":"Low"
 gusts.innerText=(windV+5)+" mph"
 
-/* WIND DIR */
 let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
 else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
 
 windDir.innerText=dir
-
+}catch{}
 }
 
 /* ALERTS */
 async function loadAlerts(){
-
+try{
 let r = await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`, {
-headers: {
-"User-Agent": "USStormAlertsApp (youremail@example.com)"
-}
+headers: {"User-Agent": "USStormAlertsApp"}
 })
+
+if(!r.ok){
+alerts.innerText="Alert data unavailable"
+return
+}
+
 let d=await r.json()
 
 let html=""
 let risk="low"
-let triggered=false
 
-d.features.forEach(a=>{
-
-let e = a.properties.event || ""
-let desc=a.properties.description || ""
+(d.features || []).forEach(a=>{
+let e=a.properties?.event || ""
+let desc=a.properties?.description || ""
 
 if(e.includes("Tornado")) risk="high"
 else if(e.includes("Severe") && risk!=="high") risk="medium"
 
-if(!triggered && (e.includes("Tornado")||e.includes("Severe"))){
-showPopup(e)
-triggered=true
-}
-
-html+=`
-<div class="card">
-<b>${e}</b><br>
-${desc.replace(/\n/g,"<br>")}
-</div>
-`
-
+html+=`<div class="card"><b>${e}</b><br>${desc}</div>`
 })
 
 alerts.innerHTML=html||"No alerts"
 
 riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
-riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+riskLevel.innerText="Severe Weather Risk: "+risk.toUpperCase()
 
-updateLogoGlow(risk)
-
+}catch{
+alerts.innerText="Alert data unavailable"
+}
 }
 
-/* SEARCH */
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-let debounce
+/* TICKER */
+async function loadTicker(){
+try{
+let t=document.getElementById("tickerContent")
 
-input.addEventListener("input",()=>{
-clearTimeout(debounce)
-let q=input.value.trim()
+let res = await fetch("https://api.weather.gov/alerts/active", {
+headers: {"User-Agent": "USStormAlertsApp"}
+})
 
-if(q.length<2){suggestions.innerHTML="";return}
-
-debounce=setTimeout(async()=>{
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(place=>{
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
-suggestions.innerHTML=""
-loadAll()
+if(!res.ok){
+t.innerText="Alert feed unavailable"
+return
 }
 
-suggestions.appendChild(div)
-})
-},300)
+let d = await res.json()
+
+let arr=[]
+;(d.features || []).forEach(a=>{
+let e=a.properties?.event || ""
+if(e.includes("Tornado")||e.includes("Severe")){
+arr.push(e)
+}
 })
 
+t.innerText=[...new Set(arr)].join(" • ")||"No major alerts"
+}catch{}
+}
 </script>
 
 </body>
