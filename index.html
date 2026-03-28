@@ -139,7 +139,7 @@ padding:20px;
 border-radius:10px;
 }
 
-/* 🔥 RISK BOX */
+/* RISK BOX */
 .riskBox{
 margin-top:10px;
 padding:15px;
@@ -147,34 +147,32 @@ border-radius:10px;
 font-size:22px;
 font-weight:bold;
 cursor:pointer;
-transition:all 0.3s ease;
-}
-
-.riskBox .weatherDetails{
-opacity:0;
-max-height:0;
-overflow:hidden;
-transition:all 0.3s ease;
-font-size:16px;
-text-align:left;
-}
-
-.riskBox.active .weatherDetails{
-opacity:1;
-max-height:500px;
-margin-top:10px;
 }
 
 .low{background:#1f3b1f}
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
+/* EXPAND */
+.weatherDetails{
+opacity:0;
+max-height:0;
+overflow:hidden;
+transition:0.3s;
+text-align:left;
+}
+
+.active .weatherDetails{
+opacity:1;
+max-height:900px;
+margin-top:10px;
+}
+
 /* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
 gap:10px;
-margin-top:20px;
 }
 
 .weatherCard{
@@ -182,21 +180,6 @@ background:#0f172a;
 padding:15px;
 border-radius:10px;
 cursor:pointer;
-transition:all 0.3s ease;
-}
-
-.weatherDetails{
-margin-top:10px;
-font-size:15px;
-opacity:0;
-max-height:0;
-overflow:hidden;
-transition:all 0.3s ease;
-}
-
-.weatherCard.active .weatherDetails{
-opacity:1;
-max-height:200px;
 }
 
 /* TEMP COLORS */
@@ -206,19 +189,24 @@ max-height:200px;
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
 
-.card{
+/* ALERTS */
+.alertCard{
 margin-top:10px;
 padding:15px;
 border-radius:10px;
 text-align:left;
+cursor:pointer;
 }
+
+.alertTornado{background:#7a0000;}
+.alertSevere{background:#8a4b00;}
+.alertOther{background:#1f2937;}
 
 </style>
 </head>
 
 <body>
 
-<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -234,7 +222,6 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -247,7 +234,6 @@ text-align:left;
 <div class="section">
 <div id="locationCard" class="locationCard">Loading location...</div>
 
-<!-- 🌪️ CLICKABLE RISK BOX -->
 <div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
 Severe Weather Risk: <span id="riskText">LOW</span>
 
@@ -264,15 +250,11 @@ Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br><br>
 
-<b>Key</b><br>
-Low = Minimal storm support<br>
-Moderate = Storms possible<br>
-High = Severe storms likely<br>
-Extreme = Tornado-capable
+<b>Live Sounding</b><br>
+<img id="soundingImg" style="width:100%;border-radius:10px;">
 
 </div>
 </div>
-
 </div>
 
 <div class="section">
@@ -323,7 +305,7 @@ Gusts: <span id="gusts">--</span>
 
 /* TOGGLE */
 function toggleCard(card){
-document.querySelectorAll(".weatherCard, .riskBox").forEach(c=>{
+document.querySelectorAll(".weatherCard, .riskBox, .alertCard").forEach(c=>{
 if(c!==card) c.classList.remove("active")
 })
 card.classList.toggle("active")
@@ -340,59 +322,16 @@ function showPopup(type){
 let p=document.getElementById("popup")
 let text=document.getElementById("popupText")
 
-let message=""
-
 if(type.includes("Tornado")){
-message=`🌪️ ${type}
-
-TAKE COVER NOW
-• Basement or interior room
-• Stay away from windows
-• Cover your head`
-}
-else if(type.includes("Severe")){
-message=`⛈️ ${type}
-
-SEEK SHELTER
-• Move indoors immediately
-• Avoid windows`
+text.innerText="🌪️ "+type+"\n\nTAKE COVER NOW"
+}else{
+text.innerText="⛈️ "+type+"\n\nSEEK SHELTER"
 }
 
-text.innerText=message
 p.style.display="block"
 }
 
-document.getElementById("popupClose").onclick=()=>{
-document.getElementById("popup").style.display="none"
-}
-
-/* LOGO GLOW */
-function updateLogoGlow(level){
-let logo=document.getElementById("logo")
-if(level==="high") logo.style.filter="drop-shadow(0 0 25px red)"
-else if(level==="medium") logo.style.filter="drop-shadow(0 0 20px orange)"
-else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
-}
-
-/* TICKER */
-async function loadTicker(){
-let t=document.getElementById("tickerContent")
-let res=await fetch("https://api.weather.gov/alerts/active")
-let d=await res.json()
-
-let priority=["Tornado Warning","Tornado Watch","Severe Thunderstorm Warning"]
-let arr=[]
-
-priority.forEach(p=>{
-d.features.forEach(a=>{
-if(a.properties.event.includes(p)){
-arr.push(`⚠ ${p}`)
-}
-})
-})
-
-t.innerText=[...new Set(arr)].join("   •   ")||"No major severe weather alerts"
-}
+popupClose.onclick=()=>popup.style.display="none"
 
 /* GEO */
 let lat=43, lon=-88
@@ -408,6 +347,7 @@ loadLocation()
 loadWeather()
 loadAlerts()
 loadTicker()
+loadSounding()
 }
 
 /* LOCATION */
@@ -424,20 +364,16 @@ let countyData=await countyRes.json()
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
 }
 
-/* WEATHER + STORM INTELLIGENCE */
+/* WEATHER */
 async function loadWeather(){
-
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
-
 let c=d.current
 
 let t=Math.round(c.temperature_2m)
 let dewV=Math.round(c.dewpoint_2m)
 let hum=c.relative_humidity_2m
 let windV=Math.round(c.wind_speed_10m)
-let pressureVal=Math.round(c.surface_pressure)
-let windDirVal=c.wind_direction_10m
 
 temp.innerText=t+"°F"
 dew.innerText=dewV+"°F"
@@ -445,67 +381,31 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-/* TEMP COLOR */
-temp.classList.remove("tempCold","tempCool","tempMild","tempWarm","tempHot")
+temp.className=""
 if(t<32) temp.classList.add("tempCold")
 else if(t<50) temp.classList.add("tempCool")
 else if(t<70) temp.classList.add("tempMild")
 else if(t<85) temp.classList.add("tempWarm")
 else temp.classList.add("tempHot")
 
-pressure.innerText=pressureVal+" mb"
-moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
-humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
-stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
+moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":"Normal"
+humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":"Comfortable"
+stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":"Moderate"
 gusts.innerText=(windV+5)+" mph"
+windDir.innerText="N"
 
-/* WIND DIR */
-let dir="N"
-if(windDirVal>45 && windDirVal<=135) dir="E"
-else if(windDirVal>135 && windDirVal<=225) dir="S"
-else if(windDirVal>225 && windDirVal<=315) dir="W"
-windDir.innerText=dir
+/* STORM INTEL */
+torRisk.innerText=dewV>70 && windV>20?"High":"Low"
+sevRisk.innerText=dewV>60?"Moderate":"Low"
+instability.innerText=dewV>65?"High":"Low"
 
-/* 🌪️ STORM INTELLIGENCE */
-let stormLevelText="Low"
-let instabilityLevel="Low"
-
-if(dewV>70 && t>80){
-instabilityLevel="Extreme"
-stormLevelText="Extreme"
-}
-else if(dewV>65 && t>75){
-instabilityLevel="High"
-stormLevelText="High"
-}
-else if(dewV>60){
-instabilityLevel="Moderate"
-stormLevelText="Moderate"
-}
-
-let tor="Low"
-if(dewV>70 && windV>15) tor="Elevated"
-if(dewV>72 && windV>20) tor="High"
-
-let sev="Low"
-if(instabilityLevel==="Moderate") sev="Moderate"
-if(instabilityLevel==="High") sev="High"
-if(instabilityLevel==="Extreme") sev="Extreme"
-
-sndMoisture.innerText = dewV>70?"Very High":dewV>60?"Moderate":"Low"
-sndLift.innerText = t>85?"Strong":t>75?"Moderate":"Weak"
-sndWind.innerText = windV>20?"Strong Shear":windV>10?"Moderate":"Weak"
-
-stormLevel.innerText=stormLevelText
-torRisk.innerText=tor
-sevRisk.innerText=sev
-instability.innerText=instabilityLevel
-
+sndMoisture.innerText=dewV>70?"Very High":"Moderate"
+sndLift.innerText=t>85?"Strong":"Weak"
+sndWind.innerText=windV>20?"Strong":"Weak"
 }
 
 /* ALERTS */
 async function loadAlerts(){
-
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
@@ -514,9 +414,12 @@ let risk="low"
 let triggered=false
 
 d.features.forEach(a=>{
-
 let e=a.properties.event
-let desc=a.properties.description || ""
+let desc=a.properties.description||""
+
+let style="alertOther"
+if(e.includes("Tornado")) style="alertTornado"
+else if(e.includes("Severe")) style="alertSevere"
 
 if(e.includes("Tornado")) risk="high"
 else if(e.includes("Severe") && risk!=="high") risk="medium"
@@ -527,55 +430,54 @@ triggered=true
 }
 
 html+=`
-<div class="card">
-<b>${e}</b><br>
-${desc.replace(/\n/g,"<br>")}
-</div>
-`
-
+<div class="alertCard ${style}" onclick="toggleCard(this)">
+<b>${e}</b>
+<div class="weatherDetails">${desc.replace(/\n/g,"<br>")}</div>
+</div>`
 })
 
 alerts.innerHTML=html||"No alerts"
 
 riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
 riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
+}
 
-updateLogoGlow(risk)
+/* TICKER */
+async function loadTicker(){
+let r=await fetch("https://api.weather.gov/alerts/active")
+let d=await r.json()
+tickerContent.innerText=d.features.map(a=>a.properties.event).slice(0,10).join(" • ")
+}
 
+/* SOUNDING */
+function loadSounding(){
+let hour=new Date().getUTCHours()
+let cycle=hour<12?"00":"12"
+soundingImg.src=`https://www.spc.noaa.gov/exper/soundings/${cycle}z/MPX.gif`
 }
 
 /* SEARCH */
-let input=document.getElementById("searchInput")
-let suggestions=document.getElementById("suggestions")
-let debounce
-
-input.addEventListener("input",()=>{
-clearTimeout(debounce)
-let q=input.value.trim()
-
+searchInput.addEventListener("input",async()=>{
+let q=searchInput.value
 if(q.length<2){suggestions.innerHTML="";return}
 
-debounce=setTimeout(async()=>{
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&countrycodes=us&limit=5`)
 let data=await res.json()
 
 suggestions.innerHTML=""
 
-data.forEach(place=>{
-let div=document.createElement("div")
-div.innerText=place.display_name
-
-div.onclick=()=>{
-lat=parseFloat(place.lat)
-lon=parseFloat(place.lon)
-input.value=place.display_name
+data.forEach(p=>{
+let d=document.createElement("div")
+d.innerText=p.display_name
+d.onclick=()=>{
+lat=parseFloat(p.lat)
+lon=parseFloat(p.lon)
+searchInput.value=p.display_name
 suggestions.innerHTML=""
 loadAll()
 }
-
-suggestions.appendChild(div)
+suggestions.appendChild(d)
 })
-},300)
 })
 
 </script>
