@@ -178,7 +178,7 @@ transition:all 0.3s ease;
 
 .weatherCard.active .weatherDetails{
 opacity:1;
-max-height:200px;
+max-height:300px;
 }
 
 /* TEMP COLORS */
@@ -187,6 +187,12 @@ max-height:200px;
 .tempMild{color:#00ff99;}
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
+
+/* STORM COLORS */
+.stormLow{color:#00ff99;}
+.stormMod{color:#ffcc00;}
+.stormHigh{color:#ff6600;}
+.stormExtreme{color:#ff0000;}
 
 .card{
 margin-top:10px;
@@ -200,7 +206,6 @@ text-align:left;
 
 <body>
 
-<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -216,7 +221,6 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -264,6 +268,29 @@ Wind<div id="wind">--</div>
 <div class="weatherDetails">
 Direction: <span id="windDir">--</span><br>
 Gusts: <span id="gusts">--</span>
+</div>
+</div>
+
+<!-- 🌪️ STORM PROBABILITY -->
+<div class="weatherCard" onclick="toggleCard(this)">
+Storm Probability
+<div id="stormLevel">--</div>
+
+<div class="weatherDetails">
+Tornado Risk: <span id="torRisk">--</span><br>
+Severe Risk: <span id="sevRisk">--</span><br>
+Instability: <span id="instability">--</span><br><br>
+
+<b>Sounding Breakdown</b><br>
+Surface Moisture: <span id="sndMoisture">--</span><br>
+Lift Potential: <span id="sndLift">--</span><br>
+Wind Energy: <span id="sndWind">--</span><br><br>
+
+<b>Key</b><br>
+Low = Minimal storm support<br>
+Moderate = Storms possible<br>
+High = Severe storms likely<br>
+Extreme = Tornado-capable
 </div>
 </div>
 
@@ -388,7 +415,7 @@ let countyData=await countyRes.json()
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
 }
 
-/* WEATHER */
+/* WEATHER + STORM INTELLIGENCE */
 async function loadWeather(){
 
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
@@ -409,16 +436,14 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-/* TEMP COLOR FIX */
+/* TEMP COLOR */
 temp.classList.remove("tempCold","tempCool","tempMild","tempWarm","tempHot")
-
 if(t<32) temp.classList.add("tempCold")
 else if(t<50) temp.classList.add("tempCool")
 else if(t<70) temp.classList.add("tempMild")
 else if(t<85) temp.classList.add("tempWarm")
 else temp.classList.add("tempHot")
 
-/* REAL DATA */
 pressure.innerText=pressureVal+" mb"
 moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
 humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
@@ -430,8 +455,48 @@ let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
 else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
-
 windDir.innerText=dir
+
+/* 🌪️ STORM INTELLIGENCE */
+let stormLevelText="Low"
+let stormClass="stormLow"
+let instabilityLevel="Low"
+
+if(dewV>70 && t>80){
+instabilityLevel="Extreme"
+stormLevelText="Extreme"
+stormClass="stormExtreme"
+}
+else if(dewV>65 && t>75){
+instabilityLevel="High"
+stormLevelText="High"
+stormClass="stormHigh"
+}
+else if(dewV>60){
+instabilityLevel="Moderate"
+stormLevelText="Moderate"
+stormClass="stormMod"
+}
+
+let tor="Low"
+if(dewV>70 && windV>15) tor="Elevated"
+if(dewV>72 && windV>20) tor="High"
+
+let sev="Low"
+if(instabilityLevel==="Moderate") sev="Moderate"
+if(instabilityLevel==="High") sev="High"
+if(instabilityLevel==="Extreme") sev="Extreme"
+
+sndMoisture.innerText = dewV>70?"Very High":dewV>60?"Moderate":"Low"
+sndLift.innerText = t>85?"Strong":t>75?"Moderate":"Weak"
+sndWind.innerText = windV>20?"Strong Shear":windV>10?"Moderate":"Weak"
+
+stormLevel.innerText=stormLevelText
+stormLevel.className=stormClass
+
+torRisk.innerText=tor
+sevRisk.innerText=sev
+instability.innerText=instabilityLevel
 
 }
 
