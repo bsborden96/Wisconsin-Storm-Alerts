@@ -151,7 +151,7 @@ font-weight:bold;
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
-/* 🔥 WEATHER GRID */
+/* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -159,7 +159,6 @@ gap:10px;
 margin-top:20px;
 }
 
-/* 🔥 WEATHER CARD */
 .weatherCard{
 background:#0f172a;
 padding:15px;
@@ -182,7 +181,13 @@ opacity:1;
 max-height:200px;
 }
 
-/* ALERTS */
+/* TEMP COLORS */
+.tempCold{color:#4da6ff;}
+.tempCool{color:#00ccff;}
+.tempMild{color:#00ff99;}
+.tempWarm{color:#ffcc00;}
+.tempHot{color:#ff3300;}
+
 .card{
 margin-top:10px;
 padding:15px;
@@ -195,7 +200,6 @@ text-align:left;
 
 <body>
 
-<!-- POPUP -->
 <div id="popup" class="popup">
 <div class="popupClose" id="popupClose">✖</div>
 <div id="popupText"></div>
@@ -211,7 +215,6 @@ text-align:left;
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- TICKER -->
 <div class="tickerWrap">
 <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
@@ -235,31 +238,29 @@ text-align:left;
 Temp<div id="temp">--</div>
 <div class="weatherDetails">
 Feels Like: <span id="feels">--</span><br>
-Updated live from station
+Condition: <span id="condition">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Humidity<div id="humidity">--</div>
 <div class="weatherDetails">
-Comfort level indicator<br>
-Higher = more humid
+Comfort: <span id="humidityDesc">--</span><br>
+Dew Point: <span id="dewDetail">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Dew<div id="dew">--</div>
 <div class="weatherDetails">
-Moisture in air<br>
-Key severe weather signal
+Air Feel: <span id="dewDesc">--</span>
 </div>
 </div>
 
 <div class="weatherCard" onclick="toggleCard(this)">
 Wind<div id="wind">--</div>
 <div class="weatherDetails">
-Surface wind speed<br>
-Gusts may be higher
+Wind Impact: <span id="windDesc">--</span>
 </div>
 </div>
 
@@ -273,7 +274,7 @@ Gusts may be higher
 
 <script>
 
-/* 🔥 EXPAND CARDS */
+/* EXPAND */
 function toggleCard(card){
 document.querySelectorAll(".weatherCard").forEach(c=>{
 if(c!==card) c.classList.remove("active")
@@ -336,30 +337,21 @@ else logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
 /* TICKER */
 async function loadTicker(){
 let t=document.getElementById("tickerContent")
-
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
-let priority=[
-"Tornado Warning",
-"Tornado Watch",
-"Severe Thunderstorm Warning"
-]
-
+let priority=["Tornado Warning","Tornado Watch","Severe Thunderstorm Warning"]
 let arr=[]
 
 priority.forEach(p=>{
 d.features.forEach(a=>{
-let e=a.properties.event || ""
-if(e.includes(p)){
+if(a.properties.event.includes(p)){
 arr.push(`⚠ ${p}`)
 }
 })
 })
 
-arr=[...new Set(arr)]
-
-t.innerText=arr.length?arr.join("   •   "):"No major severe weather alerts"
+t.innerText=[...new Set(arr)].join("   •   ")||"No major severe weather alerts"
 }
 
 /* GEO */
@@ -389,29 +381,47 @@ let state=d.properties.relativeLocation.properties.state
 let countyRes=await fetch(d.properties.county)
 let countyData=await countyRes.json()
 
-let county=countyData.properties.name
-
-locationCard.innerHTML=`<b>${county} County</b><br>${city}, ${state}`
+locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
 }
 
 /* WEATHER */
 async function loadWeather(){
+
 let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
 
 let c=d.current
-temp.innerText=Math.round(c.temperature_2m)+"°F"
-dew.innerText=Math.round(c.dewpoint_2m)+"°F"
-humidity.innerText=c.relative_humidity_2m+"%"
-wind.innerText=Math.round(c.wind_speed_10m)+" mph"
 
-/* 🔥 EXTRA DATA */
-feels.innerText=Math.round(c.temperature_2m)+"°F"
+let t=Math.round(c.temperature_2m)
+let dewV=Math.round(c.dewpoint_2m)
+let hum=c.relative_humidity_2m
+let windV=Math.round(c.wind_speed_10m)
+
+temp.innerText=t+"°F"
+dew.innerText=dewV+"°F"
+humidity.innerText=hum+"%"
+wind.innerText=windV+" mph"
+feels.innerText=t+"°F"
+
+/* COLOR */
+temp.className=""
+if(t<32) temp.classList.add("tempCold")
+else if(t<50) temp.classList.add("tempCool")
+else if(t<70) temp.classList.add("tempMild")
+else if(t<85) temp.classList.add("tempWarm")
+else temp.classList.add("tempHot")
+
+/* INFO */
+humidityDesc.innerText=hum>70?"Very Humid":hum>55?"Humid":hum<30?"Dry":"Comfortable"
+dewDesc.innerText=dewV>70?"Oppressive":dewV>65?"Muggy":dewV>55?"Slightly Humid":dewV<40?"Dry":"Comfortable"
+dewDetail.innerText=dewV+"°F"
+windDesc.innerText=windV>25?"Very Windy":windV>15?"Windy":windV>8?"Breezy":"Light"
+condition.innerText=(hum>70&&t>75)?"Humid / Storm Possible":windV>20?"Windy Conditions":"Clear"
+
 }
 
 /* ALERTS */
 async function loadAlerts(){
-
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
@@ -420,48 +430,26 @@ let risk="low"
 let triggered=false
 
 d.features.forEach(a=>{
-
 let e=a.properties.event
-let desc=a.properties.description || ""
+let desc=a.properties.description||""
 
-if(e.includes("Tornado")){
-risk="high"
-}
-else if(e.includes("Severe")){
-if(risk!=="high") risk="medium"
-}
+if(e.includes("Tornado")) risk="high"
+else if(e.includes("Severe") && risk!=="high") risk="medium"
 
 if(!triggered && (e.includes("Tornado")||e.includes("Severe"))){
 showPopup(e)
 triggered=true
 }
 
-html+=`
-<div class="card">
-<b>${e}</b><br>
-${desc.replace(/\n/g,"<br>")}
-</div>
-`
-
+html+=`<div class="card"><b>${e}</b><br>${desc.replace(/\n/g,"<br>")}</div>`
 })
 
 alerts.innerHTML=html||"No alerts"
 
-if(risk==="high"){
-riskLevel.className="riskBox high"
-riskLevel.innerText="Severe Weather Risk: HIGH"
-}
-else if(risk==="medium"){
-riskLevel.className="riskBox medium"
-riskLevel.innerText="Severe Weather Risk: MODERATE"
-}
-else{
-riskLevel.className="riskBox low"
-riskLevel.innerText="Severe Weather Risk: LOW"
-}
+riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
+riskLevel.innerText="Severe Weather Risk: "+(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
 
 updateLogoGlow(risk)
-
 }
 
 /* SEARCH */
@@ -472,7 +460,6 @@ let debounce
 input.addEventListener("input",()=>{
 clearTimeout(debounce)
 let q=input.value.trim()
-
 if(q.length<2){suggestions.innerHTML="";return}
 
 debounce=setTimeout(async()=>{
@@ -484,7 +471,6 @@ suggestions.innerHTML=""
 data.forEach(place=>{
 let div=document.createElement("div")
 div.innerText=place.display_name
-
 div.onclick=()=>{
 lat=parseFloat(place.lat)
 lon=parseFloat(place.lon)
@@ -492,7 +478,6 @@ input.value=place.display_name
 suggestions.innerHTML=""
 loadAll()
 }
-
 suggestions.appendChild(div)
 })
 },300)
