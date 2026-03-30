@@ -88,9 +88,21 @@ opacity:0.6
 let alertLayer = L.layerGroup().addTo(map)
 
 /* 📍 CENTER ON USER */
-navigator.geolocation.getCurrentPosition(pos=>{
+navigator.geolocation.getCurrentPosition(
+pos=>{
 map.setView([pos.coords.latitude, pos.coords.longitude], 7)
-})
+},
+err=>{
+console.log("Location blocked or unavailable")
+
+/* fallback to Wisconsin */
+map.setView([43.5,-88.5], 6)
+},
+{
+enableHighAccuracy:true,
+timeout:5000
+}
+)
 
 /* LOAD ALERTS */
 async function loadStorms(){
