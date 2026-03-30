@@ -1,200 +1,194 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Storm Tracker</title>
+<title>Storm Threat Tracker</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-
 <style>
+
 body{
 margin:0;
 font-family:Arial;
 background:#0a0f1c;
 color:white;
+text-align:center;
 }
 
-#map{
-height:100vh;
-width:100%;
+/* LOGO */
+.logo{
+width:260px;
+margin:15px auto;
+display:block;
+filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
-.topBar{
+/* MENU */
+.menuIcon{
 position:fixed;
-top:10px;
-left:10px;
+top:15px;
+left:15px;
+font-size:40px;
 z-index:9999;
-background:#111827;
-padding:10px 15px;
-border-radius:10px;
+cursor:pointer;
 }
 
-.legend{
+.menuPanel{
+display:none;
 position:fixed;
-bottom:10px;
-left:10px;
+top:70px;
+left:15px;
 background:#111827;
+padding:15px;
+border-radius:10px;
+z-index:9999;
+}
+
+.menuPanel a{
+display:block;
 padding:10px;
-border-radius:10px;
-font-size:14px;
-z-index:9999;
-text-align:left;
-}
-
-a{
 color:white;
 text-decoration:none;
 }
+
+/* CARD */
+.card{
+background:#111827;
+margin:15px;
+padding:20px;
+border-radius:12px;
+text-align:left;
+}
+
+/* COLORS */
+.tornado{background:#7a0000;}
+.severe{background:#8a4b00;}
+.emergency{background:#ff00ff;color:black;}
+
 </style>
 </head>
 
 <body>
 
-<div class="topBar">
-<a href="index.html">⬅ Back</a>
+<div class="menuIcon" onclick="toggleMenu()">☰</div>
+
+<div id="menuPanel" class="menuPanel">
+<a href="index.html">Home</a>
+<a href="tracking.html">Storm Tracker</a>
+<a href="winter.html">Winter Center</a>
 </div>
 
-<div id="map"></div>
+<img src="logo.PNG" class="logo">
 
-<div class="legend">
-🌪️ Tornado Warning = Red<br>
-🟣 Tornado Watch = Purple<br>
-⛈️ Severe Warning = Orange<br>
-🟡 Severe Watch = Yellow<br>
-🌊 Flood Warning = Cyan<br>
-🚨 Emergency = Magenta
-</div>
+<h2>Incoming Storm Threats</h2>
 
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<div id="storms">Scanning for storms...</div>
 
 <script>
 
-/* MAP */
-let map = L.map('map',{maxZoom:18}).setView([39,-95],4)
-
-/* DARK BASEMAP */
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
-maxZoom:19
-}).addTo(map)
-
-let alertLayer = L.layerGroup().addTo(map)
-
-/* LOCATION */
-navigator.geolocation.getCurrentPosition(
-pos=>{
-let lat=pos.coords.latitude
-let lon=pos.coords.longitude
-
-map.setView([lat,lon],8)
-
-L.circleMarker([lat,lon],{
-radius:6,
-color:"#00ffcc"
-}).addTo(map)
-},
-()=>{
-map.setView([43.5,-88.5],6)
-}
-)
-
-/* 🌧️ RADAR (ANIMATED + ALL ZOOM LEVELS) */
-let radarLayer = null
-let radarFrames = []
-let frame = 0
-
-async function initRadar(){
-
-let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
-let data = await res.json()
-
-radarFrames = data.radar.past.slice(-8)
-
-if(radarLayer){
-map.removeLayer(radarLayer)
+/* MENU */
+function toggleMenu(){
+let m=document.getElementById("menuPanel")
+m.style.display = m.style.display==="block"?"none":"block"
 }
 
-radarLayer = L.tileLayer('',{
-tileSize:512,
-zoomOffset:-1,
-maxZoom:18,
-opacity:0.7
-}).addTo(map)
+/* USER LOCATION */
+let userLat=43, userLon=-88
 
-animateRadar()
+navigator.geolocation.getCurrentPosition(p=>{
+userLat=p.coords.latitude
+userLon=p.coords.longitude
+loadStorms()
+},()=>loadStorms())
+
+/* DISTANCE CALC */
+function distance(lat1, lon1, lat2, lon2){
+let R=6371
+let dLat=(lat2-lat1)*Math.PI/180
+let dLon=(lon2-lon1)*Math.PI/180
+
+let a=Math.sin(dLat/2)**2+
+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+Math.sin(dLon/2)**2
+
+return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 }
 
-function animateRadar(){
-
-if(radarFrames.length===0) return
-
-let path = radarFrames[frame].path
-
-radarLayer.setUrl(
-`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/6/1_1.png`
-)
-
-frame = (frame+1)%radarFrames.length
-
-setTimeout(animateRadar,600)
+/* DIRECTION */
+function getDirection(lat1, lon1, lat2, lon2){
+let dLon=(lon2-lon1)
+let y=Math.sin(dLon)*Math.cos(lat2)
+let x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon)
+let brng=Math.atan2(y,x)
+return ((brng*180/Math.PI)+360)%360
 }
 
-initRadar()
-
-/* ALERTS */
+/* LOAD STORMS */
 async function loadStorms(){
 
-alertLayer.clearLayers()
+let r=await fetch(`https://api.weather.gov/alerts/active`)
+let d=await r.json()
 
-let res = await fetch("https://api.weather.gov/alerts/active")
-let data = await res.json()
+let html=""
 
-data.features.forEach(alert=>{
+d.features.forEach(a=>{
 
-let coords = alert.geometry
+let type=a.properties.event
+
+/* FILTER ONLY IMPORTANT */
+if(
+!type.includes("Tornado") &&
+!type.includes("Severe Thunderstorm")
+){
+return
+}
+
+/* GET CENTER OF STORM */
+let coords=a.geometry?.coordinates
 if(!coords) return
 
-let type = alert.properties.event
-let desc = alert.properties.headline || "No details"
+let c=coords[0][0]
+let lat=c[1]
+let lon=c[0]
 
-/* COLORS */
-let color="#cccccc"
+let dist=distance(userLat,userLon,lat,lon)
 
-if(type.includes("Tornado Emergency")) color="#ff00ff"
-else if(type.includes("Tornado Warning")) color="#ff0000"
-else if(type.includes("Tornado Watch")) color="#a855f7"
-else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
-else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
-else if(type.includes("Flash Flood Warning")) color="#00bfff"
+/* ONLY SHOW IF WITHIN 150 MILES */
+if(dist>240) return
 
-/* DRAW (NO BORDERS) */
-function draw(latlngs){
-L.polygon(latlngs,{
-stroke:false,
-fillColor:color,
-fillOpacity:0.7
-}).addTo(alertLayer)
-.bindPopup(`<b>${type}</b><br><br>${desc}`)
-}
+/* ESTIMATE SPEED */
+let speed=40 // mph average storm
 
-/* POLYGON */
-if(coords.type==="Polygon"){
-draw(coords.coordinates[0].map(c=>[c[1],c[0]]))
-}
+let eta=Math.round((dist/speed)*60)
 
-/* MULTI */
-if(coords.type==="MultiPolygon"){
-coords.coordinates.forEach(p=>{
-draw(p[0].map(c=>[c[1],c[0]]))
+/* DIRECTION */
+let dir=getDirection(userLat,userLon,lat,lon)
+
+/* COLOR */
+let style="severe"
+if(type.includes("Tornado Warning")) style="tornado"
+if(type.includes("Tornado Emergency")) style="emergency"
+
+/* BUILD CARD */
+html+=`
+<div class="card ${style}">
+<b>${type}</b><br><br>
+
+Distance: ${Math.round(dist)} km<br>
+Direction: ${Math.round(dir)}°<br>
+Speed: ~${speed} mph<br>
+Arrival: ~${eta} min<br><br>
+
+${a.properties.areaDesc}
+</div>
+`
+
 })
+
+storms.innerHTML=html||"No incoming storms nearby"
 }
 
-})
-
-}
-
-/* REFRESH */
-loadStorms()
-setInterval(loadStorms,30000)
+/* AUTO REFRESH */
+setInterval(loadStorms,60000)
 
 </script>
 
