@@ -93,8 +93,9 @@ userLon=p.coords.longitude
 loadStorms()
 },()=>loadStorms())
 
-/* STORE PREVIOUS POSITIONS */
+/* TRACKING STORAGE */
 let stormHistory = {}
+const MAX_HISTORY = 4
 
 /* DISTANCE */
 function distance(lat1, lon1, lat2, lon2){
@@ -162,21 +163,50 @@ if(dist>160) return
 let now=Date.now()
 
 if(!stormHistory[id]){
-stormHistory[id]={lat,lon,time:now}
-return
+stormHistory[id]=[]
 }
 
-let prev=stormHistory[id]
+stormHistory[id].push({lat,lon,time:now})
 
-let timeDiff=(now-prev.time)/3600000 // hours
+if(stormHistory[id].length > MAX_HISTORY){
+stormHistory[id].shift()
+}
 
-let movedDist=distance(prev.lat,prev.lon,lat,lon)
+if(stormHistory[id].length < 2) return
 
-/* SPEED */
-let speed = movedDist / timeDiff
+let totalSpeed = 0
+let totalDirX = 0
+let totalDirY = 0
+let count = 0
 
-/* DIRECTION */
-let stormDir=getDirection(prev.lat,prev.lon,lat,lon)
+for(let i=1;i<stormHistory[id].length;i++){
+
+let p1 = stormHistory[id][i-1]
+let p2 = stormHistory[id][i]
+
+let timeDiff = (p2.time - p1.time)/3600000
+if(timeDiff <= 0) continue
+
+let distMoved = distance(p1.lat,p1.lon,p2.lat,p2.lon)
+
+let speedCalc = distMoved / timeDiff
+
+if(speedCalc < 5 || speedCalc > 120) continue
+
+let dir = getDirection(p1.lat,p1.lon,p2.lat,p2.lon)
+
+let rad = dir * Math.PI/180
+totalDirX += Math.cos(rad)
+totalDirY += Math.sin(rad)
+
+totalSpeed += speedCalc
+count++
+}
+
+if(count === 0) return
+
+let speed = totalSpeed / count
+let stormDir = (Math.atan2(totalDirY, totalDirX)*180/Math.PI+360)%360
 
 /* DIRECTION TO USER */
 let dirToUser=getDirection(lat,lon,userLat,userLon)
@@ -188,15 +218,12 @@ if(diff>90) return
 /* ETA */
 let eta=Math.round((dist/speed)*60)
 
-/* SAVE NEW */
-stormHistory[id]={lat,lon,time:now}
-
 /* STYLE */
 let style="severe"
 if(type.includes("Tornado Warning")) style="tornado"
 if(type.includes("Tornado Emergency")) style="emergency"
 
-/* DISPLAY */
+/* CARD */
 html+=`
 <div class="card ${style}">
 <b>${type}</b><br><br>
