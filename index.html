@@ -365,7 +365,7 @@ async function loadWeather(){
 let obs = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph`)
 let obsData = await obs.json()
 
-let model = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=gfs&timezone=auto`)
+let model = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=ecmwf&timezone=auto`)
 let d = await model.json()
 
 let c=obsData.current_weather
@@ -417,7 +417,7 @@ let capeIndex = 0
 if(d.hourly && d.hourly.cape){
 let next = d.hourly.cape.slice(0,6)
 capeVal = Math.max(...next.map(v=>v ?? 0))
-capeIndex = next.indexOf(capeVal)
+capeIndex = d.hourly.cape.indexOf(capeVal)
 }
 
 cape.innerText = capeVal + " J/kg"
