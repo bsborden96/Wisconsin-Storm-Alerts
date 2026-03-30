@@ -17,10 +17,21 @@ text-align:center;
 width:260px;
 margin:15px auto;
 display:block;
-transition:0.4s;
-filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
+transition:0.3s;
 }
 
+/* FLASH */
+.flash{
+animation:flash 1s infinite;
+}
+
+@keyframes flash{
+0%{filter:drop-shadow(0 0 5px red);}
+50%{filter:drop-shadow(0 0 25px red);}
+100%{filter:drop-shadow(0 0 5px red);}
+}
+
+/* MENU */
 .menuIcon{
 position:fixed;
 top:15px;
@@ -48,12 +59,44 @@ color:white;
 text-decoration:none;
 }
 
+/* SEARCH */
+.searchBox{
+margin:10px auto;
+width:90%;
+max-width:500px;
+position:relative;
+}
+
+.searchBox input{
+width:100%;
+padding:12px;
+font-size:18px;
+border-radius:8px;
+border:none;
+}
+
+.suggestions{
+position:absolute;
+background:#1f2937;
+width:100%;
+border-radius:8px;
+max-height:200px;
+overflow-y:auto;
+text-align:left;
+z-index:9999;
+}
+
+/* CARDS */
 .card{
 background:#111827;
 margin:15px;
 padding:20px;
 border-radius:12px;
 text-align:left;
+}
+
+.closest{
+border:3px solid #00ffcc;
 }
 
 .tornado{background:#7a0000;}
@@ -79,6 +122,11 @@ font-size:18px;
 
 <img src="logo.PNG" class="logo" id="logo">
 
+<div class="searchBox">
+<input id="searchInput" placeholder="Search US city">
+<div id="suggestions" class="suggestions"></div>
+</div>
+
 <div id="locationText" class="location">Locating...</div>
 
 <h2>Incoming Storm Threats</h2>
@@ -88,42 +136,70 @@ font-size:18px;
 
 /* MENU */
 function toggleMenu(){
-let m=document.getElementById("menuPanel")
-m.style.display = m.style.display==="block"?"none":"block"
+menuPanel.style.display = menuPanel.style.display==="block"?"none":"block"
 }
 
-/* USER LOCATION */
+/* LOCATION */
 let userLat=43, userLon=-88
 
-navigator.geolocation.getCurrentPosition(async p=>{
-userLat=p.coords.latitude
-userLon=p.coords.longitude
+async function setLocation(lat,lon){
+userLat=lat
+userLon=lon
 
-/* GET CITY */
-let res = await fetch(`https://api.weather.gov/points/${userLat},${userLon}`)
-let d = await res.json()
+let res=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
+let d=await res.json()
 
-let city = d.properties.relativeLocation.properties.city
-let state = d.properties.relativeLocation.properties.state
+let city=d.properties.relativeLocation.properties.city
+let state=d.properties.relativeLocation.properties.state
 
-locationText.innerText = `${city}, ${state}`
+locationText.innerText=`${city}, ${state}`
 
 loadStorms()
+}
 
+navigator.geolocation.getCurrentPosition(p=>{
+setLocation(p.coords.latitude,p.coords.longitude)
 },()=>loadStorms())
+
+/* SEARCH */
+searchInput.addEventListener("input",async()=>{
+let q=searchInput.value.trim()
+if(q.length<2){suggestions.innerHTML="";return}
+
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(place=>{
+let div=document.createElement("div")
+div.innerText=place.display_name
+
+div.onclick=()=>{
+setLocation(parseFloat(place.lat),parseFloat(place.lon))
+searchInput.value=place.display_name
+suggestions.innerHTML=""
+}
+
+suggestions.appendChild(div)
+})
+})
 
 /* TRACKING */
 let stormHistory={}
 const MAX_HISTORY=4
 
-/* DISTANCE */
+/* DISTANCE IN MILES */
 function distance(lat1, lon1, lat2, lon2){
-let R=6371
+let R=3958.8
+
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
+
 let a=Math.sin(dLat/2)**2+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
 Math.sin(dLon/2)**2
+
 return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 }
 
@@ -137,25 +213,7 @@ let brng=Math.atan2(y,x)
 return ((brng*180/Math.PI)+360)%360
 }
 
-/* LOGO GLOW */
-function updateLogo(level){
-let logo=document.getElementById("logo")
-
-if(level==="emergency"){
-logo.style.filter="drop-shadow(0 0 25px magenta)"
-}
-else if(level==="tornado"){
-logo.style.filter="drop-shadow(0 0 25px red)"
-}
-else if(level==="severe"){
-logo.style.filter="drop-shadow(0 0 20px orange)"
-}
-else{
-logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
-}
-}
-
-/* LOAD STORMS */
+/* LOAD */
 async function loadStorms(){
 
 let r=await fetch("https://api.weather.gov/alerts/active")
@@ -163,6 +221,7 @@ let d=await r.json()
 
 let html=""
 let highest="none"
+let closestDist=999999
 
 d.features.forEach(a=>{
 
@@ -180,7 +239,6 @@ return
 let coords=a.geometry?.coordinates
 if(!coords) return
 
-/* CENTER */
 let pts=coords[0]
 let lat=0, lon=0
 
@@ -193,7 +251,9 @@ lat/=pts.length
 lon/=pts.length
 
 let dist=distance(userLat,userLon,lat,lon)
-if(dist>160) return
+
+/* 100 mile filter */
+if(dist>100) return
 
 let now=Date.now()
 
@@ -202,7 +262,6 @@ stormHistory[id]=[]
 }
 
 stormHistory[id].push({lat,lon,time:now})
-
 if(stormHistory[id].length>MAX_HISTORY){
 stormHistory[id].shift()
 }
@@ -219,8 +278,8 @@ let p2=stormHistory[id][i]
 let t=(p2.time-p1.time)/3600000
 if(t<=0) continue
 
-let distMoved=distance(p1.lat,p1.lon,p2.lat,p2.lon)
-let sp=distMoved/t
+let dMoved=distance(p1.lat,p1.lon,p2.lat,p2.lon)
+let sp=dMoved/t
 
 if(sp<5||sp>120) continue
 
@@ -245,27 +304,30 @@ if(Math.abs(stormDir-dirToUser)>90) return
 
 let eta=Math.round((dist/speed)*60)
 
-/* STYLE + PRIORITY */
+/* STYLE */
 let style="severe"
+if(type.includes("Tornado Warning")) style="tornado"
+if(type.includes("Tornado Emergency")) style="emergency"
 
-if(type.includes("Tornado Emergency")){
-style="emergency"
-highest="emergency"
+/* CLOSEST */
+let isClosest=false
+if(dist<closestDist){
+closestDist=dist
+isClosest=true
 }
-else if(type.includes("Tornado Warning")){
-style="tornado"
-if(highest!=="emergency") highest="tornado"
-}
-else{
-if(highest==="none") highest="severe"
-}
+
+/* HIGHEST */
+if(type.includes("Tornado Emergency")) highest="emergency"
+else if(type.includes("Tornado Warning") && highest!=="emergency") highest="tornado"
+else if(highest==="none") highest="severe"
 
 /* CARD */
 html+=`
-<div class="card ${style}">
+<div class="card ${style} ${isClosest?"closest":""}">
+${isClosest?"🚨 CLOSEST STORM<br><br>":""}
 <b>${type}</b><br><br>
 
-Distance: ${Math.round(dist)} km<br>
+Distance: ${Math.round(dist)} miles<br>
 Direction: ${Math.round(stormDir)}°<br>
 Speed: ${speed.toFixed(1)} mph<br>
 Arrival: ${eta} min<br><br>
@@ -276,7 +338,11 @@ ${a.properties.areaDesc}
 
 })
 
-updateLogo(highest)
+/* LOGO FLASH */
+logo.classList.remove("flash")
+if(highest==="tornado" || highest==="emergency"){
+logo.classList.add("flash")
+}
 
 storms.innerHTML=html||"No incoming storms nearby"
 }
