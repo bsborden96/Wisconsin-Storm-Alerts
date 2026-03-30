@@ -67,7 +67,6 @@ text-decoration:none;
 
 <div id="map"></div>
 
-<!-- LEGEND -->
 <div class="legend">
 🌪️ Tornado Warning = Red<br>
 🟣 Tornado Watch = Purple<br>
@@ -77,66 +76,52 @@ text-decoration:none;
 🚨 Emergency = Magenta
 </div>
 
-<!-- RADAR TOGGLE -->
 <div class="radarBtn" onclick="toggleRadar()">📡 Radar</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
 
-/* INIT MAP */
-let map = L.map('map').setView([39,-95], 4)
+/* INIT MAP WITH BETTER ZOOM */
+let map = L.map('map', {
+maxZoom: 18
+}).setView([39,-95], 4)
 
-/* DARK BASEMAP */
+/* BASEMAP (FIXED ZOOM LIMIT) */
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-attribution:'© OpenStreetMap'
+attribution:'© OpenStreetMap',
+maxZoom: 19
 }).addTo(map)
 
 let alertLayer = L.layerGroup().addTo(map)
 
-/* 📍 USER LOCATION */
-function centerOnUser(){
-
+/* 📍 LOCATION */
 navigator.geolocation.getCurrentPosition(
 pos=>{
 let lat = pos.coords.latitude
 let lon = pos.coords.longitude
 
-map.setView([lat, lon], 7)
+map.setView([lat, lon], 8)
 
 L.circleMarker([lat, lon],{
 radius:6,
 color:"#00ffcc"
-})
-.addTo(map)
-.bindPopup("📍 You are here")
-
+}).addTo(map)
 },
-err=>{
-console.log("Location failed:", err.message)
+()=>{
 map.setView([43.5,-88.5], 6)
-},
-{
-enableHighAccuracy:true,
-timeout:8000,
-maximumAge:0
 }
 )
 
-}
-
-centerOnUser()
-
-/* 🌧️ STABLE RADAR OVERLAY */
+/* 🌧️ WORKING RADAR (REAL FIX) */
 let radarLayer = L.tileLayer(
-"https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png",
+"https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/ridge::N0Q-0/{z}/{x}/{y}.png",
 {
 opacity:0.7,
-zIndex:5
-}
-).addTo(map)
+maxZoom: 10
+}).addTo(map)
 
-/* TOGGLE RADAR */
+/* TOGGLE */
 function toggleRadar(){
 if(map.hasLayer(radarLayer)){
 map.removeLayer(radarLayer)
@@ -145,7 +130,7 @@ map.addLayer(radarLayer)
 }
 }
 
-/* LOAD ALERTS */
+/* ALERTS */
 async function loadStorms(){
 
 alertLayer.clearLayers()
@@ -161,7 +146,7 @@ if(!coords) return
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* COLOR CODING */
+/* 🎯 FIXED COLOR MATCHING */
 let color = "#cccccc"
 
 if(type.includes("Tornado Emergency")) color="#ff00ff"
@@ -169,36 +154,28 @@ else if(type.includes("Tornado Warning")) color="#ff0000"
 else if(type.includes("Tornado Watch")) color="#8000ff"
 else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
-else if(type.includes("Flash Flood Warning")) color="#00ffcc"
+else if(type.includes("Flash Flood Warning")) color="#00ffff"
 
 /* DRAW */
 function drawPoly(latlngs){
-
-let poly = L.polygon(latlngs,{
+L.polygon(latlngs,{
 color:color,
 weight:2,
 fillColor:color,
-fillOpacity:0.25
+fillOpacity:0.3
 }).addTo(alertLayer)
-
-poly.bindPopup(`
-<b>${type}</b><br><br>
-${desc}<br><br>
-<b>Areas:</b> ${alert.properties.areaDesc}
-`)
+.bindPopup(`<b>${type}</b><br><br>${desc}`)
 }
 
-/* POLYGON */
+/* POLY */
 if(coords.type === "Polygon"){
-let latlngs = coords.coordinates[0].map(c=>[c[1],c[0]])
-drawPoly(latlngs)
+drawPoly(coords.coordinates[0].map(c=>[c[1],c[0]]))
 }
 
 /* MULTI */
 if(coords.type === "MultiPolygon"){
-coords.coordinates.forEach(polyCoords=>{
-let latlngs = polyCoords[0].map(c=>[c[1],c[0]])
-drawPoly(latlngs)
+coords.coordinates.forEach(p=>{
+drawPoly(p[0].map(c=>[c[1],c[0]]))
 })
 }
 
@@ -206,7 +183,7 @@ drawPoly(latlngs)
 
 }
 
-/* ⚡ FAST REFRESH */
+/* REFRESH */
 loadStorms()
 setInterval(loadStorms, 30000)
 
