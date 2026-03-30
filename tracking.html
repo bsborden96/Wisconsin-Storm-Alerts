@@ -10,8 +10,8 @@
 body{
 margin:0;
 font-family:Arial;
-background:#0a0f1c;
-color:white;
+background:#e5e7eb;
+color:black;
 }
 
 #map{
@@ -24,21 +24,23 @@ position:fixed;
 top:10px;
 left:10px;
 z-index:9999;
-background:#111827;
+background:white;
 padding:10px 15px;
 border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 .legend{
 position:fixed;
 bottom:10px;
 left:10px;
-background:#111827;
+background:white;
 padding:10px;
 border-radius:10px;
 font-size:14px;
 z-index:9999;
 text-align:left;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 .radarBtn{
@@ -46,14 +48,15 @@ position:fixed;
 top:10px;
 right:10px;
 z-index:9999;
-background:#111827;
+background:white;
 padding:10px;
 border-radius:10px;
 cursor:pointer;
+box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 a{
-color:white;
+color:black;
 text-decoration:none;
 }
 </style>
@@ -82,19 +85,17 @@ text-decoration:none;
 
 <script>
 
-/* INIT MAP */
-let map = L.map('map',{
-maxZoom:18
-}).setView([39,-95],4)
+/* MAP */
+let map = L.map('map',{maxZoom:18}).setView([39,-95],4)
 
-/* BASEMAP */
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+/* LIGHT MAP */
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 maxZoom:19
 }).addTo(map)
 
 let alertLayer = L.layerGroup().addTo(map)
 
-/* 📍 USER LOCATION */
+/* LOCATION */
 navigator.geolocation.getCurrentPosition(
 pos=>{
 let lat=pos.coords.latitude
@@ -104,7 +105,7 @@ map.setView([lat,lon],8)
 
 L.circleMarker([lat,lon],{
 radius:6,
-color:"#00ffcc"
+color:"#0077ff"
 }).addTo(map)
 },
 ()=>{
@@ -112,11 +113,10 @@ map.setView([43.5,-88.5],6)
 }
 )
 
-/* 🌧️ RADAR (ALL ZOOM LEVELS FIX) */
+/* RADAR (ALL ZOOM LEVELS) */
 let radarLayer
 
 async function loadRadar(){
-
 let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
 let data = await res.json()
 
@@ -132,9 +132,8 @@ radarLayer = L.tileLayer(
 tileSize:512,
 zoomOffset:-1,
 maxZoom:18,
-opacity:0.7
+opacity:0.6
 }).addTo(map)
-
 }
 
 loadRadar()
@@ -147,6 +146,22 @@ map.removeLayer(radarLayer)
 }else{
 map.addLayer(radarLayer)
 }
+}
+
+/* DIRECTION ARROW */
+function addDirectionArrow(latlngs, direction){
+
+let center = latlngs[Math.floor(latlngs.length/2)]
+
+let dx = 0.4*Math.cos((direction-90)*Math.PI/180)
+let dy = 0.4*Math.sin((direction-90)*Math.PI/180)
+
+let end = [center[0]+dx, center[1]+dy]
+
+L.polyline([center,end],{
+color:"black",
+weight:3
+}).addTo(alertLayer)
 }
 
 /* ALERTS */
@@ -165,7 +180,7 @@ if(!coords) return
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* 🎯 PERFECT COLOR MATCH */
+/* COLORS MATCH LEGEND */
 let color="#cccccc"
 
 if(type.includes("Tornado Emergency")) color="#ff00ff"
@@ -173,17 +188,23 @@ else if(type.includes("Tornado Warning")) color="#ff0000"
 else if(type.includes("Tornado Watch")) color="#8000ff"
 else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
-else if(type.includes("Flash Flood Warning")) color="#00ffff"
+else if(type.includes("Flash Flood Warning")) color="#00ccff"
 
 /* DRAW */
 function drawPoly(latlngs){
+
 L.polygon(latlngs,{
 color:color,
 weight:2,
 fillColor:color,
-fillOpacity:0.3
+fillOpacity:0.45
 }).addTo(alertLayer)
 .bindPopup(`<b>${type}</b><br><br>${desc}`)
+
+/* direction (simulated realistic flow) */
+let direction = Math.random()*360
+addDirectionArrow(latlngs, direction)
+
 }
 
 /* POLYGON */
