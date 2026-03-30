@@ -10,8 +10,8 @@
 body{
 margin:0;
 font-family:Arial;
-background:#e5e7eb;
-color:black;
+background:#0a0f1c;
+color:white;
 }
 
 #map{
@@ -24,23 +24,21 @@ position:fixed;
 top:10px;
 left:10px;
 z-index:9999;
-background:white;
+background:#111827;
 padding:10px 15px;
 border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 .legend{
 position:fixed;
 bottom:10px;
 left:10px;
-background:white;
+background:#111827;
 padding:10px;
 border-radius:10px;
 font-size:14px;
 z-index:9999;
 text-align:left;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 .radarBtn{
@@ -48,15 +46,14 @@ position:fixed;
 top:10px;
 right:10px;
 z-index:9999;
-background:white;
+background:#111827;
 padding:10px;
 border-radius:10px;
 cursor:pointer;
-box-shadow:0 0 10px rgba(0,0,0,0.2);
 }
 
 a{
-color:black;
+color:white;
 text-decoration:none;
 }
 </style>
@@ -88,8 +85,8 @@ text-decoration:none;
 /* MAP */
 let map = L.map('map',{maxZoom:18}).setView([39,-95],4)
 
-/* LIGHT MAP */
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+/* DARK MAP (BETTER CONTRAST) */
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
 maxZoom:19
 }).addTo(map)
 
@@ -105,7 +102,7 @@ map.setView([lat,lon],8)
 
 L.circleMarker([lat,lon],{
 radius:6,
-color:"#0077ff"
+color:"#00ffcc"
 }).addTo(map)
 },
 ()=>{
@@ -113,27 +110,49 @@ map.setView([43.5,-88.5],6)
 }
 )
 
-/* RADAR (ALL ZOOM LEVELS) */
-let radarLayer
+/* 🌧️ ANIMATED RADAR */
+let radarFrames = []
+let radarLayers = []
+let frameIndex = 0
 
 async function loadRadar(){
+
 let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
 let data = await res.json()
 
-let frame = data.radar.past[data.radar.past.length-1]
+radarFrames = data.radar.past.slice(-6) // last 6 frames
 
-if(radarLayer){
-map.removeLayer(radarLayer)
+radarLayers.forEach(l=>map.removeLayer(l))
+radarLayers = []
+
+radarFrames.forEach((frame,i)=>{
+
+let layer = L.tileLayer(
+`https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+{
+opacity:0,
+maxZoom:18
+}
+).addTo(map)
+
+radarLayers.push(layer)
+
+})
+
+animateRadar()
 }
 
-radarLayer = L.tileLayer(
-`https://tilecache.rainviewer.com${frame.path}/512/{z}/{x}/{y}/6/1_1.png`,
-{
-tileSize:512,
-zoomOffset:-1,
-maxZoom:18,
-opacity:0.6
-}).addTo(map)
+function animateRadar(){
+
+if(radarLayers.length===0) return
+
+radarLayers.forEach(l=>l.setOpacity(0))
+
+radarLayers[frameIndex].setOpacity(0.7)
+
+frameIndex = (frameIndex+1)%radarLayers.length
+
+setTimeout(animateRadar,500)
 }
 
 loadRadar()
@@ -141,11 +160,13 @@ setInterval(loadRadar,120000)
 
 /* TOGGLE */
 function toggleRadar(){
-if(map.hasLayer(radarLayer)){
-map.removeLayer(radarLayer)
+radarLayers.forEach(l=>{
+if(map.hasLayer(l)){
+map.removeLayer(l)
 }else{
-map.addLayer(radarLayer)
+map.addLayer(l)
 }
+})
 }
 
 /* DIRECTION ARROW */
@@ -153,14 +174,14 @@ function addDirectionArrow(latlngs, direction){
 
 let center = latlngs[Math.floor(latlngs.length/2)]
 
-let dx = 0.4*Math.cos((direction-90)*Math.PI/180)
-let dy = 0.4*Math.sin((direction-90)*Math.PI/180)
+let dx = 0.3*Math.cos((direction-90)*Math.PI/180)
+let dy = 0.3*Math.sin((direction-90)*Math.PI/180)
 
 let end = [center[0]+dx, center[1]+dy]
 
 L.polyline([center,end],{
-color:"black",
-weight:3
+color:"white",
+weight:2
 }).addTo(alertLayer)
 }
 
@@ -180,12 +201,12 @@ if(!coords) return
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* COLORS MATCH LEGEND */
+/* COLORS (HIGH CONTRAST) */
 let color="#cccccc"
 
 if(type.includes("Tornado Emergency")) color="#ff00ff"
 else if(type.includes("Tornado Warning")) color="#ff0000"
-else if(type.includes("Tornado Watch")) color="#8000ff"
+else if(type.includes("Tornado Watch")) color="#a855f7"
 else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
 else if(type.includes("Flash Flood Warning")) color="#00ccff"
@@ -197,11 +218,11 @@ L.polygon(latlngs,{
 color:color,
 weight:2,
 fillColor:color,
-fillOpacity:0.45
+fillOpacity:0.5
 }).addTo(alertLayer)
 .bindPopup(`<b>${type}</b><br><br>${desc}`)
 
-/* direction (simulated realistic flow) */
+/* simulated motion */
 let direction = Math.random()*360
 addDirectionArrow(latlngs, direction)
 
