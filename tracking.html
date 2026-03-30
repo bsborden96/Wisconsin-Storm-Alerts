@@ -56,7 +56,6 @@ text-decoration:none;
 
 <div id="map"></div>
 
-<!-- LEGEND -->
 <div class="legend">
 🌪️ Tornado Warning = Red<br>
 🟣 Tornado Watch = Purple<br>
@@ -78,31 +77,64 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 attribution:'© OpenStreetMap'
 }).addTo(map)
 
-/* 🌧️ RADAR OVERLAY (RainViewer) */
-let radar = L.tileLayer(
-"https://tilecache.rainviewer.com/v2/radar/latest/256/{z}/{x}/{y}/2/1_1.png",
-{
-opacity:0.6
-}).addTo(map)
-
 let alertLayer = L.layerGroup().addTo(map)
 
-/* 📍 CENTER ON USER */
+/* 📍 USER LOCATION */
+function centerOnUser(){
+
 navigator.geolocation.getCurrentPosition(
 pos=>{
-map.setView([pos.coords.latitude, pos.coords.longitude], 7)
+let lat = pos.coords.latitude
+let lon = pos.coords.longitude
+
+map.setView([lat, lon], 7)
+
+L.circleMarker([lat, lon],{
+radius:6,
+color:"#00ffcc"
+})
+.addTo(map)
+.bindPopup("📍 You are here")
+
 },
 err=>{
-console.log("Location blocked or unavailable")
-
-/* fallback to Wisconsin */
+console.log("Location failed:", err.message)
 map.setView([43.5,-88.5], 6)
 },
 {
 enableHighAccuracy:true,
-timeout:5000
+timeout:8000,
+maximumAge:0
 }
 )
+
+}
+
+centerOnUser()
+
+/* 🌧️ LIVE RADAR */
+async function loadRadar(){
+
+let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
+let data = await res.json()
+
+let frame = data.radar.past[data.radar.past.length - 1]
+
+if(window.radarLayer){
+map.removeLayer(window.radarLayer)
+}
+
+window.radarLayer = L.tileLayer(
+`https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+{
+opacity:0.6
+}
+).addTo(map)
+
+}
+
+loadRadar()
+setInterval(loadRadar, 120000)
 
 /* LOAD ALERTS */
 async function loadStorms(){
@@ -120,7 +152,7 @@ if(!coords) return
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* 🎯 ADVANCED COLOR CODING */
+/* COLOR CODING */
 let color = "#cccccc"
 
 if(type.includes("Tornado Emergency")) color="#ff00ff"
@@ -130,7 +162,7 @@ else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
 else if(type.includes("Flash Flood Warning")) color="#00ffcc"
 
-/* DRAW POLYGON */
+/* DRAW FUNCTION */
 function drawPoly(latlngs){
 
 let poly = L.polygon(latlngs,{
@@ -153,7 +185,7 @@ let latlngs = coords.coordinates[0].map(c=>[c[1],c[0]])
 drawPoly(latlngs)
 }
 
-/* MULTI */
+/* MULTIPOLYGON */
 if(coords.type === "MultiPolygon"){
 coords.coordinates.forEach(polyCoords=>{
 let latlngs = polyCoords[0].map(c=>[c[1],c[0]])
