@@ -414,12 +414,30 @@ sndWind.innerText=windV>20?"Strong":"Weak"
 let capeVal = 0
 let capeIndex = 0
 
-if(d.hourly && d.hourly.cape){
-let next = d.hourly.cape.slice(0,6)
-capeVal = Math.max(...next.map(v=>v ?? 0))
-capeIndex = d.hourly.cape.indexOf(capeVal)
+let offsets = [
+[0,0],
+[0.25,0],
+[-0.25,0],
+[0,0.25],
+[0,-0.25]
+]
+
+for(let o of offsets){
+
+let res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat+o[0]}&longitude=${lon+o[1]}&hourly=cape&models=ecmwf&timezone=auto`)
+let data = await res.json()
+
+if(data.hourly && data.hourly.cape){
+let next = data.hourly.cape.slice(0,6)
+let localMax = Math.max(...next.map(v=>v ?? 0))
+
+if(localMax > capeVal){
+capeVal = localMax
+capeIndex = data.hourly.cape.indexOf(localMax)
+}
 }
 
+}
 cape.innerText = capeVal + " J/kg"
 
 if(d.hourly && d.hourly.time && capeIndex >= 0){
