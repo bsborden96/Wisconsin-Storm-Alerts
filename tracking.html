@@ -72,7 +72,7 @@ text-decoration:none;
 /* MAP */
 let map = L.map('map',{maxZoom:18}).setView([39,-95],4)
 
-/* DARK MAP */
+/* DARK BASEMAP */
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
 maxZoom:19
 }).addTo(map)
@@ -97,7 +97,7 @@ map.setView([43.5,-88.5],6)
 }
 )
 
-/* 🌧️ RADAR (TRUE ANIMATION FIX) */
+/* 🌧️ RADAR (ANIMATED + ALL ZOOM LEVELS) */
 let radarLayer = null
 let radarFrames = []
 let frame = 0
@@ -107,15 +107,17 @@ async function initRadar(){
 let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
 let data = await res.json()
 
-radarFrames = data.radar.past.slice(-8) // last 8 frames
+radarFrames = data.radar.past.slice(-8)
 
 if(radarLayer){
 map.removeLayer(radarLayer)
 }
 
 radarLayer = L.tileLayer('',{
-opacity:0.7,
-maxZoom:18
+tileSize:512,
+zoomOffset:-1,
+maxZoom:18,
+opacity:0.7
 }).addTo(map)
 
 animateRadar()
@@ -123,17 +125,17 @@ animateRadar()
 
 function animateRadar(){
 
-if(radarFrames.length === 0) return
+if(radarFrames.length===0) return
 
 let path = radarFrames[frame].path
 
 radarLayer.setUrl(
-`https://tilecache.rainviewer.com${path}/256/{z}/{x}/{y}/2/1_1.png`
+`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/6/1_1.png`
 )
 
-frame = (frame + 1) % radarFrames.length
+frame = (frame+1)%radarFrames.length
 
-setTimeout(animateRadar, 600) // smooth loop
+setTimeout(animateRadar,600)
 }
 
 initRadar()
@@ -154,7 +156,7 @@ if(!coords) return
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* COLOR FIX */
+/* COLORS */
 let color="#cccccc"
 
 if(type.includes("Tornado Emergency")) color="#ff00ff"
@@ -162,14 +164,14 @@ else if(type.includes("Tornado Warning")) color="#ff0000"
 else if(type.includes("Tornado Watch")) color="#a855f7"
 else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
-else if(type.includes("Flash Flood Warning")) color="#0099cc" // FIXED CYAN
+else if(type.includes("Flash Flood Warning")) color="#00bfff"
 
+/* DRAW (NO BORDERS) */
 function draw(latlngs){
 L.polygon(latlngs,{
-color:color,
-weight:2,
+stroke:false,
 fillColor:color,
-fillOpacity:0.6
+fillOpacity:0.7
 }).addTo(alertLayer)
 .bindPopup(`<b>${type}</b><br><br>${desc}`)
 }
@@ -190,6 +192,7 @@ draw(p[0].map(c=>[c[1],c[0]]))
 
 }
 
+/* REFRESH */
 loadStorms()
 setInterval(loadStorms,30000)
 
