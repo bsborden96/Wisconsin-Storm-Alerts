@@ -365,9 +365,6 @@ async function loadWeather(){
 let obs = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph`)
 let obsData = await obs.json()
 
-let model = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=ecmwf&timezone=auto`)
-let d = await model.json()
-
 let c=obsData.current_weather
 
 let t=Math.round(c.temperature)
@@ -412,51 +409,29 @@ sndLift.innerText=t>85?"Strong":"Weak"
 sndWind.innerText=windV>20?"Strong":"Weak"
 
 let capeVal = 0
-let capeIndex = 0
 
-let offsets = [
-[0,0],
-[0.25,0],
-[-0.25,0],
-[0,0.25],
-[0,-0.25]
-]
+let spread = t - dewV
 
-for(let o of offsets){
+if(dewV >= 75 && spread <= 15) capeVal = 3000
+else if(dewV >= 70 && spread <= 20) capeVal = 2000
+else if(dewV >= 65 && spread <= 25) capeVal = 1200
+else if(dewV >= 60) capeVal = 600
+else capeVal = 100
 
-let res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat+o[0]}&longitude=${lon+o[1]}&hourly=cape&models=ecmwf&timezone=auto`)
-let data = await res.json()
-
-if(data.hourly && data.hourly.cape){
-let next = data.hourly.cape.slice(0,6)
-let localMax = Math.max(...next.map(v=>v ?? 0))
-
-if(localMax > capeVal){
-capeVal = localMax
-capeIndex = data.hourly.cape.indexOf(localMax)
-}
-}
-
-}
 cape.innerText = capeVal + " J/kg"
-
-if(d.hourly && d.hourly.time && capeIndex >= 0){
-let t = new Date(d.hourly.time[capeIndex])
-capeTime.innerText = "Peak around: " + t.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
-}
+capeTime.innerText = "Based on current environment"
 
 cape.className=""
 
 if(capeVal >= 2000){
 cape.classList.add("capeHigh")
-capeWhy.innerText="Extreme instability — explosive storm potential"
+capeWhy.innerText="Very unstable air — strong storm potential"
 riskText.innerText="HIGH"
 riskLevel.className="riskBox high"
 }
 else if(capeVal >= 1000){
 cape.classList.add("capeMed")
-capeWhy.innerText="Moderate instability — storms possible"
-
+capeWhy.innerText="Unstable — storms likely"
 if(riskText.innerText !== "HIGH"){
 riskText.innerText="MODERATE"
 riskLevel.className="riskBox medium"
@@ -464,7 +439,7 @@ riskLevel.className="riskBox medium"
 }
 else{
 cape.classList.add("capeLow")
-capeWhy.innerText="Low instability — weak storm potential"
+capeWhy.innerText="Stable air — low storm potential"
 }
 
 }
