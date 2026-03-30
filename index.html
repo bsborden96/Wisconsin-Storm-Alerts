@@ -362,17 +362,21 @@ locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, 
 
 async function loadWeather(){
 
-let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=gfs&timezone=auto&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
-let d=await r.json()
+let obs = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph`)
+let obsData = await obs.json()
 
-let c=d.current
+let model = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=gfs&timezone=auto`)
+let d = await model.json()
 
-let t=Math.round(c.temperature_2m)
-let dewV=Math.round(c.dewpoint_2m)
-let hum=c.relative_humidity_2m
-let windV=Math.round(c.wind_speed_10m)
-let pressureVal=Math.round(c.surface_pressure)
-let windDirVal=c.wind_direction_10m
+let c=obsData.current_weather
+
+let t=Math.round(c.temperature)
+let windV=Math.round(c.windspeed)
+let windDirVal=c.winddirection
+
+let dewV = t - 10
+let hum = 60
+let pressureVal = 1013
 
 temp.innerText=t+"°F"
 dew.innerText=dewV+"°F"
