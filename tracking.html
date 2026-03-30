@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-
 body{
 margin:0;
 font-family:Arial;
@@ -14,7 +13,6 @@ color:white;
 text-align:center;
 }
 
-/* LOGO */
 .logo{
 width:260px;
 margin:15px auto;
@@ -22,7 +20,6 @@ display:block;
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
-/* MENU */
 .menuIcon{
 position:fixed;
 top:15px;
@@ -50,7 +47,6 @@ color:white;
 text-decoration:none;
 }
 
-/* CARD */
 .card{
 background:#111827;
 margin:15px;
@@ -59,11 +55,9 @@ border-radius:12px;
 text-align:left;
 }
 
-/* COLORS */
 .tornado{background:#7a0000;}
 .severe{background:#8a4b00;}
 .emergency{background:#ff00ff;color:black;}
-
 </style>
 </head>
 
@@ -80,8 +74,7 @@ text-align:left;
 <img src="logo.PNG" class="logo">
 
 <h2>Incoming Storm Threats</h2>
-
-<div id="storms">Scanning for storms...</div>
+<div id="storms">Scanning...</div>
 
 <script>
 
@@ -100,24 +93,26 @@ userLon=p.coords.longitude
 loadStorms()
 },()=>loadStorms())
 
-/* DISTANCE CALC */
+/* STORE PREVIOUS POSITIONS */
+let stormHistory = {}
+
+/* DISTANCE */
 function distance(lat1, lon1, lat2, lon2){
 let R=6371
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
-
 let a=Math.sin(dLat/2)**2+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
 Math.sin(dLon/2)**2
-
 return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 }
 
 /* DIRECTION */
 function getDirection(lat1, lon1, lat2, lon2){
-let dLon=(lon2-lon1)
-let y=Math.sin(dLon)*Math.cos(lat2)
-let x=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLon)
+let dLon=(lon2-lon1)*Math.PI/180
+let y=Math.sin(dLon)*Math.cos(lat2*Math.PI/180)
+let x=Math.cos(lat1*Math.PI/180)*Math.sin(lat2*Math.PI/180)-
+Math.sin(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.cos(dLon)
 let brng=Math.atan2(y,x)
 return ((brng*180/Math.PI)+360)%360
 }
@@ -125,58 +120,91 @@ return ((brng*180/Math.PI)+360)%360
 /* LOAD STORMS */
 async function loadStorms(){
 
-let r=await fetch(`https://api.weather.gov/alerts/active`)
+let r=await fetch("https://api.weather.gov/alerts/active")
 let d=await r.json()
 
 let html=""
 
 d.features.forEach(a=>{
 
+let id=a.id
 let type=a.properties.event
 
-/* FILTER ONLY IMPORTANT */
+/* FILTER */
 if(
-!type.includes("Tornado") &&
-!type.includes("Severe Thunderstorm")
+!type.includes("Tornado Warning") &&
+!type.includes("Severe Thunderstorm Warning") &&
+!type.includes("Tornado Emergency")
 ){
 return
 }
 
-/* GET CENTER OF STORM */
 let coords=a.geometry?.coordinates
 if(!coords) return
 
-let c=coords[0][0]
-let lat=c[1]
-let lon=c[0]
+/* CENTER */
+let pts=coords[0]
+let lat=0, lon=0
 
+pts.forEach(p=>{
+lat+=p[1]
+lon+=p[0]
+})
+
+lat/=pts.length
+lon/=pts.length
+
+/* DISTANCE */
 let dist=distance(userLat,userLon,lat,lon)
+if(dist>160) return
 
-/* ONLY SHOW IF WITHIN 150 MILES */
-if(dist>240) return
+/* TRACK HISTORY */
+let now=Date.now()
 
-/* ESTIMATE SPEED */
-let speed=40 // mph average storm
+if(!stormHistory[id]){
+stormHistory[id]={lat,lon,time:now}
+return
+}
 
-let eta=Math.round((dist/speed)*60)
+let prev=stormHistory[id]
+
+let timeDiff=(now-prev.time)/3600000 // hours
+
+let movedDist=distance(prev.lat,prev.lon,lat,lon)
+
+/* SPEED */
+let speed = movedDist / timeDiff
 
 /* DIRECTION */
-let dir=getDirection(userLat,userLon,lat,lon)
+let stormDir=getDirection(prev.lat,prev.lon,lat,lon)
 
-/* COLOR */
+/* DIRECTION TO USER */
+let dirToUser=getDirection(lat,lon,userLat,userLon)
+
+/* ONLY INCOMING */
+let diff=Math.abs(stormDir-dirToUser)
+if(diff>90) return
+
+/* ETA */
+let eta=Math.round((dist/speed)*60)
+
+/* SAVE NEW */
+stormHistory[id]={lat,lon,time:now}
+
+/* STYLE */
 let style="severe"
 if(type.includes("Tornado Warning")) style="tornado"
 if(type.includes("Tornado Emergency")) style="emergency"
 
-/* BUILD CARD */
+/* DISPLAY */
 html+=`
 <div class="card ${style}">
 <b>${type}</b><br><br>
 
 Distance: ${Math.round(dist)} km<br>
-Direction: ${Math.round(dir)}°<br>
-Speed: ~${speed} mph<br>
-Arrival: ~${eta} min<br><br>
+Direction: ${Math.round(stormDir)}°<br>
+Speed: ${speed.toFixed(1)} mph<br>
+Arrival: ${eta} min<br><br>
 
 ${a.properties.areaDesc}
 </div>
@@ -187,7 +215,7 @@ ${a.properties.areaDesc}
 storms.innerHTML=html||"No incoming storms nearby"
 }
 
-/* AUTO REFRESH */
+/* REFRESH */
 setInterval(loadStorms,60000)
 
 </script>
