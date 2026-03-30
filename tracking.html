@@ -41,6 +41,17 @@ z-index:9999;
 text-align:left;
 }
 
+.radarBtn{
+position:fixed;
+top:10px;
+right:10px;
+z-index:9999;
+background:#111827;
+padding:10px;
+border-radius:10px;
+cursor:pointer;
+}
+
 a{
 color:white;
 text-decoration:none;
@@ -56,6 +67,7 @@ text-decoration:none;
 
 <div id="map"></div>
 
+<!-- LEGEND -->
 <div class="legend">
 🌪️ Tornado Warning = Red<br>
 🟣 Tornado Watch = Purple<br>
@@ -64,6 +76,9 @@ text-decoration:none;
 🌊 Flood Warning = Cyan<br>
 🚨 Emergency = Magenta
 </div>
+
+<!-- RADAR TOGGLE -->
+<div class="radarBtn" onclick="toggleRadar()">📡 Radar</div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
@@ -112,29 +127,23 @@ maximumAge:0
 
 centerOnUser()
 
-/* 🌧️ LIVE RADAR */
-async function loadRadar(){
-
-let res = await fetch("https://api.rainviewer.com/public/weather-maps.json")
-let data = await res.json()
-
-let frame = data.radar.past[data.radar.past.length - 1]
-
-if(window.radarLayer){
-map.removeLayer(window.radarLayer)
-}
-
-window.radarLayer = L.tileLayer(
-`https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png`,
+/* 🌧️ STABLE RADAR OVERLAY */
+let radarLayer = L.tileLayer(
+"https://tilecache.rainviewer.com/v2/radar/nowcast/256/{z}/{x}/{y}/2/1_1.png",
 {
-opacity:0.6
+opacity:0.7,
+zIndex:5
 }
 ).addTo(map)
 
+/* TOGGLE RADAR */
+function toggleRadar(){
+if(map.hasLayer(radarLayer)){
+map.removeLayer(radarLayer)
+}else{
+map.addLayer(radarLayer)
 }
-
-loadRadar()
-setInterval(loadRadar, 120000)
+}
 
 /* LOAD ALERTS */
 async function loadStorms(){
@@ -162,7 +171,7 @@ else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
 else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
 else if(type.includes("Flash Flood Warning")) color="#00ffcc"
 
-/* DRAW FUNCTION */
+/* DRAW */
 function drawPoly(latlngs){
 
 let poly = L.polygon(latlngs,{
@@ -185,7 +194,7 @@ let latlngs = coords.coordinates[0].map(c=>[c[1],c[0]])
 drawPoly(latlngs)
 }
 
-/* MULTIPOLYGON */
+/* MULTI */
 if(coords.type === "MultiPolygon"){
 coords.coordinates.forEach(polyCoords=>{
 let latlngs = polyCoords[0].map(c=>[c[1],c[0]])
