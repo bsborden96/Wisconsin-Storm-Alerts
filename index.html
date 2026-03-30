@@ -252,6 +252,7 @@ Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br>
 CAPE: <span id="cape">--</span><br>
+<div id="capeTime" class="capeWhy"></div>
 <div id="capeWhy" class="capeWhy"></div><br>
 
 </div>
@@ -407,28 +408,27 @@ sndLift.innerText=t>85?"Strong":"Weak"
 sndWind.innerText=windV>20?"Strong":"Weak"
 
 let capeVal = 0
+let capeIndex = 0
 
-if(d.hourly && d.hourly.cape && d.hourly.time){
-let now = new Date()
-let times = d.hourly.time
+if(d.hourly && d.hourly.cape){
 
-let closestIndex = 0
-let smallestDiff = Infinity
+let next = d.hourly.cape.slice(0,6)
+capeVal = Math.max(...next.map(v=>v || 0))
+capeIndex = d.hourly.cape.indexOf(capeVal)
 
-times.forEach((t,i)=>{
-let diff = Math.abs(new Date(t) - now)
-if(diff < smallestDiff){
-smallestDiff = diff
-closestIndex = i
-}
-})
-
-capeVal = Math.round(d.hourly.cape[closestIndex] || 0)
 }
 
 cape.innerText = capeVal + " J/kg"
 
+/* TIME OF PEAK */
+if(d.hourly && d.hourly.time && capeIndex >= 0){
+let t = new Date(d.hourly.time[capeIndex])
+capeTime.innerText = "Peak around: " + t.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
+}
+
+/* COLOR + RISK */
 cape.className=""
+
 if(capeVal >= 2000){
 cape.classList.add("capeHigh")
 capeWhy.innerText="Extreme instability — explosive storm potential"
@@ -438,6 +438,7 @@ riskLevel.className="riskBox high"
 else if(capeVal >= 1000){
 cape.classList.add("capeMed")
 capeWhy.innerText="Moderate instability — storms possible"
+
 if(riskText.innerText !== "HIGH"){
 riskText.innerText="MODERATE"
 riskLevel.className="riskBox medium"
