@@ -59,16 +59,19 @@ color:white;
 text-decoration:none;
 }
 
-/* SEARCH */
+/* SEARCH (FIXED CENTER) */
 .searchBox{
-margin:10px auto;
-width:90%;
+margin:5px auto 15px auto;
+width:100%;
 max-width:500px;
+display:flex;
+justify-content:center;
 position:relative;
 }
 
 .searchBox input{
 width:100%;
+max-width:500px;
 padding:12px;
 font-size:18px;
 border-radius:8px;
@@ -77,6 +80,7 @@ border:none;
 
 .suggestions{
 position:absolute;
+top:100%;
 background:#1f2937;
 width:100%;
 border-radius:8px;
@@ -189,21 +193,16 @@ suggestions.appendChild(div)
 let stormHistory={}
 const MAX_HISTORY=4
 
-/* DISTANCE IN MILES */
 function distance(lat1, lon1, lat2, lon2){
 let R=3958.8
-
 let dLat=(lat2-lat1)*Math.PI/180
 let dLon=(lon2-lon1)*Math.PI/180
-
 let a=Math.sin(dLat/2)**2+
 Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
 Math.sin(dLon/2)**2
-
 return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))
 }
 
-/* DIRECTION */
 function getDirection(lat1, lon1, lat2, lon2){
 let dLon=(lon2-lon1)*Math.PI/180
 let y=Math.sin(dLon)*Math.cos(lat2*Math.PI/180)
@@ -251,8 +250,6 @@ lat/=pts.length
 lon/=pts.length
 
 let dist=distance(userLat,userLon,lat,lon)
-
-/* 100 mile filter */
 if(dist>100) return
 
 let now=Date.now()
