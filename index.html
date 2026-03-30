@@ -362,7 +362,7 @@ locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, 
 
 async function loadWeather(){
 
-let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&models=gfs&timezone=auto&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
 
 let c=d.current
@@ -411,22 +411,18 @@ let capeVal = 0
 let capeIndex = 0
 
 if(d.hourly && d.hourly.cape){
-
 let next = d.hourly.cape.slice(0,6)
-capeVal = Math.max(...next.map(v=>v || 0))
-capeIndex = d.hourly.cape.indexOf(capeVal)
-
+capeVal = Math.max(...next.map(v=>v ?? 0))
+capeIndex = next.indexOf(capeVal)
 }
 
 cape.innerText = capeVal + " J/kg"
 
-/* TIME OF PEAK */
 if(d.hourly && d.hourly.time && capeIndex >= 0){
 let t = new Date(d.hourly.time[capeIndex])
 capeTime.innerText = "Peak around: " + t.toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})
 }
 
-/* COLOR + RISK */
 cape.className=""
 
 if(capeVal >= 2000){
