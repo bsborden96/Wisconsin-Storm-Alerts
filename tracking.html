@@ -29,6 +29,18 @@ padding:10px 15px;
 border-radius:10px;
 }
 
+.legend{
+position:fixed;
+bottom:10px;
+left:10px;
+background:#111827;
+padding:10px;
+border-radius:10px;
+font-size:14px;
+z-index:9999;
+text-align:left;
+}
+
 a{
 color:white;
 text-decoration:none;
@@ -44,6 +56,16 @@ text-decoration:none;
 
 <div id="map"></div>
 
+<!-- LEGEND -->
+<div class="legend">
+🌪️ Tornado Warning = Red<br>
+🟣 Tornado Watch = Purple<br>
+⛈️ Severe Warning = Orange<br>
+🟡 Severe Watch = Yellow<br>
+🌊 Flood Warning = Cyan<br>
+🚨 Emergency = Magenta
+</div>
+
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
@@ -51,12 +73,24 @@ text-decoration:none;
 /* INIT MAP */
 let map = L.map('map').setView([39,-95], 4)
 
-/* DARK MAP */
+/* DARK BASEMAP */
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 attribution:'© OpenStreetMap'
 }).addTo(map)
 
+/* 🌧️ RADAR OVERLAY (RainViewer) */
+let radar = L.tileLayer(
+"https://tilecache.rainviewer.com/v2/radar/latest/256/{z}/{x}/{y}/2/1_1.png",
+{
+opacity:0.6
+}).addTo(map)
+
 let alertLayer = L.layerGroup().addTo(map)
+
+/* 📍 CENTER ON USER */
+navigator.geolocation.getCurrentPosition(pos=>{
+map.setView([pos.coords.latitude, pos.coords.longitude], 7)
+})
 
 /* LOAD ALERTS */
 async function loadStorms(){
@@ -69,49 +103,49 @@ let data = await res.json()
 data.features.forEach(alert=>{
 
 let coords = alert.geometry
-
 if(!coords) return
 
 let type = alert.properties.event
 let desc = alert.properties.headline || "No details"
 
-/* COLOR BASED ON TYPE */
-let color = "yellow"
+/* 🎯 ADVANCED COLOR CODING */
+let color = "#cccccc"
 
-if(type.includes("Tornado")) color = "red"
-else if(type.includes("Severe")) color = "orange"
+if(type.includes("Tornado Emergency")) color="#ff00ff"
+else if(type.includes("Tornado Warning")) color="#ff0000"
+else if(type.includes("Tornado Watch")) color="#8000ff"
+else if(type.includes("Severe Thunderstorm Warning")) color="#ff8800"
+else if(type.includes("Severe Thunderstorm Watch")) color="#ffd000"
+else if(type.includes("Flash Flood Warning")) color="#00ffcc"
 
 /* DRAW POLYGON */
-if(coords.type === "Polygon"){
-let latlngs = coords.coordinates[0].map(c=>[c[1],c[0]])
+function drawPoly(latlngs){
 
 let poly = L.polygon(latlngs,{
 color:color,
 weight:2,
-fillOpacity:0.2
+fillColor:color,
+fillOpacity:0.25
 }).addTo(alertLayer)
 
 poly.bindPopup(`
 <b>${type}</b><br><br>
-${desc}
+${desc}<br><br>
+<b>Areas:</b> ${alert.properties.areaDesc}
 `)
 }
 
-/* MULTIPOLYGON */
+/* POLYGON */
+if(coords.type === "Polygon"){
+let latlngs = coords.coordinates[0].map(c=>[c[1],c[0]])
+drawPoly(latlngs)
+}
+
+/* MULTI */
 if(coords.type === "MultiPolygon"){
 coords.coordinates.forEach(polyCoords=>{
 let latlngs = polyCoords[0].map(c=>[c[1],c[0]])
-
-let poly = L.polygon(latlngs,{
-color:color,
-weight:2,
-fillOpacity:0.2
-}).addTo(alertLayer)
-
-poly.bindPopup(`
-<b>${type}</b><br><br>
-${desc}
-`)
+drawPoly(latlngs)
 })
 }
 
@@ -119,9 +153,9 @@ ${desc}
 
 }
 
-/* AUTO REFRESH */
+/* ⚡ FAST REFRESH */
 loadStorms()
-setInterval(loadStorms, 60000)
+setInterval(loadStorms, 30000)
 
 </script>
 
