@@ -194,6 +194,16 @@ cursor:pointer;
 .alertSevere{background:#8a4b00;}
 .alertOther{background:#1f2937;}
 
+.capeLow{color:#00ff99;}
+.capeMed{color:#ffcc00;}
+.capeHigh{color:#ff3300;}
+
+.capeWhy{
+font-size:13px;
+opacity:0.7;
+margin-top:4px;
+}
+
 </style>
 </head>
 
@@ -241,7 +251,8 @@ Instability: <span id="instability">--</span><br><br>
 Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br>
-CAPE: <span id="cape">--</span><br><br>
+CAPE: <span id="cape">--</span><br>
+<div id="capeWhy" class="capeWhy"></div><br>
 
 </div>
 </div>
@@ -395,8 +406,47 @@ sndMoisture.innerText=dewV>70?"Very High":"Moderate"
 sndLift.innerText=t>85?"Strong":"Weak"
 sndWind.innerText=windV>20?"Strong":"Weak"
 
-let capeVal = Math.round(d.hourly.cape[0] || 0)
+let capeVal = 0
+
+if(d.hourly && d.hourly.cape && d.hourly.time){
+let now = new Date()
+let times = d.hourly.time
+
+let closestIndex = 0
+let smallestDiff = Infinity
+
+times.forEach((t,i)=>{
+let diff = Math.abs(new Date(t) - now)
+if(diff < smallestDiff){
+smallestDiff = diff
+closestIndex = i
+}
+})
+
+capeVal = Math.round(d.hourly.cape[closestIndex] || 0)
+}
+
 cape.innerText = capeVal + " J/kg"
+
+cape.className=""
+if(capeVal >= 2000){
+cape.classList.add("capeHigh")
+capeWhy.innerText="Extreme instability — explosive storm potential"
+riskText.innerText="HIGH"
+riskLevel.className="riskBox high"
+}
+else if(capeVal >= 1000){
+cape.classList.add("capeMed")
+capeWhy.innerText="Moderate instability — storms possible"
+if(riskText.innerText !== "HIGH"){
+riskText.innerText="MODERATE"
+riskLevel.className="riskBox medium"
+}
+}
+else{
+cape.classList.add("capeLow")
+capeWhy.innerText="Low instability — weak storm potential"
+}
 
 }
 
@@ -437,9 +487,14 @@ html+=`
 
 alerts.innerHTML=html||"No alerts"
 
-riskLevel.className="riskBox "+(risk==="high"?"high":risk==="medium"?"medium":"low")
-riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
-
+if(risk==="high"){
+riskLevel.className="riskBox high"
+riskText.innerText="HIGH"
+}
+else if(risk==="medium" && riskText.innerText!=="HIGH"){
+riskLevel.className="riskBox medium"
+riskText.innerText="MODERATE"
+}
 }
 
 async function loadTicker(){
