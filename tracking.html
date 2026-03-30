@@ -17,6 +17,7 @@ text-align:center;
 width:260px;
 margin:15px auto;
 display:block;
+transition:0.4s;
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
@@ -58,6 +59,11 @@ text-align:left;
 .tornado{background:#7a0000;}
 .severe{background:#8a4b00;}
 .emergency{background:#ff00ff;color:black;}
+
+.location{
+margin-top:10px;
+font-size:18px;
+}
 </style>
 </head>
 
@@ -71,7 +77,9 @@ text-align:left;
 <a href="winter.html">Winter Center</a>
 </div>
 
-<img src="logo.PNG" class="logo">
+<img src="logo.PNG" class="logo" id="logo">
+
+<div id="locationText" class="location">Locating...</div>
 
 <h2>Incoming Storm Threats</h2>
 <div id="storms">Scanning...</div>
@@ -87,15 +95,26 @@ m.style.display = m.style.display==="block"?"none":"block"
 /* USER LOCATION */
 let userLat=43, userLon=-88
 
-navigator.geolocation.getCurrentPosition(p=>{
+navigator.geolocation.getCurrentPosition(async p=>{
 userLat=p.coords.latitude
 userLon=p.coords.longitude
+
+/* GET CITY */
+let res = await fetch(`https://api.weather.gov/points/${userLat},${userLon}`)
+let d = await res.json()
+
+let city = d.properties.relativeLocation.properties.city
+let state = d.properties.relativeLocation.properties.state
+
+locationText.innerText = `${city}, ${state}`
+
 loadStorms()
+
 },()=>loadStorms())
 
-/* TRACKING STORAGE */
-let stormHistory = {}
-const MAX_HISTORY = 4
+/* TRACKING */
+let stormHistory={}
+const MAX_HISTORY=4
 
 /* DISTANCE */
 function distance(lat1, lon1, lat2, lon2){
@@ -118,6 +137,24 @@ let brng=Math.atan2(y,x)
 return ((brng*180/Math.PI)+360)%360
 }
 
+/* LOGO GLOW */
+function updateLogo(level){
+let logo=document.getElementById("logo")
+
+if(level==="emergency"){
+logo.style.filter="drop-shadow(0 0 25px magenta)"
+}
+else if(level==="tornado"){
+logo.style.filter="drop-shadow(0 0 25px red)"
+}
+else if(level==="severe"){
+logo.style.filter="drop-shadow(0 0 20px orange)"
+}
+else{
+logo.style.filter="drop-shadow(0 0 15px rgba(0,255,150,0.6))"
+}
+}
+
 /* LOAD STORMS */
 async function loadStorms(){
 
@@ -125,13 +162,13 @@ let r=await fetch("https://api.weather.gov/alerts/active")
 let d=await r.json()
 
 let html=""
+let highest="none"
 
 d.features.forEach(a=>{
 
 let id=a.id
 let type=a.properties.event
 
-/* FILTER */
 if(
 !type.includes("Tornado Warning") &&
 !type.includes("Severe Thunderstorm Warning") &&
@@ -155,11 +192,9 @@ lon+=p[0]
 lat/=pts.length
 lon/=pts.length
 
-/* DISTANCE */
 let dist=distance(userLat,userLon,lat,lon)
 if(dist>160) return
 
-/* TRACK HISTORY */
 let now=Date.now()
 
 if(!stormHistory[id]){
@@ -168,60 +203,62 @@ stormHistory[id]=[]
 
 stormHistory[id].push({lat,lon,time:now})
 
-if(stormHistory[id].length > MAX_HISTORY){
+if(stormHistory[id].length>MAX_HISTORY){
 stormHistory[id].shift()
 }
 
-if(stormHistory[id].length < 2) return
+if(stormHistory[id].length<2) return
 
-let totalSpeed = 0
-let totalDirX = 0
-let totalDirY = 0
-let count = 0
+let totalSpeed=0, totalDirX=0, totalDirY=0, count=0
 
 for(let i=1;i<stormHistory[id].length;i++){
 
-let p1 = stormHistory[id][i-1]
-let p2 = stormHistory[id][i]
+let p1=stormHistory[id][i-1]
+let p2=stormHistory[id][i]
 
-let timeDiff = (p2.time - p1.time)/3600000
-if(timeDiff <= 0) continue
+let t=(p2.time-p1.time)/3600000
+if(t<=0) continue
 
-let distMoved = distance(p1.lat,p1.lon,p2.lat,p2.lon)
+let distMoved=distance(p1.lat,p1.lon,p2.lat,p2.lon)
+let sp=distMoved/t
 
-let speedCalc = distMoved / timeDiff
+if(sp<5||sp>120) continue
 
-if(speedCalc < 5 || speedCalc > 120) continue
+let dir=getDirection(p1.lat,p1.lon,p2.lat,p2.lon)
 
-let dir = getDirection(p1.lat,p1.lon,p2.lat,p2.lon)
+let rad=dir*Math.PI/180
+totalDirX+=Math.cos(rad)
+totalDirY+=Math.sin(rad)
 
-let rad = dir * Math.PI/180
-totalDirX += Math.cos(rad)
-totalDirY += Math.sin(rad)
-
-totalSpeed += speedCalc
+totalSpeed+=sp
 count++
 }
 
-if(count === 0) return
+if(count===0) return
 
-let speed = totalSpeed / count
-let stormDir = (Math.atan2(totalDirY, totalDirX)*180/Math.PI+360)%360
+let speed=totalSpeed/count
+let stormDir=(Math.atan2(totalDirY,totalDirX)*180/Math.PI+360)%360
 
-/* DIRECTION TO USER */
 let dirToUser=getDirection(lat,lon,userLat,userLon)
 
-/* ONLY INCOMING */
-let diff=Math.abs(stormDir-dirToUser)
-if(diff>90) return
+if(Math.abs(stormDir-dirToUser)>90) return
 
-/* ETA */
 let eta=Math.round((dist/speed)*60)
 
-/* STYLE */
+/* STYLE + PRIORITY */
 let style="severe"
-if(type.includes("Tornado Warning")) style="tornado"
-if(type.includes("Tornado Emergency")) style="emergency"
+
+if(type.includes("Tornado Emergency")){
+style="emergency"
+highest="emergency"
+}
+else if(type.includes("Tornado Warning")){
+style="tornado"
+if(highest!=="emergency") highest="tornado"
+}
+else{
+if(highest==="none") highest="severe"
+}
 
 /* CARD */
 html+=`
@@ -238,6 +275,8 @@ ${a.properties.areaDesc}
 `
 
 })
+
+updateLogo(highest)
 
 storms.innerHTML=html||"No incoming storms nearby"
 }
