@@ -15,7 +15,6 @@ text-align:center;
 overflow-x:hidden;
 }
 
-/* LOGO */
 .logo{
 width:300px;
 max-width:96vw;
@@ -25,7 +24,6 @@ transition: all 0.4s ease;
 filter: drop-shadow(0 0 15px rgba(0,255,150,0.6));
 }
 
-/* MENU */
 .menuIcon{
 position:fixed;
 top:15px;
@@ -53,7 +51,6 @@ color:white;
 text-decoration:none;
 }
 
-/* POPUP */
 .popup{
 position:fixed;
 top:50%;
@@ -79,7 +76,6 @@ font-size:20px;
 cursor:pointer;
 }
 
-/* TICKER */
 .tickerWrap{
 background:#7a0000;
 overflow:hidden;
@@ -98,25 +94,27 @@ min-width:100%;
 100%{transform:translateX(-100%)}
 }
 
-/* SEARCH */
 .searchBox{
-margin:10px auto;
-width:92%;
+margin:5px auto 15px auto;
+width:100%;
 max-width:500px;
+display:flex;
+justify-content:center;
 position:relative;
 }
 
 .searchBox input{
 width:100%;
+max-width:500px;
 padding:12px;
 font-size:18px;
 border-radius:8px;
 border:none;
-box-sizing:border-box;
 }
 
 .suggestions{
 position:absolute;
+top:100%;
 background:#1f2937;
 width:100%;
 border-radius:8px;
@@ -126,7 +124,6 @@ z-index:9999;
 text-align:left;
 }
 
-/* SECTIONS */
 .section{
 padding:20px;
 max-width:1000px;
@@ -139,7 +136,6 @@ padding:20px;
 border-radius:10px;
 }
 
-/* RISK BOX */
 .riskBox{
 margin-top:10px;
 padding:15px;
@@ -153,7 +149,6 @@ cursor:pointer;
 .medium{background:#8a4b00}
 .high{background:#7a0000}
 
-/* EXPAND */
 .weatherDetails{
 opacity:0;
 max-height:0;
@@ -168,7 +163,6 @@ max-height:900px;
 margin-top:10px;
 }
 
-/* WEATHER */
 .weatherGrid{
 display:grid;
 grid-template-columns:1fr 1fr;
@@ -182,14 +176,12 @@ border-radius:10px;
 cursor:pointer;
 }
 
-/* TEMP COLORS */
 .tempCold{color:#4da6ff;}
 .tempCool{color:#00ccff;}
 .tempMild{color:#00ff99;}
 .tempWarm{color:#ffcc00;}
 .tempHot{color:#ff3300;}
 
-/* ALERTS */
 .alertCard{
 margin-top:10px;
 padding:15px;
@@ -248,11 +240,8 @@ Instability: <span id="instability">--</span><br><br>
 <b>Sounding Breakdown</b><br>
 Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
-Wind Energy: <span id="sndWind">--</span><br><br>
-
-<b>Live Sounding</b><br>
-<iframe id="soundingFrame"
-style="width:100%;height:500px;border:none;border-radius:10px;"></iframe>
+Wind Energy: <span id="sndWind">--</span><br>
+CAPE: <span id="cape">--</span><br><br>
 
 </div>
 </div>
@@ -304,7 +293,6 @@ Gusts: <span id="gusts">--</span>
 
 <script>
 
-/* TOGGLE */
 function toggleCard(card){
 document.querySelectorAll(".weatherCard, .riskBox, .alertCard").forEach(c=>{
 if(c!==card) c.classList.remove("active")
@@ -312,13 +300,11 @@ if(c!==card) c.classList.remove("active")
 card.classList.toggle("active")
 }
 
-/* MENU */
 function toggleMenu(){
 let m=document.getElementById("menuPanel")
 m.style.display = m.style.display==="block"?"none":"block"
 }
 
-/* POPUP */
 function showPopup(type){
 let p=document.getElementById("popup")
 let text=document.getElementById("popupText")
@@ -334,7 +320,6 @@ p.style.display="block"
 
 popupClose.onclick=()=>popup.style.display="none"
 
-/* GEO */
 let lat=43, lon=-88
 
 navigator.geolocation.getCurrentPosition(p=>{
@@ -348,10 +333,8 @@ loadLocation()
 loadWeather()
 loadAlerts()
 loadTicker()
-loadSounding()
 }
 
-/* LOCATION */
 async function loadLocation(){
 let p=await fetch(`https://api.weather.gov/points/${lat},${lon}`)
 let d=await p.json()
@@ -365,11 +348,11 @@ let countyData=await countyRes.json()
 locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, ${state}`
 }
 
-/* WEATHER */
 async function loadWeather(){
 
-let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
+let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=cape&current=temperature_2m,dewpoint_2m,relative_humidity_2m,wind_speed_10m,surface_pressure,wind_direction_10m&temperature_unit=fahrenheit&wind_speed_unit=mph`)
 let d=await r.json()
+
 let c=d.current
 
 let t=Math.round(c.temperature_2m)
@@ -385,7 +368,6 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-/* COLORS */
 temp.className=""
 if(t<32) temp.classList.add("tempCold")
 else if(t<50) temp.classList.add("tempCool")
@@ -399,14 +381,12 @@ humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comforta
 stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
 gusts.innerText=(windV+5)+" mph"
 
-/* WIND DIR */
 let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
 else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
 windDir.innerText=dir
 
-/* STORM */
 torRisk.innerText=dewV>70 && windV>20?"High":"Low"
 sevRisk.innerText=dewV>60?"Moderate":"Low"
 instability.innerText=dewV>65?"High":"Low"
@@ -415,9 +395,11 @@ sndMoisture.innerText=dewV>70?"Very High":"Moderate"
 sndLift.innerText=t>85?"Strong":"Weak"
 sndWind.innerText=windV>20?"Strong":"Weak"
 
+let capeVal = Math.round(d.hourly.cape[0] || 0)
+cape.innerText = capeVal + " J/kg"
+
 }
 
-/* ALERTS */
 async function loadAlerts(){
 
 let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
@@ -460,7 +442,6 @@ riskText.innerText=(risk==="high"?"HIGH":risk==="medium"?"MODERATE":"LOW")
 
 }
 
-/* TICKER */
 async function loadTicker(){
 
 let t=document.getElementById("tickerContent")
@@ -468,76 +449,44 @@ let t=document.getElementById("tickerContent")
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
-let buckets={
-emergency:[],
-pds:[],
-tornado:[],
-watch:[],
-severe:[]
-}
+let buckets={emergency:[],pds:[],tornado:[],watch:[],severe:[]}
 
 d.features.forEach(a=>{
 let e=a.properties.event || ""
 let area=a.properties.areaDesc || ""
-
-/* split ALL counties properly */
 let counties = area.split(";").map(c=>c.trim())
 
-if(e.includes("Tornado Emergency")){
-buckets.emergency.push(...counties)
-}
-else if(e.includes("Particularly Dangerous Situation")){
-buckets.pds.push(...counties)
-}
-else if(e.includes("Tornado Warning")){
-buckets.tornado.push(...counties)
-}
-else if(e.includes("Tornado Watch")){
-buckets.watch.push(...counties)
-}
-else if(e.includes("Severe Thunderstorm Warning")){
-buckets.severe.push(...counties)
-}
-
+if(e.includes("Tornado Emergency")) buckets.emergency.push(...counties)
+else if(e.includes("Particularly Dangerous Situation")) buckets.pds.push(...counties)
+else if(e.includes("Tornado Warning")) buckets.tornado.push(...counties)
+else if(e.includes("Tornado Watch")) buckets.watch.push(...counties)
+else if(e.includes("Severe Thunderstorm Warning")) buckets.severe.push(...counties)
 })
 
-/* remove duplicates */
 for(let key in buckets){
 buckets[key]=[...new Set(buckets[key])]
 }
 
 let parts=[]
 
-if(buckets.emergency.length){
-parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
+if(buckets.emergency.length) parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
+if(buckets.pds.length) parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
+if(buckets.tornado.length) parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
+if(buckets.watch.length) parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
+if(buckets.severe.length) parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
+
+t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
 }
 
-if(buckets.pds.length){
-parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
-}
+let debounce
 
-if(buckets.tornado.length){
-parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
-}
+searchInput.addEventListener("input",()=>{
+clearTimeout(debounce)
 
-if(buckets.watch.length){
-parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
-}
-
-if(buckets.severe.length){
-parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
-}
-
-t.innerText = parts.length 
-? parts.join("   •   ") 
-: "No major severe weather alerts"
-
-}
-/* SEARCH */
-searchInput.addEventListener("input",async()=>{
 let q=searchInput.value.trim()
 if(q.length<2){suggestions.innerHTML="";return}
 
+debounce=setTimeout(async()=>{
 let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
 let data=await res.json()
 
@@ -555,9 +504,10 @@ loadAll()
 }
 suggestions.appendChild(div)
 })
+
+},300)
 })
 
-/* AUTO REFRESH EVERY 60 SECONDS */
 setInterval(loadAll, 60000)
 
 </script>
