@@ -454,25 +454,27 @@ capeWhy.innerText="Stable air — low storm potential"
 
 async function loadAlerts(){
 
-let r=await fetch(`https://api.weather.gov/alerts/active?status=actual&message_type=alert`)
+let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
 let html=""
+let risk="low"
 let triggered=false
-
-let countyText = locationCard.innerText.toLowerCase().split(" ")[0]
 
 d.features.forEach(a=>{
 
-let area=(a.properties.areaDesc||"").toLowerCase()
-if(!area.includes(countyText)) return
-
-let e=a.properties.event
+let e=a.properties.event || ""
 let desc=a.properties.description || ""
 
 let style="alertOther"
-if(e.includes("Tornado")) style="alertTornado"
-else if(e.includes("Severe")) style="alertSevere"
+
+if(e.includes("Tornado Emergency")) style="alertTornado"
+else if(e.includes("Tornado Warning")) style="alertTornado"
+else if(e.includes("Severe Thunderstorm Warning")) style="alertSevere"
+else if(e.includes("Flash Flood Warning")) style="alertSevere"
+
+if(e.includes("Tornado")) risk="high"
+else if(e.includes("Severe") && risk!=="high") risk="medium"
 
 if(!triggered && (e.includes("Tornado")||e.includes("Severe"))){
 showPopup(e)
@@ -481,15 +483,27 @@ triggered=true
 
 html+=`
 <div class="alertCard ${style}" onclick="toggleCard(this)">
-<b>${e}</b>
+<b>${e}</b><br><br>
 <div class="weatherDetails">${desc.replace(/\n/g,"<br>")}</div>
 </div>
 `
 
 })
 
-alerts.innerHTML=html||"No alerts"
+alerts.innerHTML = html || "No alerts for this location"
 
+if(risk==="high"){
+riskLevel.className="riskBox high"
+riskText.innerText="HIGH"
+}
+else if(risk==="medium"){
+riskLevel.className="riskBox medium"
+riskText.innerText="MODERATE"
+}
+else{
+riskLevel.className="riskBox low"
+riskText.innerText="LOW"
+}
 }
 
 async function loadTicker(){
@@ -499,18 +513,44 @@ let t=document.getElementById("tickerContent")
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
-let buckets={emergency:[],pds:[],tornado:[],watch:[],severe:[]}
+let buckets={
+emergency:[],
+pds:[],
+tornado:[],
+watch:[],
+severe:[],
+sevWatch:[],
+flood:[]
+}
 
 d.features.forEach(a=>{
+
 let e=a.properties.event || ""
 let area=a.properties.areaDesc || ""
 let counties = area.split(";").map(c=>c.trim())
 
-if(e.includes("Tornado Emergency")) buckets.emergency.push(...counties)
-else if(e.includes("Particularly Dangerous Situation")) buckets.pds.push(...counties)
-else if(e.includes("Tornado Warning")) buckets.tornado.push(...counties)
-else if(e.includes("Tornado Watch")) buckets.watch.push(...counties)
-else if(e.includes("Severe Thunderstorm Warning")) buckets.severe.push(...counties)
+if(e.includes("Tornado Emergency")){
+buckets.emergency.push(...counties)
+}
+else if(e.includes("Particularly Dangerous Situation")){
+buckets.pds.push(...counties)
+}
+else if(e.includes("Tornado Warning")){
+buckets.tornado.push(...counties)
+}
+else if(e.includes("Tornado Watch")){
+buckets.watch.push(...counties)
+}
+else if(e.includes("Severe Thunderstorm Warning")){
+buckets.severe.push(...counties)
+}
+else if(e.includes("Severe Thunderstorm Watch")){
+buckets.sevWatch.push(...counties)
+}
+else if(e.includes("Flash Flood Warning")){
+buckets.flood.push(...counties)
+}
+
 })
 
 for(let key in buckets){
@@ -519,48 +559,29 @@ buckets[key]=[...new Set(buckets[key])]
 
 let parts=[]
 
-if(buckets.emergency.length) parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
-if(buckets.pds.length) parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
-if(buckets.tornado.length) parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
-if(buckets.watch.length) parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
-if(buckets.severe.length) parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
-
-t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
+if(buckets.emergency.length){
+parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
 }
 
-let debounce
-
-searchInput.addEventListener("input",()=>{
-clearTimeout(debounce)
-
-let q=searchInput.value.trim()
-if(q.length<2){suggestions.innerHTML="";return}
-
-debounce=setTimeout(async()=>{
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(p=>{
-let div=document.createElement("div")
-div.innerText=p.display_name
-div.onclick=()=>{
-lat=parseFloat(p.lat)
-lon=parseFloat(p.lon)
-searchInput.value=p.display_name
-suggestions.innerHTML=""
-loadAll()
+if(buckets.pds.length){
+parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
 }
-suggestions.appendChild(div)
-})
 
-},300)
-})
+if(buckets.tornado.length){
+parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
+}
 
-setInterval(loadAll, 60000)
+if(buckets.watch.length){
+parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
+}
 
-</script>
+if(buckets.severe.length){
+parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
+}
 
-</body>
-</html>
+if(buckets.sevWatch.length){
+parts.push(`⚡ SEVERE THUNDERSTORM WATCH: ${buckets.sevWatch.join(", ")}`)
+}
+
+if(buckets.flood.length){
+parts.push(`🌊 FLASH FLOOD WARNING
