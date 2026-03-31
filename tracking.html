@@ -20,7 +20,6 @@ display:block;
 transition:0.3s;
 }
 
-/* FLASH */
 .flash{
 animation:flash 1s infinite;
 }
@@ -31,7 +30,6 @@ animation:flash 1s infinite;
 100%{filter:drop-shadow(0 0 5px red);}
 }
 
-/* MENU */
 .menuIcon{
 position:fixed;
 top:15px;
@@ -59,7 +57,6 @@ color:white;
 text-decoration:none;
 }
 
-/* SEARCH (FIXED CENTER) */
 .searchBox{
 margin:5px auto 15px auto;
 width:100%;
@@ -90,7 +87,6 @@ text-align:left;
 z-index:9999;
 }
 
-/* CARDS */
 .card{
 background:#111827;
 margin:15px;
@@ -138,12 +134,10 @@ font-size:18px;
 
 <script>
 
-/* MENU */
 function toggleMenu(){
 menuPanel.style.display = menuPanel.style.display==="block"?"none":"block"
 }
 
-/* LOCATION */
 let userLat=43, userLon=-88
 
 async function setLocation(lat,lon){
@@ -165,7 +159,6 @@ navigator.geolocation.getCurrentPosition(p=>{
 setLocation(p.coords.latitude,p.coords.longitude)
 },()=>loadStorms())
 
-/* SEARCH */
 searchInput.addEventListener("input",async()=>{
 let q=searchInput.value.trim()
 if(q.length<2){suggestions.innerHTML="";return}
@@ -189,7 +182,6 @@ suggestions.appendChild(div)
 })
 })
 
-/* TRACKING */
 let stormHistory={}
 const MAX_HISTORY=4
 
@@ -212,7 +204,11 @@ let brng=Math.atan2(y,x)
 return ((brng*180/Math.PI)+360)%360
 }
 
-/* LOAD */
+function angleDiff(a,b){
+let diff=Math.abs(a-b)%360
+return diff>180?360-diff:diff
+}
+
 async function loadStorms(){
 
 let r=await fetch("https://api.weather.gov/alerts/active")
@@ -250,7 +246,7 @@ lat/=pts.length
 lon/=pts.length
 
 let dist=distance(userLat,userLon,lat,lon)
-if(dist>100) return
+if(dist>250) return
 
 let now=Date.now()
 
@@ -263,7 +259,10 @@ if(stormHistory[id].length>MAX_HISTORY){
 stormHistory[id].shift()
 }
 
-if(stormHistory[id].length<2) return
+let speed=30
+let stormDir=0
+
+if(stormHistory[id].length>=2){
 
 let totalSpeed=0, totalDirX=0, totalDirY=0, count=0
 
@@ -290,35 +289,36 @@ totalSpeed+=sp
 count++
 }
 
-if(count===0) return
+if(count>0){
+speed=totalSpeed/count
+stormDir=(Math.atan2(totalDirY,totalDirX)*180/Math.PI+360)%360
+}
 
-let speed=totalSpeed/count
-let stormDir=(Math.atan2(totalDirY,totalDirX)*180/Math.PI+360)%360
+}
 
 let dirToUser=getDirection(lat,lon,userLat,userLon)
 
-if(Math.abs(stormDir-dirToUser)>90) return
+let movingToward = angleDiff(stormDir,dirToUser) < 70
+let overUser = dist < 15
 
-let eta=Math.round((dist/speed)*60)
+if(!movingToward && !overUser) return
 
-/* STYLE */
+let eta = speed>0 ? Math.round((dist/speed)*60) : "--"
+
 let style="severe"
 if(type.includes("Tornado Warning")) style="tornado"
 if(type.includes("Tornado Emergency")) style="emergency"
 
-/* CLOSEST */
 let isClosest=false
 if(dist<closestDist){
 closestDist=dist
 isClosest=true
 }
 
-/* HIGHEST */
 if(type.includes("Tornado Emergency")) highest="emergency"
 else if(type.includes("Tornado Warning") && highest!=="emergency") highest="tornado"
 else if(highest==="none") highest="severe"
 
-/* CARD */
 html+=`
 <div class="card ${style} ${isClosest?"closest":""}">
 ${isClosest?"🚨 CLOSEST STORM<br><br>":""}
@@ -327,7 +327,7 @@ ${isClosest?"🚨 CLOSEST STORM<br><br>":""}
 Distance: ${Math.round(dist)} miles<br>
 Direction: ${Math.round(stormDir)}°<br>
 Speed: ${speed.toFixed(1)} mph<br>
-Arrival: ${eta} min<br><br>
+Arrival: ${overUser?"NOW":eta+" min"}<br><br>
 
 ${a.properties.areaDesc}
 </div>
@@ -335,7 +335,6 @@ ${a.properties.areaDesc}
 
 })
 
-/* LOGO FLASH */
 logo.classList.remove("flash")
 if(highest==="tornado" || highest==="emergency"){
 logo.classList.add("flash")
@@ -344,7 +343,6 @@ logo.classList.add("flash")
 storms.innerHTML=html||"No incoming storms nearby"
 }
 
-/* REFRESH */
 setInterval(loadStorms,60000)
 
 </script>
