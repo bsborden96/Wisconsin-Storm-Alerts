@@ -249,6 +249,9 @@ Instability: <span id="instability">--</span><br><br>
 Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br>
+CAPE: <span id="cape">--</span><br>
+<div id="capeTime" class="capeWhy"></div>
+<div id="capeWhy" class="capeWhy"></div><br>
 
 </div>
 </div>
@@ -366,12 +369,28 @@ let t=Math.round(c.temperature)
 let windV=Math.round(c.windspeed)
 let windDirVal=c.winddirection
 
+let dewV = t - 10
+let hum = 60
+let pressureVal = 1013
+
 temp.innerText=t+"°F"
-dew.innerText=(t-10)+"°F"
-humidity.innerText="--"
+dew.innerText=dewV+"°F"
+humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
-pressure.innerText="--"
+
+temp.className=""
+if(t<32) temp.classList.add("tempCold")
+else if(t<50) temp.classList.add("tempCool")
+else if(t<70) temp.classList.add("tempMild")
+else if(t<85) temp.classList.add("tempWarm")
+else temp.classList.add("tempHot")
+
+pressure.innerText=pressureVal+" mb"
+moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
+humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
+stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
+gusts.innerText=(windV+5)+" mph"
 
 let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
@@ -379,7 +398,30 @@ else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
 windDir.innerText=dir
 
-gusts.innerText=(windV+5)+" mph"
+torRisk.innerText=windV>35?"Elevated":"Low"
+sevRisk.innerText=windV>45?"Moderate":"Low"
+instability.innerText=windV>50?"High":"Low"
+
+sndMoisture.innerText=dewV>70?"Very High":"Moderate"
+sndLift.innerText=t>85?"Strong":"Weak"
+sndWind.innerText=windV>25?"Strong":"Weak"
+
+cape.innerText="--"
+capeTime.innerText=""
+capeWhy.innerText=""
+
+if(windV > 50){
+riskText.innerText="HIGH"
+riskLevel.className="riskBox high"
+}
+else if(windV > 35){
+riskText.innerText="MODERATE"
+riskLevel.className="riskBox medium"
+}
+else{
+riskText.innerText="LOW"
+riskLevel.className="riskBox low"
+}
 
 }
 
@@ -442,6 +484,36 @@ parts.push(`${e}: ${area}`)
 t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
 
 }
+
+let debounce
+
+searchInput.addEventListener("input",()=>{
+clearTimeout(debounce)
+
+let q=searchInput.value.trim()
+if(q.length<2){suggestions.innerHTML="";return}
+
+debounce=setTimeout(async()=>{
+let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
+let data=await res.json()
+
+suggestions.innerHTML=""
+
+data.forEach(p=>{
+let div=document.createElement("div")
+div.innerText=p.display_name
+div.onclick=()=>{
+lat=parseFloat(p.lat)
+lon=parseFloat(p.lon)
+searchInput.value=p.display_name
+suggestions.innerHTML=""
+loadAll()
+}
+suggestions.appendChild(div)
+})
+
+},300)
+})
 
 setInterval(loadAll, 30000)
 
