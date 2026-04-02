@@ -85,7 +85,7 @@ width:100%;
 .tickerTrack{
 display:inline-block;
 white-space:nowrap;
-animation:scroll 90s linear infinite;
+animation:scroll 60s linear infinite;
 min-width:100%;
 }
 
@@ -194,16 +194,6 @@ cursor:pointer;
 .alertSevere{background:#8a4b00;}
 .alertOther{background:#1f2937;}
 
-.capeLow{color:#00ff99;}
-.capeMed{color:#ffcc00;}
-.capeHigh{color:#ff3300;}
-
-.capeWhy{
-font-size:13px;
-opacity:0.7;
-margin-top:4px;
-}
-
 .soundingTitle{
 border-bottom:2px solid rgba(255,255,255,0.2);
 padding-bottom:6px;
@@ -259,9 +249,6 @@ Instability: <span id="instability">--</span><br><br>
 Surface Moisture: <span id="sndMoisture">--</span><br>
 Lift Potential: <span id="sndLift">--</span><br>
 Wind Energy: <span id="sndWind">--</span><br>
-CAPE: <span id="cape">--</span><br>
-<div id="capeTime" class="capeWhy"></div>
-<div id="capeWhy" class="capeWhy"></div><br>
 
 </div>
 </div>
@@ -370,37 +357,21 @@ locationCard.innerHTML=`<b>${countyData.properties.name} County</b><br>${city}, 
 
 async function loadWeather(){
 
-let obs = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph`)
-let obsData = await obs.json()
+let r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&temperature_unit=fahrenheit&windspeed_unit=mph`)
+let d=await r.json()
 
-let c=obsData.current_weather
+let c=d.current_weather
 
 let t=Math.round(c.temperature)
 let windV=Math.round(c.windspeed)
 let windDirVal=c.winddirection
 
-let dewV = t - 10
-let hum = 60
-let pressureVal = 1013
-
 temp.innerText=t+"°F"
-dew.innerText=dewV+"°F"
-humidity.innerText=hum+"%"
+dew.innerText=(t-10)+"°F"
+humidity.innerText="--"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
-
-temp.className=""
-if(t<32) temp.classList.add("tempCold")
-else if(t<50) temp.classList.add("tempCool")
-else if(t<70) temp.classList.add("tempMild")
-else if(t<85) temp.classList.add("tempWarm")
-else temp.classList.add("tempHot")
-
-pressure.innerText=pressureVal+" mb"
-moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
-humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
-stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
-gusts.innerText=(windV+5)+" mph"
+pressure.innerText="--"
 
 let dir="N"
 if(windDirVal>45 && windDirVal<=135) dir="E"
@@ -408,66 +379,21 @@ else if(windDirVal>135 && windDirVal<=225) dir="S"
 else if(windDirVal>225 && windDirVal<=315) dir="W"
 windDir.innerText=dir
 
-torRisk.innerText=dewV>70 && windV>20?"High":"Low"
-sevRisk.innerText=dewV>60?"Moderate":"Low"
-instability.innerText=dewV>65?"High":"Low"
-
-sndMoisture.innerText=dewV>70?"Very High":"Moderate"
-sndLift.innerText=t>85?"Strong":"Weak"
-sndWind.innerText=windV>20?"Strong":"Weak"
-
-let capeVal = 0
-
-let spread = t - dewV
-
-if(dewV >= 75 && spread <= 15) capeVal = 3000
-else if(dewV >= 70 && spread <= 20) capeVal = 2000
-else if(dewV >= 65 && spread <= 25) capeVal = 1200
-else if(dewV >= 60) capeVal = 600
-else capeVal = 100
-
-cape.innerText = capeVal + " J/kg"
-capeTime.innerText = "Based on current environment"
-
-cape.className=""
-
-if(capeVal >= 2000){
-cape.classList.add("capeHigh")
-capeWhy.innerText="Very unstable air — strong storm potential"
-riskText.innerText="HIGH"
-riskLevel.className="riskBox high"
-}
-else if(capeVal >= 1000){
-cape.classList.add("capeMed")
-capeWhy.innerText="Unstable — storms likely"
-if(riskText.innerText !== "HIGH"){
-riskText.innerText="MODERATE"
-riskLevel.className="riskBox medium"
-}
-}
-else{
-cape.classList.add("capeLow")
-capeWhy.innerText="Stable air — low storm potential"
-}
+gusts.innerText=(windV+5)+" mph"
 
 }
 
 async function loadAlerts(){
 
-let r=await fetch(`https://api.weather.gov/alerts/active?status=actual&message_type=alert`)
+let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
 let d=await r.json()
 
 let html=""
 let triggered=false
 
-let countyText = locationCard.innerText.toLowerCase().split(" ")[0]
-
 d.features.forEach(a=>{
 
-let area=(a.properties.areaDesc||"").toLowerCase()
-if(!area.includes(countyText)) return
-
-let e=a.properties.event
+let e=a.properties.event || ""
 let desc=a.properties.description || ""
 
 let style="alertOther"
@@ -499,66 +425,25 @@ let t=document.getElementById("tickerContent")
 let res=await fetch("https://api.weather.gov/alerts/active")
 let d=await res.json()
 
-let buckets={emergency:[],pds:[],tornado:[],watch:[],severe:[]}
+let parts=[]
 
 d.features.forEach(a=>{
 let e=a.properties.event || ""
 let area=a.properties.areaDesc || ""
-let counties = area.split(";").map(c=>c.trim())
 
-if(e.includes("Tornado Emergency")) buckets.emergency.push(...counties)
-else if(e.includes("Particularly Dangerous Situation")) buckets.pds.push(...counties)
-else if(e.includes("Tornado Warning")) buckets.tornado.push(...counties)
-else if(e.includes("Tornado Watch")) buckets.watch.push(...counties)
-else if(e.includes("Severe Thunderstorm Warning")) buckets.severe.push(...counties)
-})
-
-for(let key in buckets){
-buckets[key]=[...new Set(buckets[key])]
+if(
+e.includes("Tornado") ||
+e.includes("Severe Thunderstorm Warning")
+){
+parts.push(`${e}: ${area}`)
 }
-
-let parts=[]
-
-if(buckets.emergency.length) parts.push(`🚨 TORNADO EMERGENCY: ${buckets.emergency.join(", ")}`)
-if(buckets.pds.length) parts.push(`⚠️ PDS TORNADO WARNING: ${buckets.pds.join(", ")}`)
-if(buckets.tornado.length) parts.push(`🌪️ TORNADO WARNING: ${buckets.tornado.join(", ")}`)
-if(buckets.watch.length) parts.push(`👀 TORNADO WATCH: ${buckets.watch.join(", ")}`)
-if(buckets.severe.length) parts.push(`⛈️ SEVERE THUNDERSTORM WARNING: ${buckets.severe.join(", ")}`)
+})
 
 t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
+
 }
 
-let debounce
-
-searchInput.addEventListener("input",()=>{
-clearTimeout(debounce)
-
-let q=searchInput.value.trim()
-if(q.length<2){suggestions.innerHTML="";return}
-
-debounce=setTimeout(async()=>{
-let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`)
-let data=await res.json()
-
-suggestions.innerHTML=""
-
-data.forEach(p=>{
-let div=document.createElement("div")
-div.innerText=p.display_name
-div.onclick=()=>{
-lat=parseFloat(p.lat)
-lon=parseFloat(p.lon)
-searchInput.value=p.display_name
-suggestions.innerHTML=""
-loadAll()
-}
-suggestions.appendChild(div)
-})
-
-},300)
-})
-
-setInterval(loadAll, 60000)
+setInterval(loadAll, 30000)
 
 </script>
 
