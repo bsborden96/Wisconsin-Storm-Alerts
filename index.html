@@ -339,10 +339,10 @@ loadAll()
 },()=>loadAll())
 
 function loadAll(){
+loadTicker()
 loadLocation()
 loadWeather()
 loadAlerts()
-loadTicker()
 }
 
 async function loadLocation(){
@@ -379,49 +379,25 @@ humidity.innerText=hum+"%"
 wind.innerText=windV+" mph"
 feels.innerText=t+"°F"
 
-temp.className=""
-if(t<32) temp.classList.add("tempCold")
-else if(t<50) temp.classList.add("tempCool")
-else if(t<70) temp.classList.add("tempMild")
-else if(t<85) temp.classList.add("tempWarm")
-else temp.classList.add("tempHot")
-
 pressure.innerText=pressureVal+" mb"
-moistureLevel.innerText=hum>70?"Very Moist":hum>55?"Moist":hum<30?"Dry":"Normal"
-humidityFeel.innerText=hum>75?"Oppressive":hum>60?"Muggy":hum<30?"Dry":"Comfortable"
-stormFuel.innerText=dewV>70?"Extreme":dewV>65?"High":dewV>60?"Moderate":"Low"
+moistureLevel.innerText="Normal"
+humidityFeel.innerText="Comfortable"
+stormFuel.innerText="Low"
 gusts.innerText=(windV+5)+" mph"
 
-let dir="N"
-if(windDirVal>45 && windDirVal<=135) dir="E"
-else if(windDirVal>135 && windDirVal<=225) dir="S"
-else if(windDirVal>225 && windDirVal<=315) dir="W"
-windDir.innerText=dir
+windDir.innerText="N"
 
-torRisk.innerText=windV>35?"Elevated":"Low"
-sevRisk.innerText=windV>45?"Moderate":"Low"
-instability.innerText=windV>50?"High":"Low"
+torRisk.innerText="--"
+sevRisk.innerText="--"
+instability.innerText="--"
 
-sndMoisture.innerText=dewV>70?"Very High":"Moderate"
-sndLift.innerText=t>85?"Strong":"Weak"
-sndWind.innerText=windV>25?"Strong":"Weak"
+sndMoisture.innerText="--"
+sndLift.innerText="--"
+sndWind.innerText="--"
 
 cape.innerText="--"
 capeTime.innerText=""
 capeWhy.innerText=""
-
-if(windV > 50){
-riskText.innerText="HIGH"
-riskLevel.className="riskBox high"
-}
-else if(windV > 35){
-riskText.innerText="MODERATE"
-riskLevel.className="riskBox medium"
-}
-else{
-riskText.innerText="LOW"
-riskLevel.className="riskBox low"
-}
 
 }
 
@@ -432,6 +408,7 @@ let d=await r.json()
 
 let html=""
 let triggered=false
+let alertRisk="low"
 
 d.features.forEach(a=>{
 
@@ -441,6 +418,10 @@ let desc=a.properties.description || ""
 let style="alertOther"
 if(e.includes("Tornado")) style="alertTornado"
 else if(e.includes("Severe")) style="alertSevere"
+
+if(e.includes("Tornado Warning")) alertRisk="high"
+else if(e.includes("Tornado Watch") && alertRisk!=="high") alertRisk="moderate"
+else if(e.includes("Severe Thunderstorm Warning") && alertRisk==="low") alertRisk="slight"
 
 if(!triggered && (e.includes("Tornado")||e.includes("Severe"))){
 showPopup(e)
@@ -458,14 +439,34 @@ html+=`
 
 alerts.innerHTML=html||"No alerts"
 
+if(alertRisk==="high"){
+riskText.innerText="HIGH"
+riskLevel.className="riskBox high"
+}
+else if(alertRisk==="moderate"){
+riskText.innerText="MODERATE"
+riskLevel.className="riskBox medium"
+}
+else if(alertRisk==="slight"){
+riskText.innerText="SLIGHT"
+riskLevel.className="riskBox medium"
+}
+else{
+riskText.innerText="LOW"
+riskLevel.className="riskBox low"
+}
+
 }
 
 async function loadTicker(){
 
 let t=document.getElementById("tickerContent")
 
-let res=await fetch("https://api.weather.gov/alerts/active")
-let d=await res.json()
+t.innerText="Loading alerts..."
+
+fetch("https://api.weather.gov/alerts/active")
+.then(r=>r.json())
+.then(d=>{
 
 let parts=[]
 
@@ -473,15 +474,14 @@ d.features.forEach(a=>{
 let e=a.properties.event || ""
 let area=a.properties.areaDesc || ""
 
-if(
-e.includes("Tornado") ||
-e.includes("Severe Thunderstorm Warning")
-){
+if(e.includes("Tornado") || e.includes("Severe")){
 parts.push(`${e}: ${area}`)
 }
 })
 
 t.innerText = parts.length ? parts.join("   •   ") : "No major severe weather alerts"
+
+})
 
 }
 
