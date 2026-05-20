@@ -1009,45 +1009,74 @@ if(
 /* ── TICKER ── */
 async function loadTicker(){
   try{
-   let r = await fetch(
-  'https://api.weather.gov/alerts/active'
-);
-    let d=await r.json();
-    let parts=[];
-let seen = new Set();
-    d.features.slice(0,40).forEach(a=>{
-      let ev=a.properties.event||'';
-      let area=a.properties.areaDesc||'';
-      if(ev.includes('Tornado')||ev.includes('Severe')){
-        let icon = '⚡';
 
-if(ev.includes('Tornado Warning')){
-  icon = '🌪️';
-}
-else if(ev.includes('Tornado Watch')){
-  icon = '🌀';
-}
-else if(ev.includes('Severe Thunderstorm Warning')){
-  icon = '⛈️';
-}
-else if(ev.includes('Flash Flood')){
-  icon = '🌊';
-}
+    let r = await fetch(
+      'https://api.weather.gov/alerts/active'
+    );
 
-let key = ev + area;
+    let d = await r.json();
 
-if(seen.has(key)) return;
+    let parts = [];
+    let seen = new Set();
 
-seen.add(key);
+    d.features
+      .filter(a => a.properties && a.properties.event)
+      .slice(0,25)
+      .forEach(a=>{
 
-parts.push(`${icon} ${ev} — ${area}`);
-      }
-    });
-    document.getElementById('tickerContent').innerText=
+        let ev = a.properties.event || '';
+        let area = a.properties.areaDesc || '';
+
+        const isMajorAlert =
+          ev.includes('Tornado Warning') ||
+          ev.includes('Tornado Watch') ||
+          ev.includes('Severe Thunderstorm Warning') ||
+          ev.includes('Flash Flood Warning') ||
+          ev.includes('Particularly Dangerous Situation') ||
+          ev.includes('PDS');
+
+        if(isMajorAlert){
+
+          let icon = '⚡';
+
+          if(ev.includes('Tornado Warning')){
+            icon = '🌪️';
+          }
+          else if(ev.includes('Tornado Watch')){
+            icon = '🌀';
+          }
+          else if(
+            ev.includes('Particularly Dangerous Situation') ||
+            ev.includes('PDS')
+          ){
+            icon = '🚨';
+          }
+          else if(ev.includes('Severe Thunderstorm Warning')){
+            icon = '⛈️';
+          }
+          else if(ev.includes('Flash Flood')){
+            icon = '🌊';
+          }
+
+          let key = ev + area;
+
+          if(seen.has(key)) return;
+
+          seen.add(key);
+
+          parts.push(`${icon} ${ev} — ${area}`);
+        }
+
+      });
+
+    document.getElementById('tickerContent').innerText =
       parts.length
-  ? parts.join('      ✦      ')
-  : '✓ No major severe weather alerts nationwide';
-  }catch(e){}
+        ? parts.join('      ✦      ')
+        : '✓ No major severe weather alerts nationwide';
+
+  }catch(e){
+    console.error('Ticker error', e);
+  }
 }
 
 /* ── SEARCH ── */
