@@ -65,7 +65,49 @@ body > *:not(#bgCanvas):not(#popup){
   font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;
 }
 .menuPanel a:hover{color:#00cfff}
+.popup{
+  position:fixed;
 
+  top:50%;
+  left:50%;
+
+  transform:translate(-50%,-50%);
+
+  width:92%;
+  max-width:430px;
+
+  padding:34px 26px 26px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(95,0,0,0.98),
+      rgba(45,0,0,0.98)
+    );
+
+  color:white;
+
+  border-radius:18px;
+
+  z-index:999999999;
+
+  display:none;
+
+  text-align:center;
+
+  border:1px solid rgba(255,80,80,0.45);
+
+  box-shadow:
+    0 0 35px rgba(255,0,0,0.55),
+    0 0 120px rgba(255,0,0,0.18),
+    inset 0 0 20px rgba(255,255,255,0.03);
+
+  backdrop-filter:blur(14px);
+
+  font-family:'Share Tech Mono',monospace;
+
+  animation:popupFade 0.22s ease-out;
+}
 .popupClose{
   position:absolute;
 
