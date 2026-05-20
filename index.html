@@ -748,7 +748,8 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   if(q.length<2){document.getElementById('suggestions').innerHTML='';return;}
   debounce=setTimeout(async()=>{
     let res=await fetch(
-  `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=10&addressdetails=1`
+let res=await fetch(
+  `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=25&addressdetails=1&featuretype=city`
 );
     let data=await res.json();
     let sug=document.getElementById('suggestions');
@@ -756,24 +757,15 @@ document.getElementById('searchInput').addEventListener('input',()=>{
     data.forEach(p=>{
 
   const allowed = [
-    'city',
-    'town',
-    'village',
-    'hamlet',
-    'municipality',
-    'locality',
-    'borough',
-    'administrative'
-  ];
+  'city',
+  'town',
+  'village',
+  'hamlet',
+  'borough',
+  'locality'
+];
 
   if(!allowed.includes(p.type)){
-    return;
-  }
-
-  if(
-    p.class !== 'place' &&
-    p.class !== 'boundary'
-  ){
     return;
   }
 
