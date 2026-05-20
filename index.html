@@ -1021,7 +1021,9 @@ parts.push(`${icon} ${ev} — ${area}`);
       }
     });
     document.getElementById('tickerContent').innerText=
-      parts.length?parts.join('   •   '):'No major severe weather alerts nationwide';
+      parts.length
+  ? parts.join('      ✦      ')
+  : '✓ No major severe weather alerts nationwide';
   }catch(e){}
 }
 
