@@ -3,689 +3,754 @@
 <head>
 <title>US Storm Alerts</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-
 <style>
 
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap');
 
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
-}
+*{box-sizing:border-box;margin:0;padding:0}
 
 body{
-font-family:'Share Tech Mono',monospace;
-background:#050a14;
-color:#e0f0ff;
-text-align:center;
-overflow-x:hidden;
-min-height:100vh;
+  font-family:'Share Tech Mono',monospace;
+  background:#050a14;
+  color:#e0f0ff;
+  text-align:center;
+  overflow-x:hidden;
+  min-height:100vh;
 }
 
-/* LIVE BACKGROUND */
-
+/* ── LIVE BACKGROUND ── */
 #bgCanvas{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-z-index:0;
-pointer-events:none;
+  position:fixed;
+  top:0;left:0;
+  width:100%;height:100%;
+  z-index:0;
+  pointer-events:none;
 }
 
-body>*:not(#bgCanvas){
-position:relative;
-z-index:1;
-}
+/* all content above canvas */
+body>*:not(#bgCanvas){position:relative;z-index:1}
 
-.searchBox,
-.suggestions{
-z-index:999999;
-}
-
-/* LOGO */
-
+/* ── LOGO ── */
 .logo{
-width:280px;
-max-width:90vw;
-margin:24px auto 0;
-display:block;
-filter:drop-shadow(0 0 18px rgba(0,200,255,0.55));
+  width:280px;max-width:90vw;
+  margin:24px auto 0;
+  display:block;
+  filter:drop-shadow(0 0 18px rgba(0,200,255,0.55));
 }
 
-/* MENU */
-
+/* ── MENU ── */
 .menuIcon{
-position:fixed;
-top:14px;
-left:14px;
-font-size:46px;
-z-index:9999;
-cursor:pointer;
-color:#00cfff;
-text-shadow:0 0 10px #00cfff88;
-line-height:1;
+  position:fixed;top:14px;left:14px;
+  font-size:46px;z-index:9999;cursor:pointer;
+  color:#00cfff;text-shadow:0 0 10px #00cfff88;
+  line-height:1;
 }
-
 .menuPanel{
-display:none;
-position:fixed;
-top:72px;
-left:14px;
-background:rgba(5,15,30,0.96);
-border:1px solid #00cfff44;
-padding:12px 18px;
-border-radius:10px;
-z-index:9999;
+  display:none;position:fixed;
+  top:72px;left:14px;
+  background:rgba(5,15,30,0.96);
+  border:1px solid #00cfff44;
+  padding:12px 18px;border-radius:10px;z-index:9999;
 }
-
 .menuPanel a{
-display:block;
-padding:9px 6px;
-color:#a0d8ef;
-text-decoration:none;
-font-family:'Bebas Neue',cursive;
-font-size:18px;
-letter-spacing:1px;
+  display:block;padding:9px 6px;
+  color:#a0d8ef;text-decoration:none;
+  font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;
 }
+.menuPanel a:hover{color:#00cfff}
 
-.menuPanel a:hover{
-color:#00cfff;
-}
-
-/* POPUP */
-
+/* ── POPUP ── */
 .popup{
-position:fixed;
-top:50%;
-left:50%;
-transform:translate(-50%,-50%);
-background:linear-gradient(135deg,#5a0000,#8a0000);
-color:white;
-padding:28px 24px;
-border-radius:14px;
-width:88%;
-max-width:420px;
-z-index:99999;
-display:none;
-box-shadow:0 0 40px rgba(255,40,40,0.8);
-text-align:left;
-border:1px solid rgba(255,80,80,0.4);
-font-family:'Share Tech Mono',monospace;
+  position:fixed;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  background:linear-gradient(135deg,#5a0000,#8a0000);
+  color:white;padding:28px 24px;border-radius:14px;
+  width:88%;max-width:420px;z-index:99999;display:none;
+  box-shadow:0 0 40px rgba(255,40,40,0.8);text-align:left;
+  border:1px solid rgba(255,80,80,0.4);
+  font-family:'Share Tech Mono',monospace;
 }
+.popupClose{position:absolute;top:10px;right:14px;font-size:22px;cursor:pointer;color:#ffaaaa}
+.popupTitle{font-family:'Bebas Neue',cursive;font-size:28px;color:#ff6060;letter-spacing:2px;margin-bottom:8px}
 
-.popupClose{
-position:absolute;
-top:10px;
-right:14px;
-font-size:22px;
-cursor:pointer;
-color:#ffaaaa;
-}
-
-.popupTitle{
-font-family:'Bebas Neue',cursive;
-font-size:28px;
-color:#ff6060;
-letter-spacing:2px;
-margin-bottom:8px;
-}
-
-/* TICKER */
-
+/* ── TICKER ── */
 .tickerWrap{
-background:linear-gradient(90deg,#5a0000,#7a0000,#5a0000);
-overflow:hidden;
-width:100%;
-padding:8px 0;
-border-top:1px solid #ff444455;
-border-bottom:1px solid #ff444455;
+  background:linear-gradient(90deg,#5a0000,#7a0000,#5a0000);
+  overflow:hidden;width:100%;padding:8px 0;
+  border-top:1px solid #ff444455;border-bottom:1px solid #ff444455;
 }
-
 .tickerTrack{
-display:inline-block;
-white-space:nowrap;
-animation:scroll 120s linear infinite;
-min-width:max-content;
-padding-right:120px;
-font-family:'Bebas Neue',cursive;
-font-size:17px;
-letter-spacing:1px;
-color:#ffcccc;
-will-change:transform;
+  display:inline-block;white-space:nowrap;
+  animation:scroll 60s linear infinite;min-width:100%;
+  font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:1px;
+  color:#ffcccc;
 }
-
 @keyframes scroll{
-0%{
-transform:translateX(100%);
-}
-100%{
-transform:translateX(-100%);
-}
+  0%{transform:translateX(100%)}
+  100%{transform:translateX(-100%)}
 }
 
-/* SEARCH */
-
+/* ── SEARCH ── */
 .searchBox{
-margin:14px auto;
-width:100%;
-max-width:480px;
-display:flex;
-justify-content:center;
-position:relative;
-padding:0 12px;
+  margin:14px auto;width:100%;max-width:480px;
+  display:flex;justify-content:center;position:relative;padding:0 12px;
 }
-
 .searchBox input{
-width:100%;
-padding:11px 14px;
-font-size:16px;
-border-radius:8px;
-border:1px solid #00cfff44;
-background:rgba(0,20,40,0.85);
-color:#e0f0ff;
-font-family:'Share Tech Mono',monospace;
-outline:none;
+  width:100%;padding:11px 14px;font-size:16px;
+  border-radius:8px;border:1px solid #00cfff44;
+  background:rgba(0,20,40,0.85);color:#e0f0ff;
+  font-family:'Share Tech Mono',monospace;
+  outline:none;
 }
-
-.searchBox input::placeholder{
-color:#4a7a9a;
-}
-
-.searchBox input:focus{
-border-color:#00cfff88;
-box-shadow:0 0 10px #00cfff22;
-}
-
+.searchBox input::placeholder{color:#4a7a9a}
+.searchBox input:focus{border-color:#00cfff88;box-shadow:0 0 10px #00cfff22}
 .suggestions{
-position:absolute;
-top:100%;
-left:12px;
-right:12px;
-background:rgba(5,20,40,0.98);
-border:1px solid #00cfff33;
-border-radius:8px;
-max-height:220px;
-overflow-y:auto;
-z-index:999999;
-text-align:left;
-backdrop-filter:blur(10px);
-box-shadow:0 0 25px rgba(0,0,0,0.7);
+  position:absolute;top:100%;left:12px;right:12px;
+  background:rgba(5,20,40,0.97);border:1px solid #00cfff33;
+  border-radius:8px;max-height:220px;overflow-y:auto;z-index:9999;text-align:left;
 }
-
 .suggestions div{
-padding:10px 14px;
-cursor:pointer;
-color:#a0d8ef;
-font-size:13px;
-border-bottom:1px solid #ffffff0a;
+  padding:10px 14px;cursor:pointer;color:#a0d8ef;font-size:13px;
+  border-bottom:1px solid #ffffff0a;
 }
+.suggestions div:hover{background:#0a1f35}
 
-.suggestions div:hover{
-background:#0a1f35;
-}
+/* ── SECTIONS ── */
+.section{padding:14px 14px;max-width:960px;margin:auto}
 
-/* SECTIONS */
-
-.section{
-padding:14px 14px;
-max-width:960px;
-margin:auto;
-}
-
-/* LOCATION */
-
+/* ── LOCATION CARD ── */
 .locationCard{
-background:rgba(10,25,50,0.8);
-border:1px solid #00cfff22;
-padding:16px 20px;
-border-radius:12px;
-font-family:'Bebas Neue',cursive;
-font-size:22px;
-letter-spacing:1px;
-color:#7ecfff;
-text-shadow:0 0 10px #00cfff44;
+  background:rgba(10,25,50,0.8);
+  border:1px solid #00cfff22;
+  padding:16px 20px;border-radius:12px;
+  font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:1px;color:#7ecfff;
+  text-shadow:0 0 10px #00cfff44;
 }
 
-/* RISK BOX */
-
+/* ── RISK BOX ── */
 .riskBox{
-margin-top:12px;
-padding:18px 20px;
-border-radius:12px;
-font-family:'Bebas Neue',cursive;
-font-size:26px;
-letter-spacing:2px;
-cursor:pointer;
-border:1px solid transparent;
-transition:all 0.3s;
+  margin-top:12px;padding:18px 20px;
+  border-radius:12px;font-family:'Bebas Neue',cursive;
+  font-size:26px;letter-spacing:2px;cursor:pointer;
+  border:1px solid transparent;transition:all 0.3s;
 }
+.riskBox:hover{filter:brightness(1.1)}
 
 .low{
-background:linear-gradient(135deg,#0d2b0d,#1a3d1a);
-border-color:#2d6b2d55;
-color:#6eff8a;
+  background:linear-gradient(135deg,#0d2b0d,#1a3d1a);
+  border-color:#2d6b2d55;color:#6eff8a;
+  text-shadow:0 0 12px #00ff5544;
 }
-
 .medium{
-background:linear-gradient(135deg,#3d2000,#5a3000);
-border-color:#ff990055;
-color:#ffbb44;
+  background:linear-gradient(135deg,#3d2000,#5a3000);
+  border-color:#ff990055;color:#ffbb44;
+  text-shadow:0 0 12px #ff880044;
 }
-
 .high{
-background:linear-gradient(135deg,#3d0000,#600000);
-border-color:#ff222255;
-color:#ff6666;
-animation:pulseRed 2s ease-in-out infinite;
+  background:linear-gradient(135deg,#3d0000,#600000);
+  border-color:#ff222255;color:#ff6666;
+  text-shadow:0 0 12px #ff000055;
+  animation:pulseRed 2s ease-in-out infinite;
 }
-
 @keyframes pulseRed{
-0%,100%{
-box-shadow:0 0 10px #ff000044;
-}
-50%{
-box-shadow:0 0 28px #ff000088;
-}
+  0%,100%{box-shadow:0 0 10px #ff000044}
+  50%{box-shadow:0 0 28px #ff000088}
 }
 
 .weatherDetails{
-opacity:0;
-max-height:0;
-overflow:hidden;
-transition:opacity 0.3s,max-height 0.4s;
-text-align:left;
-font-size:14px;
+  opacity:0;max-height:0;overflow:hidden;
+  transition:opacity 0.3s,max-height 0.4s;
+  text-align:left;font-family:'Share Tech Mono',monospace;font-size:14px;
 }
+.active .weatherDetails{opacity:1;max-height:900px;margin-top:12px}
 
-.active .weatherDetails{
-opacity:1;
-max-height:900px;
-margin-top:12px;
-}
-
+/* ── SOUNDING ── */
 .soundingTitle{
-border-bottom:1px solid rgba(0,207,255,0.25);
-padding-bottom:6px;
-margin-bottom:10px;
-font-family:'Bebas Neue',cursive;
-font-size:18px;
-letter-spacing:1px;
-color:#7ecfff;
-display:block;
-width:100%;
+  border-bottom:1px solid rgba(0,207,255,0.25);
+  padding-bottom:6px;margin-bottom:10px;
+  font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;color:#7ecfff;
+  display:block;width:100%;
 }
 
+/* ── CURRENT CONDITIONS GRID ── */
 h2{
-font-family:'Bebas Neue',cursive;
-font-size:26px;
-letter-spacing:2px;
-color:#7ecfff;
-margin-bottom:12px;
+  font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;
+  color:#7ecfff;text-shadow:0 0 12px #00cfff33;margin-bottom:12px;
 }
-
 .weatherGrid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:10px;
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;
 }
-
 .weatherCard{
-background:rgba(5,20,45,0.85);
-border:1px solid #00cfff18;
-padding:16px;
-border-radius:12px;
-cursor:pointer;
-font-family:'Bebas Neue',cursive;
-font-size:20px;
-letter-spacing:1px;
-color:#a0cce0;
+  background:rgba(5,20,45,0.85);
+  border:1px solid #00cfff18;
+  padding:16px;border-radius:12px;cursor:pointer;
+  font-family:'Bebas Neue',cursive;font-size:20px;letter-spacing:1px;
+  color:#a0cce0;transition:border-color 0.25s,box-shadow 0.25s;
 }
-
+.weatherCard:hover{border-color:#00cfff55;box-shadow:0 0 16px #00cfff18}
 .weatherCard .val{
-font-size:32px;
-margin:4px 0;
-color:#e0f0ff;
+  font-size:32px;margin:4px 0;
+  color:#e0f0ff;text-shadow:0 0 10px #00cfff55;
 }
 
+/* temp color classes */
+.tempCold{color:#4da6ff!important}
+.tempCool{color:#00ccff!important}
+.tempMild{color:#00ff99!important}
+.tempWarm{color:#ffcc00!important}
+.tempHot{color:#ff4400!important}
+
+/* ── ALERT CARDS ── */
 .alertCard{
-margin-top:10px;
-padding:16px;
-border-radius:12px;
-text-align:left;
-cursor:pointer;
-border:1px solid transparent;
+  margin-top:10px;padding:16px;border-radius:12px;
+  text-align:left;cursor:pointer;
+  border:1px solid transparent;
+  font-family:'Share Tech Mono',monospace;
 }
-
+.alertCard b{font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px}
 .alertTornado{
-background:linear-gradient(135deg,#3d0000,#5a0000);
-border-color:#ff333355;
-color:#ffaaaa;
+  background:linear-gradient(135deg,#3d0000,#5a0000);
+  border-color:#ff333355;color:#ffaaaa;
+  animation:pulseRed 2.5s ease-in-out infinite;
 }
+.alertSevere{background:linear-gradient(135deg,#3d2000,#5a3000);border-color:#ff990055;color:#ffd09a}
+.alertOther{background:rgba(10,25,50,0.85);border-color:#00cfff18;color:#a0cce0}
 
-.alertSevere{
-background:linear-gradient(135deg,#3d2000,#5a3000);
-border-color:#ff990055;
-color:#ffd09a;
-}
-
-.alertOther{
-background:rgba(10,25,50,0.85);
-border-color:#00cfff18;
-color:#a0cce0;
-}
-
+/* ── RISK DETAIL ITEMS ── */
 .riskItem{
-display:flex;
-justify-content:space-between;
-padding:4px 0;
-border-bottom:1px solid #ffffff08;
+  display:flex;justify-content:space-between;
+  padding:4px 0;border-bottom:1px solid #ffffff08;
 }
+.riskVal{color:#ffe080}
 
 footer{
-padding:20px;
-font-size:11px;
-color:#2a4a6a;
+  padding:20px;font-size:11px;color:#2a4a6a;
+  font-family:'Share Tech Mono',monospace;
 }
 
 </style>
 </head>
-
 <body>
 
+<!-- LIVE BACKGROUND CANVAS -->
 <canvas id="bgCanvas"></canvas>
 
 <div id="popup" class="popup">
-<div class="popupClose" id="popupClose">✖</div>
-<div class="popupTitle" id="popupTitle">⚠ ALERT</div>
-<div id="popupText"></div>
+  <div class="popupClose" id="popupClose">✖</div>
+  <div class="popupTitle" id="popupTitle">⚠ ALERT</div>
+  <div id="popupText"></div>
 </div>
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
-
 <div id="menuPanel" class="menuPanel">
-<a href="index.html">Home</a>
-<a href="tracking.html">Storm Tracker</a>
-<a href="winter.html">Winter Center</a>
+  <a href="index.html">Home</a>
+  <a href="tracking.html">Storm Tracker</a>
+  <a href="winter.html">Winter Center</a>
 </div>
 
-<img src="logo.PNG" class="logo">
+<img src="logo.PNG" class="logo" id="logo">
 
 <div class="tickerWrap">
-<div id="tickerContent" class="tickerTrack">
-Loading alerts...
-</div>
+  <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
 
 <div class="searchBox">
-<input id="searchInput" placeholder="🔍 Search US city...">
-<div id="suggestions" class="suggestions"></div>
+  <input id="searchInput" placeholder="🔍 Search US city...">
+  <div id="suggestions" class="suggestions"></div>
 </div>
 
 <div class="section">
+  <div id="locationCard" class="locationCard">Locating...</div>
 
-<div id="locationCard" class="locationCard">
-Locating...
+  <div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
+    Severe Weather Risk: <span id="riskText">LOW</span>
+
+    <div class="weatherDetails">
+      <div id="stormLevel" style="margin-bottom:10px;font-size:15px;color:#a0cce0"></div>
+
+      <div class="riskItem">Tornado Risk <span class="riskVal" id="torRisk">--</span></div>
+      <div class="riskItem">Severe Risk <span class="riskVal" id="sevRisk">--</span></div>
+      <div class="riskItem">Instability (LI) <span class="riskVal" id="instability">--</span></div>
+      <br>
+      <span class="soundingTitle">Sounding Breakdown</span>
+      <div class="riskItem">Surface Moisture <span class="riskVal" id="sndMoisture">--</span></div>
+      <div class="riskItem">Lift Potential <span class="riskVal" id="sndLift">--</span></div>
+      <div class="riskItem">Wind Energy <span class="riskVal" id="sndWind">--</span></div>
+      <div class="riskItem">CAPE <span class="riskVal" id="cape">--</span></div>
+      <div id="capeWhy" style="font-size:12px;color:#7ecfff;margin-top:6px;line-height:1.6"></div>
+    </div>
+  </div>
 </div>
 
-<div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
+<div class="section">
+  <h2>Current Conditions</h2>
+  <div class="weatherGrid">
 
-Severe Weather Risk:
-<span id="riskText">LOW</span>
+    <div class="weatherCard" onclick="toggleCard(this)">
+      Temperature
+      <div class="val" id="temp">--</div>
+      <div class="weatherDetails" style="font-size:13px;margin-top:8px">
+        <div class="riskItem">Feels Like <span id="feels">--</span></div>
+        <div class="riskItem">Sea Level Pressure <span id="pressure">--</span></div>
+      </div>
+    </div>
 
+    <div class="weatherCard" onclick="toggleCard(this)">
+      Humidity
+      <div class="val" id="humidity">--</div>
+      <div class="weatherDetails" style="font-size:13px;margin-top:8px">
+        <div class="riskItem">Moisture Level <span id="moistureLevel">--</span></div>
+        <div class="riskItem">Air Feel <span id="humidityFeel">--</span></div>
+      </div>
+    </div>
+
+    <div class="weatherCard" onclick="toggleCard(this)">
+      Dew Point
+      <div class="val" id="dew">--</div>
+      <div class="weatherDetails" style="font-size:13px;margin-top:8px">
+        <div class="riskItem">Storm Fuel <span id="stormFuel">--</span></div>
+      </div>
+    </div>
+
+    <div class="weatherCard" onclick="toggleCard(this)">
+      Wind
+      <div class="val" id="wind">--</div>
+      <div class="weatherDetails" style="font-size:13px;margin-top:8px">
+        <div class="riskItem">Direction <span id="windDir">--</span></div>
+        <div class="riskItem">Gusts <span id="gusts">--</span></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
+<div class="section">
+  <h2>Active Alerts</h2>
+  <div id="alerts">Loading alerts...</div>
 </div>
+
+<footer>Data: NWS · Open-Meteo · Updates every 30s</footer>
 
 <script>
+/* ===================== ANIMATED BACKGROUND ===================== */
+(function(){
+  const canvas = document.getElementById('bgCanvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, bolts=[], drops=[], clouds=[];
+  let severity = 'low'; // updated from weather
 
+  function resize(){
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  // Rain drops
+  function initRain(count){
+    drops = [];
+    for(let i=0;i<count;i++){
+      drops.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        len: 8+Math.random()*14,
+        speed: 6+Math.random()*8,
+        opacity: 0.08+Math.random()*0.18
+      });
+    }
+  }
+
+  // Lightning bolt
+  function spawnBolt(){
+    let x = W*0.2 + Math.random()*W*0.6;
+    bolts.push({x, y:0, life:1, maxLife:1, branches:[]});
+  }
+
+  // Draw jagged lightning path
+  function drawBolt(bx, by, tx, ty, depth, ctx, alpha){
+    if(depth===0) return;
+    ctx.beginPath();
+    ctx.moveTo(bx,by);
+    let midX=(bx+tx)/2 + (Math.random()-0.5)*(tx-bx)*0.6;
+    let midY=(by+ty)/2 + (Math.random()-0.5)*60;
+    ctx.quadraticCurveTo(midX,midY,tx,ty);
+    ctx.strokeStyle=`rgba(180,220,255,${alpha})`;
+    ctx.lineWidth=depth===3?2:1;
+    ctx.shadowBlur=20;ctx.shadowColor='#aaddff';
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    if(depth>1 && Math.random()>0.4){
+      let brX=midX+(Math.random()-0.5)*120;
+      let brY=midY+50+Math.random()*80;
+      drawBolt(midX,midY,brX,brY,depth-1,ctx,alpha*0.6);
+    }
+    drawBolt(midX,midY,tx,ty,depth-1,ctx,alpha*0.7);
+  }
+
+  // Cloud blobs
+  function initClouds(){
+    clouds=[];
+    for(let i=0;i<5;i++){
+      clouds.push({
+        x:Math.random()*W, y:30+Math.random()*H*0.25,
+        r:80+Math.random()*120, speed:0.1+Math.random()*0.15,
+        opacity:0.04+Math.random()*0.08
+      });
+    }
+  }
+
+  initRain(80);
+  initClouds();
+
+  let boltTimer=0, boltInterval=180; // frames between bolts
+  let frame=0;
+
+  function draw(){
+    frame++;
+    ctx.clearRect(0,0,W,H);
+
+    // Sky gradient
+    let skyColor = severity==='high'?'#1a0000':severity==='medium'?'#0d0800':'#020812';
+    let grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, skyColor);
+    grad.addColorStop(1,'#000510');
+    ctx.fillStyle=grad;
+    ctx.fillRect(0,0,W,H);
+
+    // Moving cloud shapes
+    clouds.forEach(c=>{
+      c.x += c.speed;
+      if(c.x - c.r > W) c.x = -c.r;
+      let cg = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
+      let col = severity==='high'?'rgba(80,0,0':'rgba(20,40,80';
+      cg.addColorStop(0,`${col},${c.opacity})`);
+      cg.addColorStop(1,`${col},0)`);
+      ctx.fillStyle=cg;
+      ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
+    });
+
+    // Rain
+    let rainCount = severity==='high'?120:severity==='medium'?80:40;
+    if(drops.length!==rainCount) initRain(rainCount);
+    let rainColor = severity==='high'?'rgba(255,100,100':'rgba(100,180,255';
+    drops.forEach(d=>{
+      d.y+=d.speed;
+      if(d.y>H){d.y=-d.len;d.x=Math.random()*W}
+      ctx.beginPath();
+      ctx.moveTo(d.x,d.y);
+      ctx.lineTo(d.x-1,d.y+d.len);
+      ctx.strokeStyle=`${rainColor},${d.opacity})`;
+      ctx.lineWidth=0.8;ctx.stroke();
+    });
+
+    // Lightning
+    boltTimer++;
+    let interval = severity==='high'?60:severity==='medium'?120:240;
+    if(boltTimer>=interval){
+      if(Math.random()>0.3) spawnBolt();
+      boltTimer=0;
+    }
+    bolts=bolts.filter(b=>b.life>0);
+    bolts.forEach(b=>{
+      drawBolt(b.x,0,b.x+(Math.random()-0.5)*80,H*0.4+Math.random()*H*0.3,3,ctx,b.life*0.85);
+      b.life-=0.08;
+    });
+
+    // Subtle scan line overlay
+    ctx.fillStyle='rgba(0,0,0,0.03)';
+    for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,2);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Expose severity setter
+  window.setBgSeverity = function(s){ severity=s; }
+})();
+
+/* ===================== APP LOGIC ===================== */
 function toggleCard(card){
-
-document.querySelectorAll('.weatherCard,.riskBox,.alertCard').forEach(c=>{
-
-if(c!==card){
-c.classList.remove('active')
-}
-
-})
-
-card.classList.toggle('active')
-
+  document.querySelectorAll('.weatherCard,.riskBox,.alertCard').forEach(c=>{
+    if(c!==card) c.classList.remove('active');
+  });
+  card.classList.toggle('active');
 }
 
 function toggleMenu(){
-
-let m=document.getElementById('menuPanel')
-
-m.style.display=
-m.style.display==='block'
-?'none'
-:'block'
-
+  let m=document.getElementById('menuPanel');
+  m.style.display = m.style.display==='block'?'none':'block';
 }
 
-let lat=43
-let lon=-88
+function showPopup(eventName, desc){
+  let isTornado = eventName.includes('Tornado');
+  document.getElementById('popupTitle').innerText = isTornado ? '🌪️ '+eventName : '⛈️ '+eventName;
+  document.getElementById('popupText').innerText = isTornado ? 'TAKE COVER NOW. Move to lowest floor, interior room.' : 'SEEK SHELTER immediately. Stay away from windows.';
+  document.getElementById('popup').style.display='block';
+}
+document.getElementById('popupClose').onclick=()=>document.getElementById('popup').style.display='none';
+
+let lat=43, lon=-88;
 
 navigator.geolocation.getCurrentPosition(p=>{
-
-lat=p.coords.latitude
-lon=p.coords.longitude
-
-loadAll()
-
-},()=>loadAll())
+  lat=p.coords.latitude; lon=p.coords.longitude; loadAll();
+}, ()=>loadAll());
 
 function loadAll(){
-
-loadTicker()
-loadAlerts()
-
+  loadTicker();
+  loadLocation();
+  loadWeather();
+  loadAlerts();
 }
 
-async function loadTicker(){
-
-try{
-
-let r=await fetch('https://api.weather.gov/alerts/active')
-
-let d=await r.json()
-
-let parts=[]
-
-d.features.forEach(a=>{
-
-let ev=a.properties.event||''
-let area=a.properties.areaDesc||''
-
-if(
-ev.includes('Tornado') ||
-ev.includes('Severe')
-){
-
-parts.push(`⚡ ${ev}: ${area}`)
-
+/* ── LOCATION ── */
+async function loadLocation(){
+  try{
+    let p=await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
+    let d=await p.json();
+    let city=d.properties.relativeLocation.properties.city;
+    let state=d.properties.relativeLocation.properties.state;
+    let countyRes=await fetch(d.properties.county);
+    let countyData=await countyRes.json();
+    document.getElementById('locationCard').innerHTML=
+      `<b>${countyData.properties.name} County</b><br><span style="font-size:16px">${city}, ${state}</span>`;
+  }catch(e){
+    document.getElementById('locationCard').innerText='Location unavailable';
+  }
 }
 
-})
-
-document.getElementById('tickerContent').innerText=
-parts.length
-? parts.join('   •   ')
-: 'No major severe weather alerts nationwide'
-
-}catch(e){}
-
+/* ── WEATHER ── helper to convert degrees to compass */
+function degToCompass(deg){
+  const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg/22.5)%16];
 }
 
+function tempClass(f){
+  if(f<32) return 'tempCold';
+  if(f<50) return 'tempCool';
+  if(f<70) return 'tempMild';
+  if(f<90) return 'tempWarm';
+  return 'tempHot';
+}
+
+function dewLabel(f){
+  if(f<35) return '🟢 Dry';
+  if(f<50) return '🟡 Comfortable';
+  if(f<60) return '🟠 Moderate';
+  if(f<65) return '🟠 Sticky';
+  return '🔴 Humid / Storm Fuel';
+}
+
+function humLabel(h){
+  if(h<30) return {level:'Very Dry',feel:'Parched air'};
+  if(h<50) return {level:'Low',feel:'Comfortable'};
+  if(h<70) return {level:'Moderate',feel:'Slightly humid'};
+  if(h<85) return {level:'High',feel:'Muggy'};
+  return {level:'Very High',feel:'Oppressively humid'};
+}
+
+function liLabel(li){
+  if(li>2) return '🟢 Stable — storm unlikely';
+  if(li>0) return '🟡 Slightly unstable';
+  if(li>-2) return '🟠 Unstable — storms possible';
+  if(li>-6) return '🔴 Very unstable — severe risk';
+  return '🔴🔴 Extremely unstable — tornado risk';
+}
+
+function capeLabel(c){
+  if(c<500) return {txt:'Weak',color:'#6eff8a'};
+  if(c<1500) return {txt:'Moderate',color:'#ffcc00'};
+  if(c<2500) return {txt:'Strong',color:'#ff8800'};
+  return {txt:'Extreme',color:'#ff3333'};
+}
+
+/* ── LOAD WEATHER ── */
+async function loadWeather(){
+  try{
+    // Fetch current + hourly CAPE/LI from Open-Meteo
+    let url=`https://api.open-meteo.com/v1/forecast?`+
+      `latitude=${lat}&longitude=${lon}`+
+      `&current=temperature_2m,relative_humidity_2m,apparent_temperature,`+
+      `dew_point_2m,precipitation,wind_speed_10m,wind_direction_10m,`+
+      `wind_gusts_10m,surface_pressure,weather_code`+
+      `&hourly=cape,lifted_index`+
+      `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`;
+
+    let r=await fetch(url);
+    let d=await r.json();
+    let c=d.current;
+
+    // Basic values
+    let tempF   = Math.round(c.temperature_2m);
+    let feelsF  = Math.round(c.apparent_temperature);
+    let hum     = Math.round(c.relative_humidity_2m);
+    let dewF    = Math.round(c.dew_point_2m);
+    let windSpd = Math.round(c.wind_speed_10m);
+    let windG   = Math.round(c.wind_gusts_10m);
+    let windDeg = c.wind_direction_10m;
+    let pressHpa= Math.round(c.surface_pressure);
+    // convert surface pressure to sea-level approximate (simple)
+    let pressMb = pressHpa; // already roughly mb
+
+    // Temp
+    let tc = tempClass(tempF);
+    document.getElementById('temp').innerHTML=`<span class="${tc}">${tempF}°F</span>`;
+    document.getElementById('feels').innerText=`${feelsF}°F`;
+    document.getElementById('pressure').innerText=`${pressMb} mb`;
+
+    // Humidity
+    let hl=humLabel(hum);
+    document.getElementById('humidity').innerText=hum+'%';
+    document.getElementById('moistureLevel').innerText=hl.level;
+    document.getElementById('humidityFeel').innerText=hl.feel;
+
+    // Dew point
+    document.getElementById('dew').innerHTML=`<span class="${tc}">${dewF}°F</span>`;
+    document.getElementById('stormFuel').innerText=dewLabel(dewF);
+
+    // Wind
+    let compassDir=degToCompass(windDeg);
+    document.getElementById('wind').innerText=windSpd+' mph';
+    document.getElementById('windDir').innerText=`${compassDir} (${windDeg}°)`;
+    document.getElementById('gusts').innerText=windG+' mph';
+
+    // Sounding / instability from hourly (take current hour index)
+    let now=new Date();
+    let hourIdx=now.getHours();
+    let cape=d.hourly.cape[hourIdx] ?? 0;
+    let li=d.hourly.lifted_index[hourIdx] ?? 5;
+
+    // Clamp
+    cape=Math.max(0,cape);
+
+    let cl=capeLabel(cape);
+    document.getElementById('cape').innerHTML=`<span style="color:${cl.color}">${Math.round(cape)} J/kg (${cl.txt})</span>`;
+    document.getElementById('instability').innerHTML=liLabel(li);
+    document.getElementById('sndMoisture').innerText=dewLabel(dewF);
+    document.getElementById('sndLift').innerText=li<=0?`⬆ Active (LI ${li.toFixed(1)})`:`⬇ Suppressed (LI ${li.toFixed(1)})`;
+    document.getElementById('sndWind').innerText=windSpd>20?`💨 Elevated (${windSpd} mph)`:windSpd>10?`🌬 Moderate`:`🍃 Light`;
+
+    // Tornado / Severe risk from LI + CAPE
+    let torRiskTxt, sevRiskTxt;
+    if(li<=-6 && cape>2000){torRiskTxt='🔴 High';sevRiskTxt='🔴 High';}
+    else if(li<=-4 && cape>1000){torRiskTxt='🟠 Moderate';sevRiskTxt='🔴 High';}
+    else if(li<=-2 && cape>500){torRiskTxt='🟡 Low–Moderate';sevRiskTxt='🟠 Moderate';}
+    else if(li<=0){torRiskTxt='🟡 Low';sevRiskTxt='🟡 Low–Moderate';}
+    else{torRiskTxt='🟢 Minimal';sevRiskTxt='🟢 Minimal';}
+
+    document.getElementById('torRisk').innerText=torRiskTxt;
+    document.getElementById('sevRisk').innerText=sevRiskTxt;
+
+    let capeWhy=`CAPE ${Math.round(cape)} J/kg · LI ${li.toFixed(1)} · Dew ${dewF}°F`;
+    if(cape>1500) capeWhy+=' · ⚠ Significant instability present';
+    document.getElementById('capeWhy').innerText=capeWhy;
+
+    // Set bg severity based on met data (alerts can override)
+    if(li<=-4 && cape>1500) window.setBgSeverity('high');
+    else if(li<=-2 || cape>500) window.setBgSeverity('medium');
+    else window.setBgSeverity('low');
+
+  }catch(e){
+    console.error('Weather fetch error',e);
+    document.getElementById('temp').innerText='N/A';
+  }
+}
+
+/* ── ALERTS ── */
 async function loadAlerts(){
+  try{
+    let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`);
+    let d=await r.json();
+    let html='';
+    let triggered=false;
+    let alertRisk='low';
 
-try{
+    d.features.forEach(a=>{
+      let ev=a.properties.event||'';
+      let desc=a.properties.description||'';
+      let inst=a.properties.instruction||'';
 
-let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat},${lon}`)
+      let style='alertOther';
+      if(ev.includes('Tornado')) style='alertTornado';
+      else if(ev.includes('Severe')) style='alertSevere';
 
-let d=await r.json()
+      if(ev.includes('Tornado Warning')) alertRisk='high';
+      else if(ev.includes('Tornado Watch') && alertRisk!=='high') alertRisk='medium';
+      else if((ev.includes('Severe Thunderstorm Warning')) && alertRisk==='low') alertRisk='medium';
 
-let risk='low'
+      if(!triggered && (ev.includes('Tornado')||ev.includes('Severe'))){
+        showPopup(ev,desc);triggered=true;
+      }
 
-d.features.forEach(a=>{
+      html+=`<div class="alertCard ${style}" onclick="toggleCard(this)">
+        <b>${ev}</b>
+        <div class="weatherDetails">
+          <div style="margin-top:8px;line-height:1.6;font-size:12px">${desc.replace(/\n/g,'<br>')}</div>
+          ${inst?`<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:11px">${inst.replace(/\n/g,'<br>')}</div>`:''}
+        </div>
+      </div>`;
+    });
 
-let ev=a.properties.event||''
+    document.getElementById('alerts').innerHTML=html||'<div style="color:#2a6a4a;padding:16px">✓ No active alerts for this location</div>';
 
-if(ev.includes('Tornado Warning')){
-risk='high'
+    let riskEl=document.getElementById('riskLevel');
+    let riskTxt=document.getElementById('riskText');
+    if(alertRisk==='high'){
+      riskTxt.innerText='HIGH';riskEl.className='riskBox high';
+      window.setBgSeverity('high');
+    }else if(alertRisk==='medium'){
+      riskTxt.innerText='MODERATE';riskEl.className='riskBox medium';
+      window.setBgSeverity('medium');
+    }else{
+      riskTxt.innerText='LOW';riskEl.className='riskBox low';
+    }
+  }catch(e){
+    document.getElementById('alerts').innerText='Failed to load alerts.';
+  }
 }
 
-else if(
-ev.includes('Tornado Watch') ||
-ev.includes('Severe Thunderstorm Warning')
-){
-
-if(risk!=='high'){
-risk='medium'
+/* ── TICKER ── */
+async function loadTicker(){
+  try{
+    let r=await fetch('https://api.weather.gov/alerts/active');
+    let d=await r.json();
+    let parts=[];
+    d.features.forEach(a=>{
+      let ev=a.properties.event||'';
+      let area=a.properties.areaDesc||'';
+      if(ev.includes('Tornado')||ev.includes('Severe')){
+        parts.push(`⚡ ${ev}: ${area}`);
+      }
+    });
+    document.getElementById('tickerContent').innerText=
+      parts.length?parts.join('   •   '):'No major severe weather alerts nationwide';
+  }catch(e){}
 }
 
-}
+/* ── SEARCH ── */
+let debounce;
+document.getElementById('searchInput').addEventListener('input',()=>{
+  clearTimeout(debounce);
+  let q=document.getElementById('searchInput').value.trim();
+  if(q.length<2){document.getElementById('suggestions').innerHTML='';return;}
+  debounce=setTimeout(async()=>{
+    let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`);
+    let data=await res.json();
+    let sug=document.getElementById('suggestions');
+    sug.innerHTML='';
+    data.forEach(p=>{
+      let div=document.createElement('div');
+      div.innerText=p.display_name;
+      div.onclick=()=>{
+        lat=parseFloat(p.lat);lon=parseFloat(p.lon);
+        document.getElementById('searchInput').value=p.display_name;
+        sug.innerHTML='';loadAll();
+      };
+      sug.appendChild(div);
+    });
+  },300);
+});
 
-})
-
-let riskEl=document.getElementById('riskLevel')
-let riskTxt=document.getElementById('riskText')
-
-if(risk==='high'){
-
-riskTxt.innerText='HIGH'
-riskEl.className='riskBox high'
-
-}
-
-else if(risk==='medium'){
-
-riskTxt.innerText='MODERATE'
-riskEl.className='riskBox medium'
-
-}
-
-else{
-
-riskTxt.innerText='LOW'
-riskEl.className='riskBox low'
-
-}
-
-}catch(e){}
-
-}
-
-/* BACKGROUND */
-
-(function(){
-
-const canvas=document.getElementById('bgCanvas')
-const ctx=canvas.getContext('2d')
-
-let W,H
-let drops=[]
-
-let raining=false
-let severity='low'
-
-function resize(){
-
-W=canvas.width=window.innerWidth
-H=canvas.height=window.innerHeight
-
-}
-
-window.addEventListener('resize',resize)
-
-resize()
-
-function initRain(count){
-
-drops=[]
-
-for(let i=0;i<count;i++){
-
-drops.push({
-x:Math.random()*W,
-y:Math.random()*H,
-len:8+Math.random()*12,
-speed:5+Math.random()*8
-})
-
-}
-
-}
-
-initRain(100)
-
-function draw(){
-
-ctx.clearRect(0,0,W,H)
-
-let grad=ctx.createLinearGradient(0,0,0,H)
-
-if(severity==='high'){
-grad.addColorStop(0,'#2a0000')
-}
-else if(severity==='medium'){
-grad.addColorStop(0,'#2a1800')
-}
-else{
-grad.addColorStop(0,'#001020')
-}
-
-grad.addColorStop(1,'#000')
-
-ctx.fillStyle=grad
-ctx.fillRect(0,0,W,H)
-
-if(raining){
-
-drops.forEach(d=>{
-
-d.y+=d.speed
-
-if(d.y>H){
-
-d.y=-20
-d.x=Math.random()*W
-
-}
-
-ctx.beginPath()
-
-ctx.moveTo(d.x,d.y)
-ctx.lineTo(d.x-1,d.y+d.len)
-
-ctx.strokeStyle='rgba(100,180,255,0.25)'
-ctx.stroke()
-
-})
-
-}
-
-requestAnimationFrame(draw)
-
-}
-
-draw()
-
-window.setRain=function(v){
-raining=v
-}
-
-window.setSeverity=function(v){
-severity=v
-}
-
-})()
-
-setInterval(loadAll,30000)
-
+setInterval(loadAll,30000);
 </script>
 
 </body>
