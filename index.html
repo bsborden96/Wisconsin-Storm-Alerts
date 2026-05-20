@@ -1165,8 +1165,6 @@ async function loadAlerts(){
       let desc=a.properties.description||'';
       let inst=a.properties.instruction||'';
       let areaDesc=a.properties.areaDesc||'';
-      let dist=alertDistance(a);
-      let distStr = dist<9000 ? `${Math.round(dist)} mi away` : '';
 
       let style='alertOther';
       if(ev.includes('Tornado')) style='alertTornado';
@@ -1197,7 +1195,7 @@ async function loadAlerts(){
       }
 
       html+=`<div class="alertCard ${style}" onclick="toggleCard(this)">
-        <b>${ev}</b>${distStr?` <span style="font-size:11px;color:#7ecfff;margin-left:8px">📍 ${distStr}</span>`:''}
+        <b>${ev}</b>
         <div class="weatherDetails">
           <div style="margin-top:8px;line-height:1.6;font-size:12px">${desc.replace(/\n/g,'<br>')}</div>
           ${inst?`<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:11px">${inst.replace(/\n/g,'<br>')}</div>`:''}
@@ -1216,7 +1214,7 @@ async function loadAlerts(){
     let riskTxt=document.getElementById('riskText');
     if(alertRisk==='high'){
       riskTxt.innerText='HIGH';riskEl.className='riskBox high';
-      window.setBgMode('storm');
+      // Don't override bg here — weather code already set it in loadWeather
     }else if(alertRisk==='medium'){
       riskTxt.innerText='MODERATE';riskEl.className='riskBox medium';
     }else{
@@ -1275,9 +1273,7 @@ async function loadTicker(){
       for(const [k,v] of Object.entries(iconMap)){
         if(ev.includes(k)){icon=v;break;}
       }
-      let dist=alertDistance(a);
-      let distTag=dist<500?` (${Math.round(dist)} mi)`:'';
-      return `${icon} ${ev}${distTag} — ${area}`;
+      return `${icon} ${ev} — ${area}`;
     }).filter(Boolean);
 
     let ticker=document.getElementById('tickerContent');
