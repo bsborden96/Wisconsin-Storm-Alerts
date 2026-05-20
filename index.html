@@ -255,6 +255,9 @@ body > *:not(#bgCanvas):not(#popup){
   text-shadow:0 0 8px rgba(255,120,120,0.35);
 }
 
+.tickerWrap:hover .tickerTrack{
+  animation-play-state:paused;
+}
 @keyframes tickerScroll{
   0%{
     transform:translateX(100%);
@@ -520,7 +523,9 @@ footer{
   <div id="alerts">Loading alerts...</div>
 </div>
 
-<footer>Data: NWS · Open-Meteo · Updates every 30s</footer>
+<footer id="footerTime">
+  Data: NWS · Open-Meteo · Syncing...
+</footer>
 
 <script>
 /* ===================== ANIMATED BACKGROUND ===================== */
@@ -731,10 +736,16 @@ navigator.geolocation.getCurrentPosition(p=>{
 }, ()=>loadAll());
 
 function loadAll(){
+
   loadTicker();
   loadLocation();
   loadWeather();
   loadAlerts();
+
+  let now = new Date();
+
+  document.getElementById('footerTime').innerText =
+    `Data: NWS · Open-Meteo · Updated ${now.toLocaleTimeString()}`;
 }
 
 /* ── LOCATION ── */
@@ -998,7 +1009,8 @@ async function loadTicker(){
     let r=await fetch('https://api.weather.gov/alerts/active');
     let d=await r.json();
     let parts=[];
-    d.features.forEach(a=>{
+let seen = new Set();
+    d.features.slice(0,40).forEach(a=>{
       let ev=a.properties.event||'';
       let area=a.properties.areaDesc||'';
       if(ev.includes('Tornado')||ev.includes('Severe')){
@@ -1016,6 +1028,12 @@ else if(ev.includes('Severe Thunderstorm Warning')){
 else if(ev.includes('Flash Flood')){
   icon = '🌊';
 }
+
+let key = ev + area;
+
+if(seen.has(key)) return;
+
+seen.add(key);
 
 parts.push(`${icon} ${ev} — ${area}`);
       }
