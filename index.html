@@ -764,7 +764,7 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   return;
 }
       let div=document.createElement('div');
-      div.innerText=p.display_name;
+      div.innerText=`${p.name}, ${p.address.state || ''}`;
       div.onclick=()=>{
         lat=parseFloat(p.lat);lon=parseFloat(p.lon);
         document.getElementById('searchInput').value=p.display_name;
