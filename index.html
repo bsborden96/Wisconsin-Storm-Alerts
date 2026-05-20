@@ -854,7 +854,8 @@ async function loadAlerts(){
     let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`);
     let d=await r.json();
     let html='';
-    let triggered=false;
+    let triggered = false;
+window.shownAlerts = window.shownAlerts || [];
     let alertRisk='low';
 
     d.features.forEach(a=>{
