@@ -768,30 +768,25 @@ document.getElementById('searchInput').addEventListener('input',()=>{
 
     data.forEach(p=>{
 
-      const allowed = [
-        'city',
-        'town',
-        'village',
-        'hamlet',
-        'borough',
-        'locality'
-      ];
-
-      if(!allowed.includes(p.type)){
-        return;
-      }
+    if(
+  !p.lat ||
+  !p.lon ||
+  !p.display_name
+){
+  return;
+}
 
       let div=document.createElement('div');
 
-      div.innerText=`${p.name}, ${p.address.state || ''}`;
+      div.innerText = p.display_name;
 
       div.onclick=()=>{
 
         lat=parseFloat(p.lat);
         lon=parseFloat(p.lon);
 
-        document.getElementById('searchInput').value=
-          `${p.name}, ${p.address.state || ''}`;
+        document.getElementById('searchInput').value =
+  p.display_name;
 
         sug.innerHTML='';
 
