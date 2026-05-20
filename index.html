@@ -260,13 +260,16 @@ will-change:transform;
   animation-play-state:paused;
 }
 @keyframes tickerScroll{
-  0%{
-    transform:translateX(100%);
+
+  from{
+    transform:translateX(100vw);
   }
 
-  100%{
+  to{
     transform:translateX(-100%);
   }
+
+}
 }
 
 /* ── SEARCH ── */
@@ -1008,10 +1011,11 @@ if(
 
 /* ── TICKER ── */
 async function loadTicker(){
+
   try{
 
     let r = await fetch(
-      'https://api.weather.gov/alerts/active'
+      'https://api.weather.gov/alerts/active?severity=Severe,Extreme'
     );
 
     let d = await r.json();
@@ -1021,7 +1025,6 @@ async function loadTicker(){
 
     d.features
       .filter(a => a.properties && a.properties.event)
-      .slice(0,25)
       .forEach(a=>{
 
         let ev = a.properties.event || '';
@@ -1035,50 +1038,67 @@ async function loadTicker(){
           ev.includes('Particularly Dangerous Situation') ||
           ev.includes('PDS');
 
-        if(isMajorAlert){
+        if(!isMajorAlert) return;
 
-          let icon = '⚡';
+        let icon = '⚡';
 
-          if(ev.includes('Tornado Warning')){
-            icon = '🌪️';
-          }
-          else if(ev.includes('Tornado Watch')){
-            icon = '🌀';
-          }
-          else if(
-            ev.includes('Particularly Dangerous Situation') ||
-            ev.includes('PDS')
-          ){
-            icon = '🚨';
-          }
-          else if(ev.includes('Severe Thunderstorm Warning')){
-            icon = '⛈️';
-          }
-          else if(ev.includes('Flash Flood')){
-            icon = '🌊';
-          }
-
-          let key = ev + area;
-
-          if(seen.has(key)) return;
-
-          seen.add(key);
-
-          parts.push(`${icon} ${ev} — ${area}`);
+        if(ev.includes('Tornado Warning')){
+          icon = '🌪️';
         }
+        else if(ev.includes('Tornado Watch')){
+          icon = '🌀';
+        }
+        else if(
+          ev.includes('Particularly Dangerous Situation') ||
+          ev.includes('PDS')
+        ){
+          icon = '🚨';
+        }
+        else if(ev.includes('Severe Thunderstorm Warning')){
+          icon = '⛈️';
+        }
+        else if(ev.includes('Flash Flood')){
+          icon = '🌊';
+        }
+
+        let key = ev + area;
+
+        if(seen.has(key)) return;
+
+        seen.add(key);
+
+        parts.push(`${icon} ${ev} — ${area}`);
 
       });
 
-    document.getElementById('tickerContent').innerText =
+    // limit AFTER filtering
+    parts = parts.slice(0,25);
+
+    let ticker = document.getElementById('tickerContent');
+
+    // reset animation
+    ticker.style.animation = 'none';
+
+    ticker.innerText =
       parts.length
         ? parts.join('      ✦      ')
         : '✓ No major severe weather alerts nationwide';
 
-  }catch(e){
-    console.error('Ticker error', e);
-  }
-}
+    // force browser redraw
+    void ticker.offsetWidth;
 
+    // restart animation
+    ticker.style.animation =
+      'tickerScroll 160s linear infinite';
+
+  }
+  catch(e){
+
+    console.error('Ticker error', e);
+
+  }
+
+}
 /* ── SEARCH ── */
 let debounce;
 
