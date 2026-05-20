@@ -18,7 +18,6 @@ body{
   min-height:100vh;
 }
 
-/* ── LIVE BACKGROUND ── */
 #bgCanvas{
   position:fixed;
   top:0;left:0;
@@ -27,7 +26,6 @@ body{
   pointer-events:none;
 }
 
-/* all content above canvas */
 body > *:not(#bgCanvas):not(#popup){
   position:relative;
   z-index:1;
@@ -37,7 +35,6 @@ body > *:not(#bgCanvas):not(#popup){
   z-index:999999 !important;
 }
 
-/* ── LOGO ── */
 .logo{
   width:280px;max-width:90vw;
   margin:24px auto 0;
@@ -45,7 +42,6 @@ body > *:not(#bgCanvas):not(#popup){
   filter:drop-shadow(0 0 18px rgba(0,200,255,0.55));
 }
 
-/* ── MENU ── */
 .menuIcon{
   position:fixed;top:14px;left:14px;
   font-size:46px;z-index:9999;cursor:pointer;
@@ -65,213 +61,95 @@ body > *:not(#bgCanvas):not(#popup){
   font-family:'Bebas Neue',cursive;font-size:18px;letter-spacing:1px;
 }
 .menuPanel a:hover{color:#00cfff}
+
 .popup{
   position:fixed;
-
-  top:50%;
-  left:50%;
-
+  top:50%;left:50%;
   transform:translate(-50%,-50%);
-
-  width:92%;
-  max-width:430px;
-
+  width:92%;max-width:430px;
   padding:34px 26px 26px;
-
-  background:
-    linear-gradient(
-      145deg,
-      rgba(95,0,0,0.98),
-      rgba(45,0,0,0.98)
-    );
-
+  background:linear-gradient(145deg,rgba(95,0,0,0.98),rgba(45,0,0,0.98));
   color:white;
-
   border-radius:18px;
-
   z-index:999999999;
-
   display:none;
-
   text-align:center;
-
   border:1px solid rgba(255,80,80,0.45);
-
-  box-shadow:
-    0 0 35px rgba(255,0,0,0.55),
-    0 0 120px rgba(255,0,0,0.18),
-    inset 0 0 20px rgba(255,255,255,0.03);
-
+  box-shadow:0 0 35px rgba(255,0,0,0.55),0 0 120px rgba(255,0,0,0.18),inset 0 0 20px rgba(255,255,255,0.03);
   backdrop-filter:blur(14px);
-
   font-family:'Share Tech Mono',monospace;
-
   animation:popupFade 0.22s ease-out;
 }
 .popupClose{
-  position:absolute;
-
-  top:10px;
-  right:12px;
-
-  width:34px;
-  height:34px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
+  position:absolute;top:10px;right:12px;
+  width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
   border-radius:50%;
-
   background:rgba(255,255,255,0.08);
-
   border:1px solid rgba(255,255,255,0.08);
-
-  color:#ffd0d0;
-
-  font-size:18px;
-
-  cursor:pointer;
-
-  transition:
-    background 0.2s,
-    transform 0.2s,
-    color 0.2s;
-
+  color:#ffd0d0;font-size:18px;cursor:pointer;
+  transition:background 0.2s,transform 0.2s,color 0.2s;
   z-index:1000000000;
 }
-
-.popupClose:hover{
-  background:rgba(255,80,80,0.22);
-  color:white;
-  transform:scale(1.08);
-}
-
+.popupClose:hover{background:rgba(255,80,80,0.22);color:white;transform:scale(1.08)}
 .popupTitle{
-  font-family:'Bebas Neue',cursive;
-
-  font-size:30px;
-
-  letter-spacing:2px;
-
-  color:#ff7070;
-
-  margin-bottom:14px;
-
-  text-shadow:
-    0 0 10px rgba(255,80,80,0.6),
-    0 0 20px rgba(255,0,0,0.25);
+  font-family:'Bebas Neue',cursive;font-size:30px;letter-spacing:2px;
+  color:#ff7070;margin-bottom:14px;
+  text-shadow:0 0 10px rgba(255,80,80,0.6),0 0 20px rgba(255,0,0,0.25);
 }
 @keyframes popupFade{
-  from{
-    opacity:0;
-    transform:translate(-50%,-45%) scale(0.92);
-  }
-
-  to{
-    opacity:1;
-    transform:translate(-50%,-50%) scale(1);
-  }
+  from{opacity:0;transform:translate(-50%,-45%) scale(0.92)}
+  to{opacity:1;transform:translate(-50%,-50%) scale(1)}
 }
-/* ── LIVE ALERT TICKER ── */
+
+/* ── TICKER ── */
 .tickerWrap{
   position:relative;
-
   width:100%;
-
   overflow:hidden;
-
   padding:10px 0;
-
-  background:
-    linear-gradient(
-      90deg,
-      #2a0000,
-      #5a0000,
-      #2a0000
-    );
-
+  background:linear-gradient(90deg,#2a0000,#5a0000,#2a0000);
   border-top:1px solid rgba(255,80,80,0.35);
   border-bottom:1px solid rgba(255,80,80,0.35);
-
-  box-shadow:
-    0 0 18px rgba(255,0,0,0.12),
-    inset 0 0 14px rgba(255,255,255,0.03);
+  box-shadow:0 0 18px rgba(255,0,0,0.12),inset 0 0 14px rgba(255,255,255,0.03);
 }
 
-.tickerWrap::before{
-  content:'LIVE ALERTS';
-
+/* SOLID opaque label — covers ticker text scrolling behind it */
+.tickerLabel{
   position:absolute;
-
-  left:0;
-  top:0;
-  bottom:0;
-
-  display:flex;
-  align-items:center;
-
+  left:0;top:0;bottom:0;
+  display:flex;align-items:center;
   padding:0 18px;
-
-  background:
-    linear-gradient(
-      90deg,
-      rgba(0,0,0,0.65),
-      rgba(0,0,0,0)
-    );
-
+  /* fully opaque so text can't bleed through */
+  background:#3a0000;
+  border-right:2px solid rgba(255,80,80,0.5);
   color:#ff8080;
-
   font-family:'Bebas Neue',cursive;
-
-  font-size:18px;
-
-  letter-spacing:2px;
-
-  z-index:3;
-
+  font-size:18px;letter-spacing:2px;
+  z-index:10;
+  white-space:nowrap;
   text-shadow:0 0 10px rgba(255,0,0,0.45);
+  box-shadow:6px 0 18px rgba(42,0,0,0.9);
 }
 
 .tickerTrack{
   display:inline-block;
-
   white-space:nowrap;
-
-  padding-left:220px;
-
+  padding-left:140px;
   min-width:100%;
-
   animation:tickerScroll 160s linear infinite;
-will-change:transform;
-
+  will-change:transform;
   font-family:'Bebas Neue',cursive;
-
-  font-size:18px;
-
-  letter-spacing:1px;
-
+  font-size:18px;letter-spacing:1px;
   color:#ffe0e0;
-
   text-shadow:0 0 8px rgba(255,120,120,0.35);
 }
-
-.tickerWrap:hover .tickerTrack{
-  animation-play-state:paused;
-}
+.tickerWrap:hover .tickerTrack{animation-play-state:paused}
 @keyframes tickerScroll{
-
-  from{
-    transform:translateX(100vw);
-  }
-
-  to{
-    transform:translateX(-100%);
-  }
-
+  from{transform:translateX(100vw)}
+  to{transform:translateX(-100%)}
 }
 
-/* ── SEARCH ── */
 .searchBox{
   margin:14px auto;width:100%;max-width:480px;
   display:flex;justify-content:center;position:relative;padding:0 12px;
@@ -280,24 +158,16 @@ will-change:transform;
   width:100%;padding:11px 14px;font-size:16px;
   border-radius:8px;border:1px solid #00cfff44;
   background:rgba(0,20,40,0.85);color:#e0f0ff;
-  font-family:'Share Tech Mono',monospace;
-  outline:none;
+  font-family:'Share Tech Mono',monospace;outline:none;
 }
 .searchBox input::placeholder{color:#4a7a9a}
 .searchBox input:focus{border-color:#00cfff88;box-shadow:0 0 10px #00cfff22}
 .suggestions{
-  position:absolute;
-  top:100%;
-  left:12px;
-  right:12px;
+  position:absolute;top:100%;left:12px;right:12px;
   background:rgba(5,20,40,0.98);
-  border:1px solid #00cfff33;
-  border-radius:8px;
-  max-height:220px;
-  overflow-y:auto;
-  z-index:999999;
-  text-align:left;
-  backdrop-filter:blur(10px);
+  border:1px solid #00cfff33;border-radius:8px;
+  max-height:220px;overflow-y:auto;z-index:999999;
+  text-align:left;backdrop-filter:blur(10px);
   box-shadow:0 0 25px rgba(0,0,0,0.7);
 }
 .suggestions div{
@@ -306,10 +176,8 @@ will-change:transform;
 }
 .suggestions div:hover{background:#0a1f35}
 
-/* ── SECTIONS ── */
 .section{padding:14px 14px;max-width:960px;margin:auto}
 
-/* ── LOCATION CARD ── */
 .locationCard{
   background:rgba(10,25,50,0.8);
   border:1px solid #00cfff22;
@@ -318,7 +186,6 @@ will-change:transform;
   text-shadow:0 0 10px #00cfff44;
 }
 
-/* ── RISK BOX ── */
 .riskBox{
   margin-top:12px;padding:18px 20px;
   border-radius:12px;font-family:'Bebas Neue',cursive;
@@ -355,7 +222,6 @@ will-change:transform;
 }
 .active .weatherDetails{opacity:1;max-height:900px;margin-top:12px}
 
-/* ── SOUNDING ── */
 .soundingTitle{
   border-bottom:1px solid rgba(0,207,255,0.25);
   padding-bottom:6px;margin-bottom:10px;
@@ -363,7 +229,6 @@ will-change:transform;
   display:block;width:100%;
 }
 
-/* ── CURRENT CONDITIONS GRID ── */
 h2{
   font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:2px;
   color:#7ecfff;text-shadow:0 0 12px #00cfff33;margin-bottom:12px;
@@ -384,14 +249,12 @@ h2{
   color:#e0f0ff;text-shadow:0 0 10px #00cfff55;
 }
 
-/* temp color classes */
 .tempCold{color:#4da6ff!important}
 .tempCool{color:#00ccff!important}
 .tempMild{color:#00ff99!important}
 .tempWarm{color:#ffcc00!important}
 .tempHot{color:#ff4400!important}
 
-/* ── ALERT CARDS ── */
 .alertCard{
   margin-top:10px;padding:16px;border-radius:12px;
   text-align:left;cursor:pointer;
@@ -407,7 +270,6 @@ h2{
 .alertSevere{background:linear-gradient(135deg,#3d2000,#5a3000);border-color:#ff990055;color:#ffd09a}
 .alertOther{background:rgba(10,25,50,0.85);border-color:#00cfff18;color:#a0cce0}
 
-/* ── RISK DETAIL ITEMS ── */
 .riskItem{
   display:flex;justify-content:space-between;
   padding:4px 0;border-bottom:1px solid #ffffff08;
@@ -419,23 +281,38 @@ footer{
   font-family:'Share Tech Mono',monospace;
 }
 
+/* Tornado siren overlay */
+#sirenBanner{
+  display:none;
+  position:fixed;top:0;left:0;right:0;
+  background:repeating-linear-gradient(45deg,#ff0000,#ff0000 10px,#cc0000 10px,#cc0000 20px);
+  color:white;font-family:'Bebas Neue',cursive;
+  font-size:22px;letter-spacing:3px;
+  padding:12px;text-align:center;z-index:99999999;
+  animation:sirenFlash 0.6s ease-in-out infinite;
+  cursor:pointer;
+}
+@keyframes sirenFlash{
+  0%,100%{opacity:1}
+  50%{opacity:0.7}
+}
+#sirenBanner span{margin:0 20px}
 </style>
 </head>
 <body>
 
-<!-- LIVE BACKGROUND CANVAS -->
 <canvas id="bgCanvas"></canvas>
+
+<!-- Tornado siren banner -->
+<div id="sirenBanner" onclick="stopSiren()">
+  <span>🚨 TORNADO WARNING / PDS IN YOUR COUNTY</span>
+  <span style="font-size:14px">TAP TO SILENCE</span>
+</div>
 
 <div id="popup" class="popup">
   <div class="popupClose" id="popupClose">✖</div>
   <div class="popupTitle" id="popupTitle">⚠ ALERT</div>
-  <div id="popupText"
-     style="
-       line-height:1.7;
-       font-size:15px;
-       color:#ffeaea;
-     ">
-</div>
+  <div id="popupText" style="line-height:1.7;font-size:15px;color:#ffeaea;"></div>
 </div>
 
 <div class="menuIcon" onclick="toggleMenu()">☰</div>
@@ -448,6 +325,7 @@ footer{
 <img src="logo.PNG" class="logo" id="logo">
 
 <div class="tickerWrap">
+  <div class="tickerLabel">LIVE ALERTS</div>
   <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
 
@@ -461,10 +339,8 @@ footer{
 
   <div id="riskLevel" class="riskBox low" onclick="toggleCard(this)">
     Severe Weather Risk: <span id="riskText">LOW</span>
-
     <div class="weatherDetails">
       <div id="stormLevel" style="margin-bottom:10px;font-size:15px;color:#a0cce0"></div>
-
       <div class="riskItem">Tornado Risk <span class="riskVal" id="torRisk">--</span></div>
       <div class="riskItem">Severe Risk <span class="riskVal" id="sevRisk">--</span></div>
       <div class="riskItem">Instability (LI) <span class="riskVal" id="instability">--</span></div>
@@ -531,12 +407,100 @@ footer{
 </footer>
 
 <script>
+/* ===================== SIREN AUDIO ===================== */
+let sirenCtx = null;
+let sirenNodes = [];
+let sirenActive = false;
+
+function startSiren(){
+  if(sirenActive) return;
+  sirenActive = true;
+  document.getElementById('sirenBanner').style.display = 'block';
+
+  try{
+    sirenCtx = new (window.AudioContext || window.webkitAudioContext)();
+    playSirenLoop();
+  }catch(e){ console.warn('Audio not supported', e); }
+}
+
+function playSirenLoop(){
+  if(!sirenActive || !sirenCtx) return;
+
+  // Create a realistic emergency siren: rise + fall wail
+  const now = sirenCtx.currentTime;
+  const duration = 3.5; // one wail cycle
+
+  // Main oscillator
+  const osc = sirenCtx.createOscillator();
+  const gain = sirenCtx.createGain();
+  // Slight distortion node for urgency
+  const dist = sirenCtx.createWaveShaper();
+  function makeDistortion(amount){
+    const samples = 256;
+    const curve = new Float32Array(samples);
+    for(let i=0;i<samples;i++){
+      const x = (i*2/samples)-1;
+      curve[i] = ((Math.PI+amount)*x)/(Math.PI+amount*Math.abs(x));
+    }
+    return curve;
+  }
+  dist.curve = makeDistortion(30);
+
+  osc.connect(dist);
+  dist.connect(gain);
+  gain.connect(sirenCtx.destination);
+
+  osc.type = 'sawtooth';
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.35, now + 0.15);
+  gain.gain.setValueAtTime(0.35, now + duration - 0.2);
+  gain.gain.linearRampToValueAtTime(0, now + duration);
+
+  // Frequency sweep: low → high → low (classic wail)
+  osc.frequency.setValueAtTime(580, now);
+  osc.frequency.linearRampToValueAtTime(1050, now + duration * 0.45);
+  osc.frequency.linearRampToValueAtTime(580, now + duration);
+
+  // Second oscillator for harmonic thickness
+  const osc2 = sirenCtx.createOscillator();
+  const gain2 = sirenCtx.createGain();
+  osc2.connect(gain2);
+  gain2.connect(sirenCtx.destination);
+  osc2.type = 'sine';
+  gain2.gain.setValueAtTime(0, now);
+  gain2.gain.linearRampToValueAtTime(0.12, now + 0.2);
+  gain2.gain.setValueAtTime(0.12, now + duration - 0.2);
+  gain2.gain.linearRampToValueAtTime(0, now + duration);
+  osc2.frequency.setValueAtTime(290, now);
+  osc2.frequency.linearRampToValueAtTime(525, now + duration * 0.45);
+  osc2.frequency.linearRampToValueAtTime(290, now + duration);
+
+  osc.start(now);
+  osc.stop(now + duration);
+  osc2.start(now);
+  osc2.stop(now + duration);
+
+  sirenNodes = [osc, osc2, gain, gain2];
+
+  // Loop
+  setTimeout(()=>{ if(sirenActive) playSirenLoop(); }, duration * 1000);
+}
+
+function stopSiren(){
+  sirenActive = false;
+  document.getElementById('sirenBanner').style.display = 'none';
+  sirenNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
+  if(sirenCtx){ sirenCtx.close(); sirenCtx = null; }
+}
+
 /* ===================== ANIMATED BACKGROUND ===================== */
 (function(){
   const canvas = document.getElementById('bgCanvas');
   const ctx = canvas.getContext('2d');
-  let W, H, bolts=[], drops=[], clouds=[];
-  let severity = 'low'; // updated from weather
+  let W, H, drops=[], clouds=[];
+
+  // Weather state
+  let bgMode = 'clear'; // 'clear','cloudy','rain','storm','snow','fog','tornado'
 
   function resize(){
     W = canvas.width = window.innerWidth;
@@ -545,126 +509,360 @@ footer{
   window.addEventListener('resize', resize);
   resize();
 
-  // Rain drops
-  function initRain(count){
+  /* ── RAIN DROPS ── */
+  function initRain(count, angled){
     drops = [];
     for(let i=0;i<count;i++){
       drops.push({
-        x: Math.random()*W,
+        x: Math.random()*W*1.5,
         y: Math.random()*H,
-        len: 8+Math.random()*14,
-        speed: 6+Math.random()*8,
-        opacity: 0.08+Math.random()*0.18
+        len: 8+Math.random()*18,
+        speed: 7+Math.random()*10,
+        angle: angled ? (0.25+Math.random()*0.15) : 0,
+        opacity: 0.08+Math.random()*0.22
       });
     }
   }
 
-  // Lightning bolt
-  function spawnBolt(){
-    let x = W*0.2 + Math.random()*W*0.6;
-    bolts.push({x, y:0, life:1, maxLife:1, branches:[]});
-  }
-
-  // Draw jagged lightning path
-  function drawBolt(bx, by, tx, ty, depth, ctx, alpha){
-    if(depth===0) return;
-    ctx.beginPath();
-    ctx.moveTo(bx,by);
-    let midX=(bx+tx)/2 + (Math.random()-0.5)*(tx-bx)*0.6;
-    let midY=(by+ty)/2 + (Math.random()-0.5)*60;
-    ctx.quadraticCurveTo(midX,midY,tx,ty);
-    ctx.strokeStyle=`rgba(180,220,255,${alpha})`;
-    ctx.lineWidth=depth===3?2:1;
-    ctx.shadowBlur=20;ctx.shadowColor='#aaddff';
-    ctx.stroke();
-    ctx.shadowBlur=0;
-    if(depth>1 && Math.random()>0.4){
-      let brX=midX+(Math.random()-0.5)*120;
-      let brY=midY+50+Math.random()*80;
-      drawBolt(midX,midY,brX,brY,depth-1,ctx,alpha*0.6);
+  /* ── SNOWFLAKES ── */
+  let snowflakes = [];
+  function initSnow(count){
+    snowflakes = [];
+    for(let i=0;i<count;i++){
+      snowflakes.push({
+        x: Math.random()*W, y: Math.random()*H,
+        r: 1+Math.random()*3,
+        speed: 0.5+Math.random()*1.5,
+        drift: (Math.random()-0.5)*0.5,
+        opacity: 0.4+Math.random()*0.5
+      });
     }
-    drawBolt(midX,midY,tx,ty,depth-1,ctx,alpha*0.7);
   }
 
-  // Cloud blobs
-  function initClouds(){
-    clouds=[];
-    for(let i=0;i<5;i++){
+  /* ── CLOUDS ── */
+  function initClouds(count, dark){
+    clouds = [];
+    for(let i=0;i<count;i++){
       clouds.push({
-        x:Math.random()*W, y:30+Math.random()*H*0.25,
-        r:80+Math.random()*120, speed:0.1+Math.random()*0.15,
-        opacity:0.04+Math.random()*0.08
+        x: Math.random()*W, y: 20+Math.random()*H*0.35,
+        r: 90+Math.random()*160,
+        speed: 0.08+Math.random()*0.18,
+        opacity: dark ? (0.12+Math.random()*0.22) : (0.04+Math.random()*0.09),
+        dark
       });
     }
   }
 
-  initRain(80);
-  initClouds();
+  /* ── REALISTIC LIGHTNING ── */
+  let bolts = [];
+  let boltTimer = 0;
 
-  let boltTimer=0, boltInterval=180; // frames between bolts
-  let frame=0;
+  function spawnBolt(){
+    const x = W*0.15 + Math.random()*W*0.7;
+    const segments = buildBoltPath(x, 0, x+(Math.random()-0.5)*180, H*(0.35+Math.random()*0.45), 7);
+    bolts.push({
+      segments,
+      life: 1.0,
+      decay: 0.045 + Math.random()*0.04,
+      bright: 0.7+Math.random()*0.3,
+      branches: generateBranches(segments)
+    });
+  }
+
+  function buildBoltPath(x1, y1, x2, y2, depth){
+    if(depth === 0) return [{x:x1,y:y1},{x:x2,y:y2}];
+    const mx = (x1+x2)/2 + (Math.random()-0.5)*(Math.abs(x2-x1)+80)*(0.8/depth);
+    const my = (y1+y2)/2 + (Math.random()-0.5)*40;
+    return [...buildBoltPath(x1,y1,mx,my,depth-1), ...buildBoltPath(mx,my,x2,y2,depth-1)];
+  }
+
+  function generateBranches(segments){
+    const branches = [];
+    for(let i=2;i<segments.length-2;i+=3){
+      if(Math.random()<0.45){
+        const seg = segments[i];
+        const len = 40+Math.random()*90;
+        const angle = (Math.random()-0.5)*1.4 + Math.PI/2;
+        const bx2 = seg.x + Math.cos(angle)*len;
+        const by2 = seg.y + Math.sin(angle)*len;
+        const bsegs = buildBoltPath(seg.x, seg.y, bx2, by2, 4);
+        branches.push({segs:bsegs, opacity:0.5+Math.random()*0.35});
+      }
+    }
+    return branches;
+  }
+
+  function drawBoltPath(segs, alpha, lineWidth, color){
+    if(segs.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(segs[0].x, segs[0].y);
+    for(let i=1;i<segs.length;i++) ctx.lineTo(segs[i].x, segs[i].y);
+
+    // Outer glow — wide, diffuse
+    ctx.lineWidth = lineWidth * 6;
+    ctx.strokeStyle = `rgba(${color},${alpha*0.08})`;
+    ctx.shadowBlur = 0;
+    ctx.stroke();
+
+    // Mid glow
+    ctx.lineWidth = lineWidth * 3;
+    ctx.strokeStyle = `rgba(${color},${alpha*0.2})`;
+    ctx.stroke();
+
+    // Core channel
+    ctx.lineWidth = lineWidth;
+    ctx.strokeStyle = `rgba(${color},${alpha})`;
+    ctx.shadowBlur = 18;
+    ctx.shadowColor = `rgba(${color},0.9)`;
+    ctx.stroke();
+
+    // White hot core
+    ctx.lineWidth = Math.max(0.5, lineWidth * 0.4);
+    ctx.strokeStyle = `rgba(255,255,255,${alpha*0.85})`;
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = 'white';
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  /* ── FOG ── */
+  let fogParticles = [];
+  function initFog(){
+    fogParticles = [];
+    for(let i=0;i<18;i++){
+      fogParticles.push({
+        x: Math.random()*W, y: H*0.3+Math.random()*H*0.6,
+        r: 120+Math.random()*200,
+        speed: 0.08+Math.random()*0.12,
+        opacity: 0.03+Math.random()*0.06
+      });
+    }
+  }
+
+  /* ── TORNADO VORTEX ── */
+  let tornadoAngle = 0;
+  function drawTornado(){
+    const cx = W/2;
+    // Funnel shape with rotating debris
+    tornadoAngle += 0.04;
+    const layers = 22;
+    for(let i=0;i<layers;i++){
+      const t = i/layers;
+      const y = H*0.08 + t*H*0.72;
+      // Funnel narrows toward top, widens at bottom
+      const radiusCurve = t < 0.5
+        ? t * t * 2 * 120 + 8
+        : (t-0.5)*(t-0.5)*2*(-60) + 60 + t*80;
+      const radius = Math.max(8, radiusCurve);
+      const alpha = 0.06 + t*0.12;
+
+      const grd = ctx.createRadialGradient(cx, y, 0, cx, y, radius);
+      grd.addColorStop(0, `rgba(80,40,20,${alpha*1.2})`);
+      grd.addColorStop(0.5, `rgba(40,20,10,${alpha})`);
+      grd.addColorStop(1, `rgba(0,0,0,0)`);
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(cx, y, radius, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Rotating debris dots
+    for(let d=0;d<40;d++){
+      const ring = (d/40) * Math.PI*2;
+      const t = (d/40);
+      const y = H*0.1 + t*H*0.65;
+      const radiusCurve = t < 0.5 ? t*t*2*110+8 : (t-0.5)*(t-0.5)*2*(-55)+55+t*70;
+      const r = Math.max(6, radiusCurve);
+      const angle = ring + tornadoAngle*(3-t*2);
+      const dx = Math.cos(angle)*r*0.85;
+      const dy = Math.sin(angle)*r*0.22; // flatten for perspective
+      ctx.fillStyle = `rgba(100,60,20,${0.3+t*0.4})`;
+      ctx.beginPath();
+      ctx.arc(cx+dx, y+dy, 2+t*3, 0, Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  initClouds(5, false);
+  initRain(40, false);
+  initSnow(0);
+  initFog();
+
+  let frame = 0;
 
   function draw(){
     frame++;
     ctx.clearRect(0,0,W,H);
 
-    // Sky gradient
-    let skyColor = severity==='high'?'#1a0000':severity==='medium'?'#0d0800':'#020812';
-    let grad = ctx.createLinearGradient(0,0,0,H);
-    grad.addColorStop(0, skyColor);
-    grad.addColorStop(1,'#000510');
-    ctx.fillStyle=grad;
+    /* Sky gradient per mode */
+    let skyTop, skyBot;
+    switch(bgMode){
+      case 'snow':    skyTop='#0a0e1a'; skyBot='#1a2235'; break;
+      case 'fog':     skyTop='#0d1018'; skyBot='#1c2230'; break;
+      case 'storm':   skyTop='#1a0000'; skyBot='#000510'; break;
+      case 'rain':    skyTop='#060b18'; skyBot='#0a1525'; break;
+      case 'cloudy':  skyTop='#06090f'; skyBot='#0e1520'; break;
+      case 'tornado': skyTop='#0d0800'; skyBot='#1a1000'; break;
+      default:        skyTop='#020812'; skyBot='#000510'; // clear night-ish
+    }
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0, skyTop);
+    grad.addColorStop(1, skyBot);
+    ctx.fillStyle = grad;
     ctx.fillRect(0,0,W,H);
 
-    // Moving cloud shapes
+    /* Stars for clear / partly cloudy */
+    if(bgMode === 'clear' || bgMode === 'cloudy'){
+      // static stars seeded by frame 0
+      if(!window._stars){
+        window._stars = [];
+        for(let i=0;i<160;i++){
+          window._stars.push({x:Math.random()*W,y:Math.random()*H*0.6,r:Math.random()*1.2,flicker:Math.random()*Math.PI*2});
+        }
+      }
+      window._stars.forEach(s=>{
+        s.flicker += 0.02;
+        const a = 0.3 + Math.sin(s.flicker)*0.25;
+        ctx.beginPath();
+        ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+        ctx.fillStyle = `rgba(200,220,255,${a})`;
+        ctx.fill();
+      });
+    }
+
+    /* Clouds */
     clouds.forEach(c=>{
       c.x += c.speed;
       if(c.x - c.r > W) c.x = -c.r;
-      let cg = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
-      let col = severity==='high'?'rgba(80,0,0':'rgba(20,40,80';
-      cg.addColorStop(0,`${col},${c.opacity})`);
-      cg.addColorStop(1,`${col},0)`);
+      const col = c.dark ? '20,30,50' : '30,55,90';
+      const cg = ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
+      cg.addColorStop(0,`rgba(${col},${c.opacity})`);
+      cg.addColorStop(1,`rgba(${col},0)`);
       ctx.fillStyle=cg;
       ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
     });
 
-    // Rain
-    let rainCount = severity==='high'?120:severity==='medium'?80:40;
-    if(drops.length!==rainCount) initRain(rainCount);
-    let rainColor = severity==='high'?'rgba(255,100,100':'rgba(100,180,255';
-    drops.forEach(d=>{
-      d.y+=d.speed;
-      if(d.y>H){d.y=-d.len;d.x=Math.random()*W}
-      ctx.beginPath();
-      ctx.moveTo(d.x,d.y);
-      ctx.lineTo(d.x-1,d.y+d.len);
-      ctx.strokeStyle=`${rainColor},${d.opacity})`;
-      ctx.lineWidth=0.8;ctx.stroke();
-    });
-
-    // Lightning
-    boltTimer++;
-    let interval = severity==='high'?60:severity==='medium'?120:240;
-    if(boltTimer>=interval){
-      if(Math.random()>0.3) spawnBolt();
-      boltTimer=0;
+    /* Rain */
+    if(bgMode === 'rain' || bgMode === 'storm'){
+      const rainCol = bgMode==='storm' ? '255,120,120' : '120,190,255';
+      drops.forEach(d=>{
+        d.y += d.speed;
+        d.x -= d.speed * d.angle;
+        if(d.y > H){ d.y=-d.len; d.x=Math.random()*W*1.3; }
+        ctx.beginPath();
+        ctx.moveTo(d.x, d.y);
+        ctx.lineTo(d.x - d.len*d.angle*1.5, d.y + d.len);
+        ctx.strokeStyle = `rgba(${rainCol},${d.opacity})`;
+        ctx.lineWidth = 0.8; ctx.stroke();
+      });
     }
-    bolts=bolts.filter(b=>b.life>0);
+
+    /* Snow */
+    if(bgMode === 'snow'){
+      snowflakes.forEach(s=>{
+        s.y += s.speed;
+        s.x += s.drift;
+        if(s.y > H){ s.y = -5; s.x = Math.random()*W; }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(200,220,255,${s.opacity})`;
+        ctx.fill();
+      });
+    }
+
+    /* Fog */
+    if(bgMode === 'fog'){
+      fogParticles.forEach(fp=>{
+        fp.x += fp.speed;
+        if(fp.x - fp.r > W) fp.x = -fp.r;
+        const fg = ctx.createRadialGradient(fp.x,fp.y,0,fp.x,fp.y,fp.r);
+        fg.addColorStop(0,`rgba(160,180,200,${fp.opacity})`);
+        fg.addColorStop(1,'rgba(160,180,200,0)');
+        ctx.fillStyle = fg;
+        ctx.beginPath();ctx.arc(fp.x,fp.y,fp.r,0,Math.PI*2);ctx.fill();
+      });
+    }
+
+    /* Tornado */
+    if(bgMode === 'tornado'){
+      // Heavy rain behind tornado
+      drops.forEach(d=>{
+        d.y += d.speed*1.4;
+        d.x -= d.speed*0.4;
+        if(d.y > H){ d.y=-d.len; d.x=Math.random()*W*1.5; }
+        ctx.beginPath();
+        ctx.moveTo(d.x,d.y);ctx.lineTo(d.x-d.len*0.5,d.y+d.len);
+        ctx.strokeStyle = `rgba(180,120,60,${d.opacity*0.7})`;
+        ctx.lineWidth=0.9;ctx.stroke();
+      });
+      drawTornado();
+    }
+
+    /* Lightning */
+    if(bgMode === 'storm' || bgMode === 'tornado'){
+      const interval = bgMode==='tornado' ? 50 : 80;
+      boltTimer++;
+      if(boltTimer >= interval){
+        if(Math.random() > 0.25) spawnBolt();
+        boltTimer = 0;
+      }
+    } else if(bgMode === 'rain'){
+      boltTimer++;
+      if(boltTimer >= 200){
+        if(Math.random() > 0.55) spawnBolt();
+        boltTimer = 0;
+      }
+    }
+
+    bolts = bolts.filter(b => b.life > 0);
     bolts.forEach(b=>{
-      drawBolt(b.x,0,b.x+(Math.random()-0.5)*80,H*0.4+Math.random()*H*0.3,3,ctx,b.life*0.85);
-      b.life-=0.08;
+      const boltColor = bgMode==='tornado' ? '255,180,80' : bgMode==='storm' ? '200,220,255' : '180,210,255';
+
+      // Ground flash when bolt is fresh
+      if(b.life > 0.85){
+        const flashAlpha = (b.life-0.85)/0.15 * 0.06;
+        ctx.fillStyle = `rgba(200,220,255,${flashAlpha})`;
+        ctx.fillRect(0,0,W,H);
+      }
+
+      drawBoltPath(b.segments, b.life * b.bright, 1.8, boltColor);
+
+      b.branches.forEach(br=>{
+        drawBoltPath(br.segs, b.life * b.bright * br.opacity, 0.8, boltColor);
+      });
+
+      b.life -= b.decay;
     });
 
-    // Subtle scan line overlay
-    ctx.fillStyle='rgba(0,0,0,0.03)';
+    /* Scan lines */
+    ctx.fillStyle='rgba(0,0,0,0.025)';
     for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,2);
 
     requestAnimationFrame(draw);
   }
   draw();
 
-  // Expose severity setter
-  window.setBgSeverity = function(s){ severity=s; }
+  window.setBgMode = function(mode){
+    if(bgMode === mode) return;
+    bgMode = mode;
+    // Re-init particles for new mode
+    switch(mode){
+      case 'storm':   initClouds(8,true);  initRain(140,true);  initSnow(0);   break;
+      case 'rain':    initClouds(6,true);  initRain(80,false);  initSnow(0);   break;
+      case 'tornado': initClouds(9,true);  initRain(120,true);  initSnow(0);   break;
+      case 'snow':    initClouds(4,false); initRain(0,false);   initSnow(120); break;
+      case 'fog':     initClouds(3,false); initRain(0,false);   initSnow(0);   initFog(); break;
+      case 'cloudy':  initClouds(7,true);  initRain(0,false);   initSnow(0);   break;
+      default:        initClouds(3,false); initRain(0,false);   initSnow(0);   break; // clear
+    }
+    window.stars = null; // reset stars
+  };
+
+  // Legacy shim
+  window.setBgSeverity = function(s){
+    if(s==='high') window.setBgMode('storm');
+    else if(s==='medium') window.setBgMode('rain');
+  };
 })();
 
 /* ===================== APP LOGIC ===================== */
@@ -681,73 +879,47 @@ function toggleMenu(){
 }
 
 function showPopup(eventName, desc){
-
   let title = '⚠ WEATHER ALERT';
   let message = 'Stay alert and monitor conditions.';
-
-  // Particularly Dangerous Situation
-  if(
-    eventName.includes('Particularly Dangerous Situation') ||
-    eventName.includes('PDS')
-  ){
+  if(eventName.includes('Particularly Dangerous Situation')||eventName.includes('PDS')){
     title = '🚨 PARTICULARLY DANGEROUS SITUATION';
     message = 'Life-threatening severe weather is occurring or imminent. Seek substantial shelter immediately away from windows.';
-  }
-
-  // Tornado Warning
-  else if(eventName.includes('Tornado Warning')){
+  } else if(eventName.includes('Tornado Warning')){
     title = '🌪️ TORNADO WARNING';
     message = 'Seek shelter immediately in a basement or interior room away from windows.';
-  }
-
-  // Severe Thunderstorm Warning
-  else if(eventName.includes('Severe Thunderstorm Warning')){
+  } else if(eventName.includes('Severe Thunderstorm Warning')){
     title = '⛈️ SEVERE THUNDERSTORM WARNING';
     message = 'Move indoors immediately and stay away from windows.';
-  }
-
-  // Flash Flood Emergency
-  else if(eventName.includes('Flash Flood Emergency')){
+  } else if(eventName.includes('Flash Flood Emergency')){
     title = '🌊 FLASH FLOOD EMERGENCY';
     message = 'Move to higher ground immediately. Do not travel through flooded roads.';
-  }
-
-  // Tornado Watch
-  else if(eventName.includes('Tornado Watch')){
+  } else if(eventName.includes('Tornado Watch')){
     title = '🌪️ TORNADO WATCH';
     message = 'Conditions are favorable for tornadoes. Be prepared to take shelter quickly.';
-  }
-
-  // Severe Thunderstorm Watch
-  else if(eventName.includes('Severe Thunderstorm Watch')){
+  } else if(eventName.includes('Severe Thunderstorm Watch')){
     title = '⛈️ SEVERE THUNDERSTORM WATCH';
     message = 'Strong storms may develop. Stay weather aware.';
   }
-
   document.getElementById('popupTitle').innerText = title;
-
   document.getElementById('popupText').innerText = message;
-
   document.getElementById('popup').style.display='block';
 }
 document.getElementById('popupClose').onclick=()=>document.getElementById('popup').style.display='none';
 
 let lat=43, lon=-88;
+let userCounty = '';
 
 navigator.geolocation.getCurrentPosition(p=>{
   lat=p.coords.latitude; lon=p.coords.longitude; loadAll();
 }, ()=>loadAll());
 
 function loadAll(){
-
   loadTicker();
   loadLocation();
   loadWeather();
   loadAlerts();
-
-  let now = new Date();
-
-  document.getElementById('footerTime').innerText =
+  let now=new Date();
+  document.getElementById('footerTime').innerText=
     `Data: NWS · Open-Meteo · Updated ${now.toLocaleTimeString()}`;
 }
 
@@ -760,19 +932,38 @@ async function loadLocation(){
     let state=d.properties.relativeLocation.properties.state;
     let countyRes=await fetch(d.properties.county);
     let countyData=await countyRes.json();
+    userCounty = countyData.properties.name;
     document.getElementById('locationCard').innerHTML=
-      `<b>${countyData.properties.name} County</b><br><span style="font-size:16px">${city}, ${state}</span>`;
+      `<b>${userCounty} County</b><br><span style="font-size:16px">${city}, ${state}</span>`;
   }catch(e){
     document.getElementById('locationCard').innerText='Location unavailable';
   }
 }
 
-/* ── WEATHER ── helper to convert degrees to compass */
+/* ── WEATHER CODE → BG MODE ── */
+// WMO weather codes: https://open-meteo.com/en/docs
+function weatherCodeToMode(code, cape, li){
+  // Tornado / extreme storm conditions from instability
+  if(li<=-6 && cape>2000) return 'tornado'; // extreme instability → tornado mode
+  // Snow codes
+  if([71,73,75,77,85,86].includes(code)) return 'snow';
+  // Fog codes
+  if([45,48].includes(code)) return 'fog';
+  // Heavy thunderstorm
+  if([95,96,99].includes(code)) return 'storm';
+  // Rain / drizzle
+  if([51,53,55,61,63,65,80,81,82].includes(code)) return 'rain';
+  // Overcast
+  if([2,3].includes(code)) return 'cloudy';
+  // Clear/partly cloudy
+  return 'clear';
+}
+
+/* ── HELPERS ── */
 function degToCompass(deg){
   const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   return dirs[Math.round(deg/22.5)%16];
 }
-
 function tempClass(f){
   if(f<32) return 'tempCold';
   if(f<50) return 'tempCool';
@@ -780,7 +971,6 @@ function tempClass(f){
   if(f<90) return 'tempWarm';
   return 'tempHot';
 }
-
 function dewLabel(f){
   if(f<35) return '🟢 Dry';
   if(f<50) return '🟡 Comfortable';
@@ -788,7 +978,6 @@ function dewLabel(f){
   if(f<65) return '🟠 Sticky';
   return '🔴 Humid / Storm Fuel';
 }
-
 function humLabel(h){
   if(h<30) return {level:'Very Dry',feel:'Parched air'};
   if(h<50) return {level:'Low',feel:'Comfortable'};
@@ -796,7 +985,6 @@ function humLabel(h){
   if(h<85) return {level:'High',feel:'Muggy'};
   return {level:'Very High',feel:'Oppressively humid'};
 }
-
 function liLabel(li){
   if(li>2) return '🟢 Stable — storm unlikely';
   if(li>0) return '🟡 Slightly unstable';
@@ -804,7 +992,6 @@ function liLabel(li){
   if(li>-6) return '🔴 Very unstable — severe risk';
   return '🔴🔴 Extremely unstable — tornado risk';
 }
-
 function capeLabel(c){
   if(c<500) return {txt:'Weak',color:'#6eff8a'};
   if(c<1500) return {txt:'Moderate',color:'#ffcc00'};
@@ -815,7 +1002,6 @@ function capeLabel(c){
 /* ── LOAD WEATHER ── */
 async function loadWeather(){
   try{
-    // Fetch current + hourly CAPE/LI from Open-Meteo
     let url=`https://api.open-meteo.com/v1/forecast?`+
       `latitude=${lat}&longitude=${lon}`+
       `&current=temperature_2m,relative_humidity_2m,apparent_temperature,`+
@@ -828,7 +1014,6 @@ async function loadWeather(){
     let d=await r.json();
     let c=d.current;
 
-    // Basic values
     let tempF   = Math.round(c.temperature_2m);
     let feelsF  = Math.round(c.apparent_temperature);
     let hum     = Math.round(c.relative_humidity_2m);
@@ -837,39 +1022,30 @@ async function loadWeather(){
     let windG   = Math.round(c.wind_gusts_10m);
     let windDeg = c.wind_direction_10m;
     let pressHpa= Math.round(c.surface_pressure);
-    // convert surface pressure to sea-level approximate (simple)
-    let pressMb = pressHpa; // already roughly mb
+    let wcode   = c.weather_code || 0;
 
-    // Temp
     let tc = tempClass(tempF);
     document.getElementById('temp').innerHTML=`<span class="${tc}">${tempF}°F</span>`;
     document.getElementById('feels').innerText=`${feelsF}°F`;
-    document.getElementById('pressure').innerText=`${pressMb} mb`;
+    document.getElementById('pressure').innerText=`${pressHpa} mb`;
 
-    // Humidity
     let hl=humLabel(hum);
     document.getElementById('humidity').innerText=hum+'%';
     document.getElementById('moistureLevel').innerText=hl.level;
     document.getElementById('humidityFeel').innerText=hl.feel;
 
-    // Dew point
     document.getElementById('dew').innerHTML=`<span class="${tc}">${dewF}°F</span>`;
     document.getElementById('stormFuel').innerText=dewLabel(dewF);
 
-    // Wind
     let compassDir=degToCompass(windDeg);
     document.getElementById('wind').innerText=windSpd+' mph';
     document.getElementById('windDir').innerText=`${compassDir} (${windDeg}°)`;
     document.getElementById('gusts').innerText=windG+' mph';
 
-    // Sounding / instability from hourly (take current hour index)
     let now=new Date();
     let hourIdx=now.getHours();
-    let cape=d.hourly.cape[hourIdx] ?? 0;
+    let cape=Math.max(0, d.hourly.cape[hourIdx] ?? 0);
     let li=d.hourly.lifted_index[hourIdx] ?? 5;
-
-    // Clamp
-    cape=Math.max(0,cape);
 
     let cl=capeLabel(cape);
     document.getElementById('cape').innerHTML=`<span style="color:${cl.color}">${Math.round(cape)} J/kg (${cl.txt})</span>`;
@@ -878,58 +1054,33 @@ async function loadWeather(){
     document.getElementById('sndLift').innerText=li<=0?`⬆ Active (LI ${li.toFixed(1)})`:`⬇ Suppressed (LI ${li.toFixed(1)})`;
     document.getElementById('sndWind').innerText=windSpd>20?`💨 Elevated (${windSpd} mph)`:windSpd>10?`🌬 Moderate`:`🍃 Light`;
 
-    // Tornado / Severe risk from LI + CAPE
     let torRiskTxt, sevRiskTxt;
-    if(li<=-6 && cape>2000){torRiskTxt='🔴 High';sevRiskTxt='🔴 High';}
-    else if(li<=-4 && cape>1000){torRiskTxt='🟠 Moderate';sevRiskTxt='🔴 High';}
-    else if(li<=-2 && cape>500){torRiskTxt='🟡 Low–Moderate';sevRiskTxt='🟠 Moderate';}
+    if(li<=-6&&cape>2000){torRiskTxt='🔴 High';sevRiskTxt='🔴 High';}
+    else if(li<=-4&&cape>1000){torRiskTxt='🟠 Moderate';sevRiskTxt='🔴 High';}
+    else if(li<=-2&&cape>500){torRiskTxt='🟡 Low–Moderate';sevRiskTxt='🟠 Moderate';}
     else if(li<=0){torRiskTxt='🟡 Low';sevRiskTxt='🟡 Low–Moderate';}
     else{torRiskTxt='🟢 Minimal';sevRiskTxt='🟢 Minimal';}
 
     document.getElementById('torRisk').innerText=torRiskTxt;
     document.getElementById('sevRisk').innerText=sevRiskTxt;
+    document.getElementById('capeWhy').innerText=
+      `CAPE ${Math.round(cape)} J/kg · LI ${li.toFixed(1)} · Dew ${dewF}°F`+
+      (cape>1500?' · ⚠ Significant instability present':'');
 
-    let capeWhy=`CAPE ${Math.round(cape)} J/kg · LI ${li.toFixed(1)} · Dew ${dewF}°F`;
-    if(cape>1500) capeWhy+=' · ⚠ Significant instability present';
-    document.getElementById('capeWhy').innerText=capeWhy;
+    // Background: weather code takes priority, instability can override to storm/tornado
+    let bgMode = weatherCodeToMode(wcode, cape, li);
+    window.setBgMode(bgMode);
 
-    // Determine forecast severe risk
-let weatherRisk = 'low';
+    // Fallback risk level from instability (alerts can override below)
+    let weatherRisk='low';
+    if(li<=-6&&cape>2000&&dewF>=65&&windSpd>=20) weatherRisk='high';
+    else if(li<=-3&&cape>1000) weatherRisk='medium';
 
-if(
-  li <= -6 &&
-  cape > 2000 &&
-  dewF >= 65 &&
-  windSpd >= 20
-){
-  weatherRisk = 'high';
-}
-else if(
-  li <= -3 &&
-  cape > 1000
-){
-  weatherRisk = 'medium';
-}
-
-// Update severe weather box
-let riskEl = document.getElementById('riskLevel');
-let riskTxt = document.getElementById('riskText');
-
-if(weatherRisk === 'high'){
-  riskTxt.innerText = 'HIGH';
-  riskEl.className = 'riskBox high';
-}
-else if(weatherRisk === 'medium'){
-  riskTxt.innerText = 'MODERATE';
-  riskEl.className = 'riskBox medium';
-}
-else{
-  riskTxt.innerText = 'LOW';
-  riskEl.className = 'riskBox low';
-}
-
-// Background severity
-window.setBgSeverity(weatherRisk);
+    let riskEl=document.getElementById('riskLevel');
+    let riskTxt=document.getElementById('riskText');
+    if(weatherRisk==='high'){riskTxt.innerText='HIGH';riskEl.className='riskBox high';}
+    else if(weatherRisk==='medium'){riskTxt.innerText='MODERATE';riskEl.className='riskBox medium';}
+    else{riskTxt.innerText='LOW';riskEl.className='riskBox low';}
 
   }catch(e){
     console.error('Weather fetch error',e);
@@ -937,52 +1088,116 @@ window.setBgSeverity(weatherRisk);
   }
 }
 
+/* ── ALERT SEVERITY SORT ORDER ── */
+const ALERT_PRIORITY = {
+  'Tornado Warning':                    1,
+  'Particularly Dangerous Situation':   1,
+  'Flash Flood Emergency':              2,
+  'Severe Thunderstorm Warning':        3,
+  'Flash Flood Warning':                4,
+  'Tornado Watch':                      5,
+  'Severe Thunderstorm Watch':          6,
+  'Flash Flood Watch':                  7,
+  'Winter Storm Warning':               8,
+  'Ice Storm Warning':                  8,
+  'Blizzard Warning':                   8,
+  'Winter Storm Watch':                 9,
+};
+
+function alertSortScore(ev){
+  for(const [key, val] of Object.entries(ALERT_PRIORITY)){
+    if(ev.includes(key)) return val;
+  }
+  return 99;
+}
+
+function distanceMiles(lat1,lon1,lat2,lon2){
+  const R=3958.8;
+  const dLat=(lat2-lat1)*Math.PI/180;
+  const dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function alertDistance(a){
+  // Use centroid of alert polygon if available
+  try{
+    const geo = a.geometry;
+    if(geo && geo.type==='Polygon'){
+      const coords = geo.coordinates[0];
+      const clat = coords.reduce((s,c)=>s+c[1],0)/coords.length;
+      const clon = coords.reduce((s,c)=>s+c[0],0)/coords.length;
+      return distanceMiles(lat,lon,clat,clon);
+    }
+  }catch(e){}
+  return 9999;
+}
+
 /* ── ALERTS ── */
 async function loadAlerts(){
   try{
-   let r = await fetch(
-  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`
-);
+    let r=await fetch(
+      `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`
+    );
     let d=await r.json();
+
+    // Sort: priority first, then distance
+    let features = [...(d.features||[])];
+    features.sort((a,b)=>{
+      const ea = a.properties?.event||'';
+      const eb = b.properties?.event||'';
+      const pa = alertSortScore(ea);
+      const pb = alertSortScore(eb);
+      if(pa !== pb) return pa-pb;
+      return alertDistance(a) - alertDistance(b);
+    });
+
     let html='';
-    let triggered = false;
-window.shownAlerts = window.shownAlerts || [];
+    let triggered=false;
+    window.shownAlerts = window.shownAlerts||[];
     let alertRisk='low';
 
-    d.features.forEach(a=>{
+    // Check for tornado warning or PDS in user's county → trigger siren
+    let needsSiren = false;
+
+    features.forEach(a=>{
       let ev=a.properties.event||'';
       let desc=a.properties.description||'';
       let inst=a.properties.instruction||'';
+      let areaDesc=a.properties.areaDesc||'';
+      let dist=alertDistance(a);
+      let distStr = dist<9000 ? `${Math.round(dist)} mi away` : '';
 
       let style='alertOther';
       if(ev.includes('Tornado')) style='alertTornado';
       else if(ev.includes('Severe')) style='alertSevere';
 
       if(ev.includes('Tornado Warning')) alertRisk='high';
-      else if(ev.includes('Tornado Watch') && alertRisk!=='high') alertRisk='medium';
-      else if((ev.includes('Severe Thunderstorm Warning')) && alertRisk==='low') alertRisk='medium';
+      else if(ev.includes('Tornado Watch')&&alertRisk!=='high') alertRisk='medium';
+      else if(ev.includes('Severe Thunderstorm Warning')&&alertRisk==='low') alertRisk='medium';
 
-      let uniqueAlertId =
-  ev +
-  (a.properties.sent || '') +
-  (a.properties.areaDesc || '');
+      // Check if this alert covers user's county
+      const coversMyCounty = userCounty &&
+        areaDesc.toLowerCase().includes(userCounty.toLowerCase());
 
-// only popup once per alert
-if(
-  !triggered &&
-  (ev.includes('Tornado') || ev.includes('Severe')) &&
-  !window.shownAlerts.includes(uniqueAlertId)
-){
+      if(coversMyCounty && (
+        ev.includes('Tornado Warning') ||
+        (ev.includes('Tornado Watch') && desc.includes('Particularly Dangerous')) ||
+        ev.includes('PDS')
+      )){
+        needsSiren = true;
+      }
 
-  window.shownAlerts.push(uniqueAlertId);
-
-  showPopup(ev, desc);
-
-  triggered = true;
-}
+      let uniqueAlertId = ev+(a.properties.sent||'')+(areaDesc);
+      if(!triggered&&(ev.includes('Tornado')||ev.includes('Severe'))&&
+         !window.shownAlerts.includes(uniqueAlertId)){
+        window.shownAlerts.push(uniqueAlertId);
+        showPopup(ev,desc);
+        triggered=true;
+      }
 
       html+=`<div class="alertCard ${style}" onclick="toggleCard(this)">
-        <b>${ev}</b>
+        <b>${ev}</b>${distStr?` <span style="font-size:11px;color:#7ecfff;margin-left:8px">📍 ${distStr}</span>`:''}
         <div class="weatherDetails">
           <div style="margin-top:8px;line-height:1.6;font-size:12px">${desc.replace(/\n/g,'<br>')}</div>
           ${inst?`<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.05);border-radius:6px;font-size:11px">${inst.replace(/\n/g,'<br>')}</div>`:''}
@@ -990,16 +1205,20 @@ if(
       </div>`;
     });
 
-    document.getElementById('alerts').innerHTML=html||'<div style="color:#2a6a4a;padding:16px">✓ No active alerts for this location</div>';
+    document.getElementById('alerts').innerHTML=html||
+      '<div style="color:#2a6a4a;padding:16px">✓ No active alerts for this location</div>';
+
+    // Siren
+    if(needsSiren && !sirenActive) startSiren();
+    else if(!needsSiren && sirenActive) stopSiren();
 
     let riskEl=document.getElementById('riskLevel');
     let riskTxt=document.getElementById('riskText');
     if(alertRisk==='high'){
       riskTxt.innerText='HIGH';riskEl.className='riskBox high';
-      window.setBgSeverity('high');
+      window.setBgMode('storm');
     }else if(alertRisk==='medium'){
       riskTxt.innerText='MODERATE';riskEl.className='riskBox medium';
-      window.setBgSeverity('medium');
     }else{
       riskTxt.innerText='LOW';riskEl.className='riskBox low';
     }
@@ -1008,155 +1227,97 @@ if(
   }
 }
 
-/* ── TICKER ── */
+/* ── TICKER ── sorted: most severe + closest first ── */
 async function loadTicker(){
-
   try{
+    let r=await fetch('https://api.weather.gov/alerts/active?severity=Severe,Extreme');
+    let d=await r.json();
 
-    let r = await fetch(
-      'https://api.weather.gov/alerts/active?severity=Severe,Extreme'
-    );
+    // Filter to major alerts only
+    const majorTypes = [
+      'Tornado Warning','Tornado Watch','Severe Thunderstorm Warning',
+      'Flash Flood Warning','Particularly Dangerous Situation','PDS',
+      'Flash Flood Emergency','Blizzard Warning','Ice Storm Warning'
+    ];
 
-    let d = await r.json();
-
-    let parts = [];
-    let seen = new Set();
-
-    d.features
-      .filter(a => a.properties && a.properties.event)
-      .forEach(a=>{
-
-        let ev = a.properties.event || '';
-        let area = a.properties.areaDesc || '';
-
-        const isMajorAlert =
-          ev.includes('Tornado Warning') ||
-          ev.includes('Tornado Watch') ||
-          ev.includes('Severe Thunderstorm Warning') ||
-          ev.includes('Flash Flood Warning') ||
-          ev.includes('Particularly Dangerous Situation') ||
-          ev.includes('PDS');
-
-        if(!isMajorAlert) return;
-
-        let icon = '⚡';
-
-        if(ev.includes('Tornado Warning')){
-          icon = '🌪️';
-        }
-        else if(ev.includes('Tornado Watch')){
-          icon = '🌀';
-        }
-        else if(
-          ev.includes('Particularly Dangerous Situation') ||
-          ev.includes('PDS')
-        ){
-          icon = '🚨';
-        }
-        else if(ev.includes('Severe Thunderstorm Warning')){
-          icon = '⛈️';
-        }
-        else if(ev.includes('Flash Flood')){
-          icon = '🌊';
-        }
-
-        let key = ev + area;
-
-        if(seen.has(key)) return;
-
-        seen.add(key);
-
-        parts.push(`${icon} ${ev} — ${area}`);
-
-      });
-
-    // limit AFTER filtering
-    parts = parts.slice(0,25);
-
-    let ticker = document.getElementById('tickerContent');
-
-    // reset animation
-    ticker.style.animation = 'none';
-
-    ticker.innerText =
-      parts.length
-        ? parts.join('      ✦      ')
-        : '✓ No major severe weather alerts nationwide';
-
-    // force browser redraw
-    void ticker.offsetWidth;
-
-    // restart animation
-    ticker.style.animation =
-      'tickerScroll 160s linear infinite';
-
-  }
-  catch(e){
-
-    console.error('Ticker error', e);
-
-  }
-
-}
-/* ── SEARCH ── */
-let debounce;
-
-document.getElementById('searchInput').addEventListener('input',()=>{
-
-  clearTimeout(debounce);
-
-  let q=document.getElementById('searchInput').value.trim();
-
-  if(q.length < 2){
-    document.getElementById('suggestions').innerHTML='';
-    return;
-  }
-
-  debounce=setTimeout(async()=>{
-
-    let res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=25&addressdetails=1`
-    );
-
-    let data = await res.json();
-
-    let sug=document.getElementById('suggestions');
-
-    sug.innerHTML='';
-
-    data.forEach(p=>{
-
-    if(
-  !p.lat ||
-  !p.lon ||
-  !p.display_name
-){
-  return;
-}
-
-      let div=document.createElement('div');
-
-      div.innerText = p.display_name;
-
-      div.onclick=()=>{
-
-        lat=parseFloat(p.lat);
-        lon=parseFloat(p.lon);
-
-        document.getElementById('searchInput').value =
-  p.display_name;
-
-        sug.innerHTML='';
-
-        loadAll();
-      };
-
-      sug.appendChild(div);
-
+    let features = (d.features||[]).filter(a=>{
+      const ev = a.properties?.event||'';
+      return majorTypes.some(t=>ev.includes(t));
     });
 
-  },300);
+    // Sort by priority then distance
+    features.sort((a,b)=>{
+      const ea=a.properties?.event||'';
+      const eb=b.properties?.event||'';
+      const pa=alertSortScore(ea);
+      const pb=alertSortScore(eb);
+      if(pa!==pb) return pa-pb;
+      return alertDistance(a)-alertDistance(b);
+    });
 
+    features = features.slice(0,30);
+
+    const iconMap = {
+      'Tornado Warning':'🌪️','Particularly Dangerous Situation':'🚨','PDS':'🚨',
+      'Flash Flood Emergency':'🌊','Severe Thunderstorm Warning':'⛈️',
+      'Flash Flood Warning':'🌊','Tornado Watch':'🌀','Severe Thunderstorm Watch':'⛈️',
+      'Blizzard Warning':'❄️','Ice Storm Warning':'🧊'
+    };
+
+    let seen=new Set();
+    let parts=features.map(a=>{
+      let ev=a.properties?.event||'';
+      let area=a.properties?.areaDesc||'';
+      let key=ev+area;
+      if(seen.has(key)) return null;
+      seen.add(key);
+      let icon='⚡';
+      for(const [k,v] of Object.entries(iconMap)){
+        if(ev.includes(k)){icon=v;break;}
+      }
+      let dist=alertDistance(a);
+      let distTag=dist<500?` (${Math.round(dist)} mi)`:'';
+      return `${icon} ${ev}${distTag} — ${area}`;
+    }).filter(Boolean);
+
+    let ticker=document.getElementById('tickerContent');
+    ticker.style.animation='none';
+    ticker.innerText=parts.length
+      ? parts.join('      ✦      ')
+      : '✓ No major severe weather alerts nationwide';
+    void ticker.offsetWidth;
+    ticker.style.animation='tickerScroll 160s linear infinite';
+  }catch(e){
+    console.error('Ticker error',e);
+  }
+}
+
+/* ── SEARCH ── */
+let debounce;
+document.getElementById('searchInput').addEventListener('input',()=>{
+  clearTimeout(debounce);
+  let q=document.getElementById('searchInput').value.trim();
+  if(q.length<2){document.getElementById('suggestions').innerHTML='';return;}
+  debounce=setTimeout(async()=>{
+    let res=await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=25&addressdetails=1`
+    );
+    let data=await res.json();
+    let sug=document.getElementById('suggestions');
+    sug.innerHTML='';
+    data.forEach(p=>{
+      if(!p.lat||!p.lon||!p.display_name) return;
+      let div=document.createElement('div');
+      div.innerText=p.display_name;
+      div.onclick=()=>{
+        lat=parseFloat(p.lat);lon=parseFloat(p.lon);
+        document.getElementById('searchInput').value=p.display_name;
+        sug.innerHTML='';
+        loadAll();
+      };
+      sug.appendChild(div);
+    });
+  },300);
 });
 
 setInterval(loadAll,30000);
