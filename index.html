@@ -63,20 +63,52 @@ body>*:not(#bgCanvas){position:relative;z-index:1}
 }
 .menuPanel a:hover{color:#00cfff}
 
-/* ── POPUP ── */
 .popup{
-  position:fixed;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  background:linear-gradient(135deg,#5a0000,#8a0000);
-  color:white;padding:28px 24px;border-radius:14px;
-  width:88%;max-width:420px;z-index:99999;display:none;
-  box-shadow:0 0 40px rgba(255,40,40,0.8);text-align:left;
-  border:1px solid rgba(255,80,80,0.4);
-  font-family:'Share Tech Mono',monospace;
-}
-.popupClose{position:absolute;top:10px;right:14px;font-size:22px;cursor:pointer;color:#ffaaaa}
-.popupTitle{font-family:'Bebas Neue',cursive;font-size:28px;color:#ff6060;letter-spacing:2px;margin-bottom:8px}
+  position:fixed;
 
+  top:50%;
+  left:50%;
+
+  transform:translate(-50%,-50%);
+
+  width:90%;
+  max-width:420px;
+
+  padding:28px 24px;
+
+  background:linear-gradient(135deg,#5a0000,#8a0000);
+
+  color:white;
+
+  border-radius:14px;
+
+  z-index:999999;
+
+  display:none;
+
+  text-align:center;
+
+  border:1px solid rgba(255,80,80,0.4);
+
+  box-shadow:
+    0 0 40px rgba(255,40,40,0.8),
+    0 0 120px rgba(255,0,0,0.25);
+
+  font-family:'Share Tech Mono',monospace;
+
+  animation:popupFade 0.25s ease;
+}
+@keyframes popupFade{
+  from{
+    opacity:0;
+    transform:translate(-50%,-45%) scale(0.92);
+  }
+
+  to{
+    opacity:1;
+    transform:translate(-50%,-50%) scale(1);
+  }
+}
 /* ── TICKER ── */
 .tickerWrap{
   background:linear-gradient(90deg,#5a0000,#7a0000,#5a0000);
@@ -496,9 +528,53 @@ function toggleMenu(){
 }
 
 function showPopup(eventName, desc){
-  let isTornado = eventName.includes('Tornado');
-  document.getElementById('popupTitle').innerText = isTornado ? '🌪️ '+eventName : '⛈️ '+eventName;
-  document.getElementById('popupText').innerText = isTornado ? 'TAKE COVER NOW. Move to lowest floor, interior room.' : 'SEEK SHELTER immediately. Stay away from windows.';
+
+  let title = '⚠ WEATHER ALERT';
+  let message = 'Stay alert and monitor conditions.';
+
+  // Particularly Dangerous Situation
+  if(
+    eventName.includes('Particularly Dangerous Situation') ||
+    eventName.includes('PDS')
+  ){
+    title = '🚨 PARTICULARLY DANGEROUS SITUATION';
+    message = 'Life-threatening severe weather is occurring or imminent. Seek substantial shelter immediately away from windows.';
+  }
+
+  // Tornado Warning
+  else if(eventName.includes('Tornado Warning')){
+    title = '🌪️ TORNADO WARNING';
+    message = 'Seek shelter immediately in a basement or interior room away from windows.';
+  }
+
+  // Severe Thunderstorm Warning
+  else if(eventName.includes('Severe Thunderstorm Warning')){
+    title = '⛈️ SEVERE THUNDERSTORM WARNING';
+    message = 'Move indoors immediately and stay away from windows.';
+  }
+
+  // Flash Flood Emergency
+  else if(eventName.includes('Flash Flood Emergency')){
+    title = '🌊 FLASH FLOOD EMERGENCY';
+    message = 'Move to higher ground immediately. Do not travel through flooded roads.';
+  }
+
+  // Tornado Watch
+  else if(eventName.includes('Tornado Watch')){
+    title = '🌪️ TORNADO WATCH';
+    message = 'Conditions are favorable for tornadoes. Be prepared to take shelter quickly.';
+  }
+
+  // Severe Thunderstorm Watch
+  else if(eventName.includes('Severe Thunderstorm Watch')){
+    title = '⛈️ SEVERE THUNDERSTORM WATCH';
+    message = 'Strong storms may develop. Stay weather aware.';
+  }
+
+  document.getElementById('popupTitle').innerText = title;
+
+  document.getElementById('popupText').innerText = message;
+
   document.getElementById('popup').style.display='block';
 }
 document.getElementById('popupClose').onclick=()=>document.getElementById('popup').style.display='none';
