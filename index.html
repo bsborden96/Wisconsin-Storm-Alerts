@@ -243,6 +243,7 @@ body > *:not(#bgCanvas):not(#popup){
   min-width:100%;
 
   animation:tickerScroll 160s linear infinite;
+will-change:transform;
 
   font-family:'Bebas Neue',cursive;
 
@@ -1006,7 +1007,9 @@ if(
 /* ── TICKER ── */
 async function loadTicker(){
   try{
-    let r=await fetch('https://api.weather.gov/alerts/active');
+    let r=await fetch(
+  'https://api.weather.gov/alerts/active?event=Tornado%20Warning&event=Tornado%20Watch&event=Severe%20Thunderstorm%20Warning&event=Flash%20Flood%20Warning'
+);
     let d=await r.json();
     let parts=[];
 let seen = new Set();
