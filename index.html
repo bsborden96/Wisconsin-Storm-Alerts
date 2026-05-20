@@ -747,11 +747,21 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   let q=document.getElementById('searchInput').value.trim();
   if(q.length<2){document.getElementById('suggestions').innerHTML='';return;}
   debounce=setTimeout(async()=>{
-    let res=await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=5`);
+    let res=await fetch(
+  `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=10&addressdetails=1`
+);
     let data=await res.json();
     let sug=document.getElementById('suggestions');
     sug.innerHTML='';
     data.forEach(p=>{
+      if(
+  p.type !== 'city' &&
+  p.type !== 'town' &&
+  p.type !== 'village' &&
+  p.type !== 'hamlet' &&
+  p.type !== 'municipality'
+){
+  return;
       let div=document.createElement('div');
       div.innerText=p.display_name;
       div.onclick=()=>{
