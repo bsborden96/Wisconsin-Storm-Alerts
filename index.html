@@ -871,9 +871,24 @@ window.shownAlerts = window.shownAlerts || [];
       else if(ev.includes('Tornado Watch') && alertRisk!=='high') alertRisk='medium';
       else if((ev.includes('Severe Thunderstorm Warning')) && alertRisk==='low') alertRisk='medium';
 
-      if(!triggered && (ev.includes('Tornado')||ev.includes('Severe'))){
-        showPopup(ev,desc);triggered=true;
-      }
+      let uniqueAlertId =
+  ev +
+  (a.properties.sent || '') +
+  (a.properties.areaDesc || '');
+
+// only popup once per alert
+if(
+  !triggered &&
+  (ev.includes('Tornado') || ev.includes('Severe')) &&
+  !window.shownAlerts.includes(uniqueAlertId)
+){
+
+  window.shownAlerts.push(uniqueAlertId);
+
+  showPopup(ev, desc);
+
+  triggered = true;
+}
 
       html+=`<div class="alertCard ${style}" onclick="toggleCard(this)">
         <b>${ev}</b>
