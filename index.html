@@ -754,24 +754,48 @@ document.getElementById('searchInput').addEventListener('input',()=>{
     let sug=document.getElementById('suggestions');
     sug.innerHTML='';
     data.forEach(p=>{
-      if(
-  p.type !== 'city' &&
-  p.type !== 'town' &&
-  p.type !== 'village' &&
-  p.type !== 'hamlet' &&
-  p.type !== 'municipality'
-){
-  return;
-}
-      let div=document.createElement('div');
-      div.innerText=`${p.name}, ${p.address.state || ''}`;
-      div.onclick=()=>{
-        lat=parseFloat(p.lat);lon=parseFloat(p.lon);
-        document.getElementById('searchInput').value=p.display_name;
-        sug.innerHTML='';loadAll();
-      };
-      sug.appendChild(div);
-    });
+
+  const allowed = [
+    'city',
+    'town',
+    'village',
+    'hamlet',
+    'municipality',
+    'locality',
+    'borough',
+    'administrative'
+  ];
+
+  if(!allowed.includes(p.type)){
+    return;
+  }
+
+  if(
+    p.class !== 'place' &&
+    p.class !== 'boundary'
+  ){
+    return;
+  }
+
+  let div=document.createElement('div');
+
+  div.innerText=`${p.name}, ${p.address.state || ''}`;
+
+  div.onclick=()=>{
+    lat=parseFloat(p.lat);
+    lon=parseFloat(p.lon);
+
+    document.getElementById('searchInput').value=
+      `${p.name}, ${p.address.state || ''}`;
+
+    sug.innerHTML='';
+
+    loadAll();
+  };
+
+  sug.appendChild(div);
+
+});
   },300);
 });
 
