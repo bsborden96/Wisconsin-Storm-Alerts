@@ -28,7 +28,10 @@ body{
 }
 
 /* all content above canvas */
-body>*:not(#bgCanvas){position:relative;z-index:1}
+body > *:not(#bgCanvas):not(#popup){
+  position:relative;
+  z-index:1;
+}
 .searchBox,
 .suggestions{
   z-index:999999 !important;
