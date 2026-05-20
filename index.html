@@ -938,8 +938,8 @@ window.setBgSeverity(weatherRisk);
 /* ── ALERTS ── */
 async function loadAlerts(){
   try{
-    let r = await fetch(
-  'https://api.weather.gov/alerts/active'
+   let r = await fetch(
+  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`
 );
     let d=await r.json();
     let html='';
