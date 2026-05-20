@@ -658,10 +658,43 @@ async function loadWeather(){
     if(cape>1500) capeWhy+=' · ⚠ Significant instability present';
     document.getElementById('capeWhy').innerText=capeWhy;
 
-    // Set bg severity based on met data (alerts can override)
-    if(li<=-4 && cape>1500) window.setBgSeverity('high');
-    else if(li<=-2 || cape>500) window.setBgSeverity('medium');
-    else window.setBgSeverity('low');
+    // Determine forecast severe risk
+let weatherRisk = 'low';
+
+if(
+  li <= -6 &&
+  cape > 2000 &&
+  dewF >= 65 &&
+  windSpd >= 20
+){
+  weatherRisk = 'high';
+}
+else if(
+  li <= -3 &&
+  cape > 1000
+){
+  weatherRisk = 'medium';
+}
+
+// Update severe weather box
+let riskEl = document.getElementById('riskLevel');
+let riskTxt = document.getElementById('riskText');
+
+if(weatherRisk === 'high'){
+  riskTxt.innerText = 'HIGH';
+  riskEl.className = 'riskBox high';
+}
+else if(weatherRisk === 'medium'){
+  riskTxt.innerText = 'MODERATE';
+  riskEl.className = 'riskBox medium';
+}
+else{
+  riskTxt.innerText = 'LOW';
+  riskEl.className = 'riskBox low';
+}
+
+// Background severity
+window.setBgSeverity(weatherRisk);
 
   }catch(e){
     console.error('Weather fetch error',e);
