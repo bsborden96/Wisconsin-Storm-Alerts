@@ -173,21 +173,96 @@ body > *:not(#bgCanvas):not(#popup){
     transform:translate(-50%,-50%) scale(1);
   }
 }
-/* ── TICKER ── */
+/* ── LIVE ALERT TICKER ── */
 .tickerWrap{
-  background:linear-gradient(90deg,#5a0000,#7a0000,#5a0000);
-  overflow:hidden;width:100%;padding:8px 0;
-  border-top:1px solid #ff444455;border-bottom:1px solid #ff444455;
+  position:relative;
+
+  width:100%;
+
+  overflow:hidden;
+
+  padding:10px 0;
+
+  background:
+    linear-gradient(
+      90deg,
+      #2a0000,
+      #5a0000,
+      #2a0000
+    );
+
+  border-top:1px solid rgba(255,80,80,0.35);
+  border-bottom:1px solid rgba(255,80,80,0.35);
+
+  box-shadow:
+    0 0 18px rgba(255,0,0,0.12),
+    inset 0 0 14px rgba(255,255,255,0.03);
 }
+
+.tickerWrap::before{
+  content:'LIVE ALERTS';
+
+  position:absolute;
+
+  left:0;
+  top:0;
+  bottom:0;
+
+  display:flex;
+  align-items:center;
+
+  padding:0 18px;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(0,0,0,0.65),
+      rgba(0,0,0,0)
+    );
+
+  color:#ff8080;
+
+  font-family:'Bebas Neue',cursive;
+
+  font-size:18px;
+
+  letter-spacing:2px;
+
+  z-index:3;
+
+  text-shadow:0 0 10px rgba(255,0,0,0.45);
+}
+
 .tickerTrack{
-  display:inline-block;white-space:nowrap;
-  animation:scroll 100s linear infinite;min-width:100%;
-  font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:1px;
-  color:#ffcccc;
+  display:inline-block;
+
+  white-space:nowrap;
+
+  padding-left:220px;
+
+  min-width:100%;
+
+  animation:tickerScroll 160s linear infinite;
+
+  font-family:'Bebas Neue',cursive;
+
+  font-size:18px;
+
+  letter-spacing:1px;
+
+  color:#ffe0e0;
+
+  text-shadow:0 0 8px rgba(255,120,120,0.35);
 }
-@keyframes scroll{
-  0%{transform:translateX(100%)}
-  100%{transform:translateX(-100%)}
+
+@keyframes tickerScroll{
+  0%{
+    transform:translateX(100%);
+  }
+
+  100%{
+    transform:translateX(-100%);
+  }
 }
 
 /* ── SEARCH ── */
@@ -927,7 +1002,22 @@ async function loadTicker(){
       let ev=a.properties.event||'';
       let area=a.properties.areaDesc||'';
       if(ev.includes('Tornado')||ev.includes('Severe')){
-        parts.push(`⚡ ${ev}: ${area}`);
+        let icon = '⚡';
+
+if(ev.includes('Tornado Warning')){
+  icon = '🌪️';
+}
+else if(ev.includes('Tornado Watch')){
+  icon = '🌀';
+}
+else if(ev.includes('Severe Thunderstorm Warning')){
+  icon = '⛈️';
+}
+else if(ev.includes('Flash Flood')){
+  icon = '🌊';
+}
+
+parts.push(`${icon} ${ev} — ${area}`);
       }
     });
     document.getElementById('tickerContent').innerText=
