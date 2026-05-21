@@ -489,25 +489,147 @@ function playSirenLoop(){
 
   sirenNodes = [osc, osc2, gain, gain2];
 
-  // Loop
-  clearTimeout(sirenTimeout);
+/* ===================== SIREN AUDIO ===================== */
 
-sirenTimeout = setTimeout(() => {
-  if(sirenActive) playSirenLoop();
-}, duration * 1000);
-  
-  let sirenCtx = null;
+document.addEventListener('click', () => {
+  if(window.AudioContext || window.webkitAudioContext){
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+    ctx.close();
+  }
+}, { once:true });
+
+let sirenCtx = null;
 let sirenNodes = [];
 let sirenActive = false;
 let sirenTimeout = null;
+
+function startSiren(){
+  if(sirenActive) return;
+
+  sirenActive = true;
+
+  document.getElementById('sirenBanner').style.display = 'block';
+
+  try{
+    sirenCtx = new (window.AudioContext || window.webkitAudioContext)();
+    playSirenLoop();
+  }catch(e){
+    console.warn('Audio not supported', e);
+  }
+}
+
+function playSirenLoop(){
+  if(!sirenActive || !sirenCtx) return;
+
+  const now = sirenCtx.currentTime;
+  const duration = 3.5;
+
+  // Main oscillator
+  const osc = sirenCtx.createOscillator();
+  const gain = sirenCtx.createGain();
+
+  // Distortion
+  const dist = sirenCtx.createWaveShaper();
+
+  function makeDistortion(amount){
+    const samples = 256;
+    const curve = new Float32Array(samples);
+
+    for(let i = 0; i < samples; i++){
+      const x = (i * 2 / samples) - 1;
+      curve[i] = ((Math.PI + amount) * x) /
+                 (Math.PI + amount * Math.abs(x));
+    }
+
+    return curve;
+  }
+
+  dist.curve = makeDistortion(30);
+
+  osc.connect(dist);
+  dist.connect(gain);
+  gain.connect(sirenCtx.destination);
+
+  osc.type = 'sawtooth';
+
+  gain.gain.setValueAtTime(0, now);
+  gain.gain.linearRampToValueAtTime(0.35, now + 0.15);
+  gain.gain.setValueAtTime(0.35, now + duration - 0.2);
+  gain.gain.linearRampToValueAtTime(0, now + duration);
+
+  // Main frequency sweep
+  osc.frequency.setValueAtTime(580, now);
+  osc.frequency.linearRampToValueAtTime(
+    1050,
+    now + duration * 0.45
+  );
+  osc.frequency.linearRampToValueAtTime(
+    580,
+    now + duration
+  );
+
+  // Secondary harmonic oscillator
+  const osc2 = sirenCtx.createOscillator();
+  const gain2 = sirenCtx.createGain();
+
+  osc2.connect(gain2);
+  gain2.connect(sirenCtx.destination);
+
+  osc2.type = 'sine';
+
+  gain2.gain.setValueAtTime(0, now);
+  gain2.gain.linearRampToValueAtTime(0.12, now + 0.2);
+  gain2.gain.setValueAtTime(0.12, now + duration - 0.2);
+  gain2.gain.linearRampToValueAtTime(0, now + duration);
+
+  osc2.frequency.setValueAtTime(290, now);
+  osc2.frequency.linearRampToValueAtTime(
+    525,
+    now + duration * 0.45
+  );
+  osc2.frequency.linearRampToValueAtTime(
+    290,
+    now + duration
+  );
+
+  osc.start(now);
+  osc.stop(now + duration);
+
+  osc2.start(now);
+  osc2.stop(now + duration);
+
+  sirenNodes = [osc, osc2, gain, gain2];
+
+  // Loop safely
+  clearTimeout(sirenTimeout);
+
+  sirenTimeout = setTimeout(() => {
+    if(sirenActive){
+      playSirenLoop();
+    }
+  }, duration * 1000);
 }
 
 function stopSiren(){
   sirenActive = false;
+
   document.getElementById('sirenBanner').style.display = 'none';
-  sirenNodes.forEach(n=>{ try{ n.disconnect(); }catch(e){} });
-  if(sirenCtx){ sirenCtx.close(); sirenCtx = null; }
+
   clearTimeout(sirenTimeout);
+
+  sirenNodes.forEach(n => {
+    try{
+      n.disconnect();
+    }catch(e){}
+  });
+
+  sirenNodes = [];
+
+  if(sirenCtx){
+    sirenCtx.close();
+    sirenCtx = null;
+  }
 }
 
 /* ===================== ANIMATED BACKGROUND ===================== */
