@@ -532,7 +532,31 @@ document.addEventListener('click', () => {
 }, { once:true });
 
 let sirenCtx=null, sirenNodes=[], sirenActive=false, sirenTimeout=null;
+async function fetchWithTimeout(url, options = {}, timeout = 8000){
+  const controller = new AbortController();
 
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+
+  try{
+    const response = await fetch(url,{
+      ...options,
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+    return response;
+
+  } catch(err){
+
+    clearTimeout(timeoutId);
+
+    console.error('Fetch timeout/error:', url, err);
+
+    throw err;
+  }
+}
 function startSiren(){
   if(sirenActive) return;
   sirenActive=true;
