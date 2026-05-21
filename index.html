@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/storm-alerts.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,7 +15,6 @@ body{
   color:#e0f0ff;
   text-align:center;
   overflow-x:hidden;
-  min-height:100vh;
   min-height:100dvh;
 }
 
@@ -108,155 +106,46 @@ body > *:not(#bgCanvas):not(#popup){
 .tickerWrap{
   position:relative;
   width:100%;
-  background:linear-gradient(90deg,#1a0000,#3a0000,#1a0000);
+  overflow:hidden;
+  padding:10px 0;
+  background:linear-gradient(90deg,#2a0000,#5a0000,#2a0000);
   border-top:1px solid rgba(255,80,80,0.35);
   border-bottom:1px solid rgba(255,80,80,0.35);
   box-shadow:0 0 18px rgba(255,0,0,0.12),inset 0 0 14px rgba(255,255,255,0.03);
-  overflow:hidden;
 }
 
-/* Groups row */
-.tickerGroups{
-  display:flex;
-  align-items:stretch;
-  min-height:38px;
-  overflow-x:auto;
-  scrollbar-width:none;
-}
-.tickerGroups::-webkit-scrollbar{display:none}
-
-.tickerGroup{
-  display:flex;
-  align-items:center;
-  flex-shrink:0;
-  padding:0 14px;
-  gap:8px;
-  border-right:1px solid rgba(255,80,80,0.18);
-  font-family:'Bebas Neue',cursive;
-  font-size:13px;
-  letter-spacing:1px;
-  white-space:nowrap;
-  cursor:default;
-  transition:background 0.2s;
-}
-.tickerGroup:first-child{
-  padding-left:8px;
-}
-.tickerGroup:hover{
-  background:rgba(255,255,255,0.04);
-}
-
-.tickerGroupLabel{
-  display:flex;
-  align-items:center;
-  gap:5px;
-  font-size:11px;
-  letter-spacing:1.5px;
-  opacity:0.55;
-  text-transform:uppercase;
-  border-right:1px solid rgba(255,255,255,0.1);
-  padding-right:10px;
-  margin-right:2px;
-  white-space:nowrap;
-}
-
-.tickerItem{
-  display:flex;
-  align-items:center;
-  gap:5px;
-  padding:4px 10px;
-  border-radius:4px;
-  font-size:13px;
-  letter-spacing:0.8px;
-  white-space:nowrap;
-  border:1px solid transparent;
-}
-
-/* Tornado = red */
-.tg-tornado .tickerItem{
-  background:rgba(180,0,0,0.3);
-  border-color:rgba(255,60,60,0.35);
-  color:#ffaaaa;
-}
-.tg-tornado .tickerGroupLabel{color:#ff6060;}
-/* Severe TS = orange */
-.tg-severe .tickerItem{
-  background:rgba(120,60,0,0.35);
-  border-color:rgba(255,140,0,0.35);
-  color:#ffd080;
-}
-.tg-severe .tickerGroupLabel{color:#ffaa40;}
-/* Flash flood = teal-blue */
-.tg-flood .tickerItem{
-  background:rgba(0,60,120,0.35);
-  border-color:rgba(60,160,255,0.35);
-  color:#80d0ff;
-}
-.tg-flood .tickerGroupLabel{color:#60c0ff;}
-/* Winter = icy blue */
-.tg-winter .tickerItem{
-  background:rgba(20,40,90,0.35);
-  border-color:rgba(120,180,255,0.35);
-  color:#c0d8ff;
-}
-.tg-winter .tickerGroupLabel{color:#a0c8ff;}
-/* Other */
-.tg-other .tickerItem{
-  background:rgba(10,30,60,0.3);
-  border-color:rgba(0,180,255,0.2);
-  color:#90c8e8;
-}
-.tg-other .tickerGroupLabel{color:#60a8cc;}
-
-/* Scrolling marquee inside ticker */
-.tickerScrollWrap{
-  position:relative;
-  overflow:hidden;
-  height:38px;
-  background:transparent;
-}
-.tickerScrollTrack{
-  display:inline-flex;
-  align-items:center;
-  height:38px;
-  white-space:nowrap;
-  min-width:max-content;
-  animation:tickerScroll 120s linear infinite;
-  will-change:transform;
-}
-.tickerScrollWrap:hover .tickerScrollTrack{animation-play-state:paused}
-@keyframes tickerScroll{
-  from{transform:translateX(100%)}
-  to{transform:translateX(-100%)}
-}
-
-.tickerNone{
-  padding:9px 18px;
-  color:#2a6a4a;
-  font-family:'Bebas Neue',cursive;
-  font-size:14px;
-  letter-spacing:1px;
-}
-
-/* Top strip: LIVE ALERTS label + scrolling text */
-.tickerTop{
-  display:flex;
-  align-items:stretch;
-  border-bottom:1px solid rgba(255,80,80,0.18);
-}
 .tickerLabel{
-  flex-shrink:0;
+  position:absolute;
+  left:0;top:0;bottom:0;
   display:flex;align-items:center;
-  padding:0 14px;
+  padding:0 18px;
   background:#3a0000;
   border-right:2px solid rgba(255,80,80,0.5);
   color:#ff8080;
   font-family:'Bebas Neue',cursive;
-  font-size:15px;letter-spacing:2px;
+  font-size:18px;letter-spacing:2px;
   z-index:10;
   white-space:nowrap;
   text-shadow:0 0 10px rgba(255,0,0,0.45);
   box-shadow:6px 0 18px rgba(42,0,0,0.9);
+}
+
+.tickerTrack{
+  display:inline-block;
+  white-space:nowrap;
+  padding-left:140px;
+  min-width:100%;
+  animation:tickerScroll 110s linear infinite;
+  will-change:transform;
+  font-family:'Bebas Neue',cursive;
+  font-size:18px;letter-spacing:1px;
+  color:#ffe0e0;
+  text-shadow:0 0 8px rgba(255,120,120,0.35);
+}
+.tickerWrap:hover .tickerTrack{animation-play-state:paused}
+@keyframes tickerScroll{
+  from{transform:translateX(100vw)}
+  to{transform:translateX(-100%)}
 }
 
 .searchBox{
@@ -303,17 +192,20 @@ body > *:not(#bgCanvas):not(#popup){
 }
 .riskBox:hover{filter:brightness(1.1)}
 
+/* GREEN = No risk */
 .low{
   background:linear-gradient(135deg,#0d2b0d,#1a3d1a);
   border-color:#2d6b2d55;color:#6eff8a;
   text-shadow:0 0 12px #00ff5544;
 }
+/* ORANGE = Possible risk */
 .medium{
   background:linear-gradient(135deg,#3d2000,#5a3000);
   border-color:#ff6600aa;color:#ff8c00;
   text-shadow:0 0 14px #ff660066;
   animation:pulseOrange 2.5s ease-in-out infinite;
 }
+/* RED = Probable / Active risk */
 .high{
   background:linear-gradient(135deg,#3d0000,#600000);
   border-color:#ff222255;color:#ff4444;
@@ -395,6 +287,7 @@ footer{
   font-family:'Share Tech Mono',monospace;
 }
 
+/* Tornado siren overlay */
 #sirenBanner{
   display:none;
   position:fixed;top:0;left:0;right:0;
@@ -436,15 +329,9 @@ footer{
 
 <img src="logo.PNG" class="logo" id="logo">
 
-<!-- ── NEW TICKER ── -->
 <div class="tickerWrap">
-  <div class="tickerTop">
-    <div class="tickerLabel">LIVE ALERTS</div>
-    <div class="tickerScrollWrap" style="flex:1">
-      <div id="tickerScrollTrack" class="tickerScrollTrack">Loading...</div>
-    </div>
-  </div>
-  <div id="tickerGroups" class="tickerGroups"></div>
+  <div class="tickerLabel">LIVE ALERTS</div>
+  <div id="tickerContent" class="tickerTrack">Loading alerts...</div>
 </div>
 
 <div class="searchBox">
@@ -529,7 +416,7 @@ footer{
 document.addEventListener('click', () => {
   if(window.AudioContext || window.webkitAudioContext){
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    ctx.resume();
+    ctx.resume(); ctx.close();
   }
 }, { once:true });
 
@@ -583,157 +470,15 @@ function stopSiren(){
 (function(){
   const canvas=document.getElementById('bgCanvas');
   const ctx=canvas.getContext('2d');
-  let W,H;
+  let W,H,drops=[],clouds=[],snowflakes=[],fogParticles=[];
 
-  // Cloud system — each cloud is made of multiple overlapping lobes
-  let cloudSystem=[];
-  let drops=[], snowflakes=[], fogParticles=[];
-
+  // Day/night and weather state
   let bgMode='clear';
-  let isDaytime=true;
-  let sunProgress=0.5;
-  let nightProgress=0.5;
+  let isDaytime=true; // will be set from sunrise/sunset data
 
   function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
   window.addEventListener('resize',resize);
   resize();
-
-  /* ── CLOUD BUILDER ── */
-  // Each "cloud" is an object with multiple lobe positions (offsets from center)
-  // We draw them with solid fills + hard edges for a real cumulus look
-  function buildCloud(x, y, scale, dark){
-    // Generate lobe offsets to form a convincing cumulus shape
-    const lobes=[];
-    // Main body lobes
-    const bodyCount=3+Math.floor(Math.random()*2);
-    for(let i=0;i<bodyCount;i++){
-      const angle=(i/bodyCount)*Math.PI*2;
-      const dist=(0.2+Math.random()*0.45)*scale;
-      lobes.push({
-        ox:Math.cos(angle)*dist*1.3,
-        oy:Math.sin(angle)*dist*0.55 - scale*0.1,
-        r:(0.4+Math.random()*0.5)*scale,
-        layer:'body'
-      });
-    }
-    // Top billowing lobes
-    const topCount=2+Math.floor(Math.random()*2);
-    for(let i=0;i<topCount;i++){
-      const angle=-Math.PI/2+(i/(topCount-1)-0.5)*Math.PI*0.9;
-      lobes.push({
-        ox:Math.cos(angle)*scale*0.35,
-        oy:Math.sin(angle)*scale*0.5 - scale*0.3,
-        r:(0.35+Math.random()*0.4)*scale,
-        layer:'top'
-      });
-    }
-    // Flat base (dark bottom strip done via canvas clip later)
-    return {
-      x, y, scale, dark,
-      lobes,
-      speed:0.1+Math.random()*0.2,
-      baseY:y + scale*0.25
-    };
-  }
-
-  function initClouds(count, dark){
-    cloudSystem=[];
-    for(let i=0;i<count;i++){
-      const x=Math.random()*W*1.4 - W*0.2;
-      const y=H*0.04+Math.random()*H*0.28;
-      const scale=70+Math.random()*120;
-      cloudSystem.push(buildCloud(x,y,scale,dark));
-    }
-  }
-
-  // Draw a single cloud with proper shading — no opacity haze
-  function drawCloud(cloud){
-    const {x,y,lobes,dark,scale}=cloud;
-
-    // Determine colors based on mode
-    let topColor, midColor, shadowColor, baseColor;
-    if(dark){
-      // Storm/dark clouds — charcoal with blue-grey tones
-      topColor  ='rgba(80,85,100,1)';
-      midColor  ='rgba(50,55,70,1)';
-      shadowColor='rgba(25,28,40,1)';
-      baseColor ='rgba(18,20,30,1)';
-    } else if(isDaytime){
-      // Bright white daytime clouds
-      topColor  ='rgba(255,255,255,1)';
-      midColor  ='rgba(235,240,248,1)';
-      shadowColor='rgba(180,195,220,1)';
-      baseColor ='rgba(150,165,195,1)';
-    } else {
-      // Night clouds — dim blue-grey
-      topColor  ='rgba(55,65,90,1)';
-      midColor  ='rgba(38,46,68,1)';
-      shadowColor='rgba(22,28,45,1)';
-      baseColor ='rgba(15,18,30,1)';
-    }
-
-    ctx.save();
-
-    // Draw shadow pass (slightly offset down-right for depth)
-    const shadowOff=scale*0.08;
-    lobes.forEach(lobe=>{
-      ctx.beginPath();
-      ctx.arc(x+lobe.ox+shadowOff, y+lobe.oy+shadowOff, lobe.r*0.98, 0, Math.PI*2);
-      ctx.fillStyle=shadowColor;
-      ctx.fill();
-    });
-
-    // Draw base/body lobes
-    lobes.filter(l=>l.layer==='body').forEach(lobe=>{
-      ctx.beginPath();
-      ctx.arc(x+lobe.ox, y+lobe.oy, lobe.r, 0, Math.PI*2);
-      ctx.fillStyle=midColor;
-      ctx.fill();
-    });
-
-    // Draw top billowing lobes
-    lobes.filter(l=>l.layer==='top').forEach(lobe=>{
-      ctx.beginPath();
-      ctx.arc(x+lobe.ox, y+lobe.oy, lobe.r, 0, Math.PI*2);
-      ctx.fillStyle=topColor;
-      ctx.fill();
-    });
-
-    // Highlight on top-left of top lobes (sun position aware)
-    const hlX = isDaytime ? x + (sunProgress-0.5)*scale*0.5 : x;
-    lobes.filter(l=>l.layer==='top').forEach(lobe=>{
-      const hlGrd=ctx.createRadialGradient(
-        x+lobe.ox-lobe.r*0.25, y+lobe.oy-lobe.r*0.3, lobe.r*0.05,
-        x+lobe.ox, y+lobe.oy, lobe.r
-      );
-      if(dark){
-        hlGrd.addColorStop(0,'rgba(100,108,130,0.45)');
-        hlGrd.addColorStop(0.5,'rgba(60,66,85,0.1)');
-        hlGrd.addColorStop(1,'rgba(0,0,0,0)');
-      } else if(isDaytime){
-        hlGrd.addColorStop(0,'rgba(255,255,255,0.7)');
-        hlGrd.addColorStop(0.4,'rgba(255,255,255,0.15)');
-        hlGrd.addColorStop(1,'rgba(255,255,255,0)');
-      } else {
-        hlGrd.addColorStop(0,'rgba(80,100,140,0.35)');
-        hlGrd.addColorStop(1,'rgba(0,0,0,0)');
-      }
-      ctx.beginPath();
-      ctx.arc(x+lobe.ox, y+lobe.oy, lobe.r, 0, Math.PI*2);
-      ctx.fillStyle=hlGrd;
-      ctx.fill();
-    });
-
-    // Flat bottom — clip everything below baseY
-    const baseY=y+scale*0.3;
-    const baseGrd=ctx.createLinearGradient(x,baseY-scale*0.1,x,baseY+scale*0.12);
-    baseGrd.addColorStop(0,midColor);
-    baseGrd.addColorStop(1,baseColor);
-    ctx.fillStyle=baseGrd;
-    ctx.fillRect(x-scale*1.4, baseY-scale*0.1, scale*2.8, scale*0.22);
-
-    ctx.restore();
-  }
 
   function initRain(count,angled){
     drops=[];
@@ -749,6 +494,13 @@ function stopSiren(){
         speed:0.5+Math.random()*1.5,drift:(Math.random()-0.5)*0.5,opacity:0.4+Math.random()*0.5});
     }
   }
+  function initClouds(count,dark){
+    clouds=[];
+    for(let i=0;i<count;i++){
+      clouds.push({x:Math.random()*W,y:20+Math.random()*H*0.35,r:90+Math.random()*160,
+        speed:0.08+Math.random()*0.18,opacity:dark?(0.15+Math.random()*0.25):(0.06+Math.random()*0.12),dark});
+    }
+  }
   function initFog(){
     fogParticles=[];
     for(let i=0;i<18;i++){
@@ -762,15 +514,8 @@ function stopSiren(){
   function spawnBolt(){
     const x=W*0.15+Math.random()*W*0.7;
     const segments=buildBoltPath(x,0,x+(Math.random()-0.5)*180,H*(0.35+Math.random()*0.45),7);
-    if(bolts.length < 12){
-  bolts.push({
-    segments,
-    life:1.0,
-    decay:0.045+Math.random()*0.04,
-    bright:0.7+Math.random()*0.3,
-    branches:generateBranches(segments)
-  });
-}
+    bolts.push({segments,life:1.0,decay:0.045+Math.random()*0.04,bright:0.7+Math.random()*0.3,branches:generateBranches(segments)});
+  }
   function buildBoltPath(x1,y1,x2,y2,depth){
     if(depth===0) return [{x:x1,y:y1},{x:x2,y:y2}];
     const mx=(x1+x2)/2+(Math.random()-0.5)*(Math.abs(x2-x1)+80)*(0.8/depth);
@@ -830,13 +575,17 @@ function stopSiren(){
   }
 
   /* Sun rendering */
+  let sunAngle=0;
   function drawSun(progress){
+    // progress: 0=sunrise, 0.5=noon, 1=sunset
     const sunX=W*0.1+W*0.8*progress;
     const sunY=H*0.45-Math.sin(Math.PI*progress)*H*0.38;
     const sunR=38;
+    // Glow layers
     const glowR=sunR*4;
     const grd=ctx.createRadialGradient(sunX,sunY,sunR*0.5,sunX,sunY,glowR);
     if(progress<0.15||progress>0.85){
+      // Sunrise/sunset warm glow
       grd.addColorStop(0,'rgba(255,220,100,0.9)');
       grd.addColorStop(0.3,'rgba(255,140,40,0.35)');
       grd.addColorStop(1,'rgba(255,80,0,0)');
@@ -846,6 +595,7 @@ function stopSiren(){
       grd.addColorStop(1,'rgba(255,255,200,0)');
     }
     ctx.fillStyle=grd;ctx.beginPath();ctx.arc(sunX,sunY,glowR,0,Math.PI*2);ctx.fill();
+    // Sun disk
     const diskGrd=ctx.createRadialGradient(sunX-sunR*0.2,sunY-sunR*0.2,sunR*0.1,sunX,sunY,sunR);
     if(progress<0.15||progress>0.85){
       diskGrd.addColorStop(0,'rgba(255,230,120,1)');
@@ -857,7 +607,9 @@ function stopSiren(){
     ctx.fillStyle=diskGrd;ctx.beginPath();ctx.arc(sunX,sunY,sunR,0,Math.PI*2);ctx.fill();
   }
 
+  /* Moon rendering */
   function drawMoon(progress){
+    // Night progress: 0=moonrise, 1=moonset
     const moonX=W*0.1+W*0.8*progress;
     const moonY=H*0.4-Math.sin(Math.PI*progress)*H*0.32;
     const moonR=22;
@@ -866,9 +618,11 @@ function stopSiren(){
     grd.addColorStop(1,'rgba(150,180,255,0)');
     ctx.fillStyle=grd;ctx.beginPath();ctx.arc(moonX,moonY,moonR*3.5,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='rgba(220,230,255,0.95)';ctx.beginPath();ctx.arc(moonX,moonY,moonR,0,Math.PI*2);ctx.fill();
+    // Crescent shadow
     ctx.fillStyle='rgba(20,30,60,0.7)';ctx.beginPath();ctx.arc(moonX+moonR*0.35,moonY,moonR*0.85,0,Math.PI*2);ctx.fill();
   }
 
+  /* Stars */
   let stars=null;
   function initStars(){
     stars=[];
@@ -877,23 +631,19 @@ function stopSiren(){
     }
   }
 
-  initClouds(3,false);
-  initStars();
+  initClouds(3,false);initRain(0,false);initSnow(0);initFog();initStars();
 
   let frame=0;
+  // sunProgress driven externally (0..1), nightProgress for moon
+  let sunProgress=0.5; // noon default
+  let nightProgress=0.5;
   window.setSunProgress=function(sp,np){sunProgress=sp;nightProgress=np||0.5;};
 
   function draw(){
-
-  if(appPaused){
-    setTimeout(()=>{
-      requestAnimationFrame(draw);
-    },1000);
-    return;
-  }
     frame++;
     ctx.clearRect(0,0,W,H);
 
+    // Sky gradient — changes by day/night AND weather
     let skyTop,skyBot;
     const day=isDaytime;
     switch(bgMode){
@@ -908,11 +658,12 @@ function stopSiren(){
         skyTop=day?'#8090a0':'#0d1018';skyBot=day?'#a0b0c0':'#1c2230'; break;
       case 'cloudy':
         skyTop=day?'#3a4a5a':'#06090f';skyBot=day?'#4a5a6a':'#0e1520'; break;
-      default:
+      default: // clear
         if(day){
+          // Daytime blue sky
           const blend=Math.sin(Math.PI*sunProgress);
           if(sunProgress<0.15||sunProgress>0.85){
-            skyTop='#1a0808';skyBot='#6a2a10';
+            skyTop='#1a0808';skyBot='#6a2a10'; // sunrise/sunset
           } else {
             skyTop=`rgb(${Math.round(20+blend*15)},${Math.round(80+blend*60)},${Math.round(140+blend*80)})`;
             skyBot=`rgb(${Math.round(80+blend*100)},${Math.round(140+blend*80)},${Math.round(200+blend*30)})`;
@@ -925,6 +676,7 @@ function stopSiren(){
     grad.addColorStop(0,skyTop);grad.addColorStop(1,skyBot);
     ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);
 
+    // Horizon glow for sunrise/sunset in clear
     if(bgMode==='clear'&&day&&(sunProgress<0.2||sunProgress>0.8)){
       const hg=ctx.createLinearGradient(0,H*0.5,0,H);
       const intense=(sunProgress<0.2)?sunProgress/0.2:(1-sunProgress)/0.2;
@@ -934,7 +686,7 @@ function stopSiren(){
       ctx.fillStyle=hg;ctx.fillRect(0,H*0.5,W,H*0.5);
     }
 
-    // Stars
+    // Stars (night or storm night)
     if(!day||(bgMode==='storm')||(bgMode==='tornado')){
       if(!stars) initStars();
       const starAlpha=day?0.15:1;
@@ -947,19 +699,35 @@ function stopSiren(){
       });
     }
 
-    // Sun/Moon
+    // Sun (daytime, non-storm)
     if(day&&bgMode!=='storm'&&bgMode!=='tornado'&&bgMode!=='rain'){
       drawSun(sunProgress);
     } else if(!day&&bgMode==='clear'){
       drawMoon(nightProgress);
     }
 
-    // Clouds — use new solid-lobe rendering
-    cloudSystem.forEach(cloud=>{
-      cloud.x+=cloud.speed;
-      if(cloud.x-cloud.scale*1.5>W) cloud.x=-cloud.scale*1.5;
-      drawCloud(cloud);
-    });
+    // Day-sky clouds
+    if(day&&bgMode==='clear'){
+      // Fluffy white daytime clouds
+      clouds.forEach(c=>{
+        c.x+=c.speed;if(c.x-c.r>W) c.x=-c.r;
+        const cg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
+        cg.addColorStop(0,`rgba(255,255,255,${c.opacity*1.4})`);
+        cg.addColorStop(0.5,`rgba(240,248,255,${c.opacity})`);
+        cg.addColorStop(1,`rgba(220,235,255,0)`);
+        ctx.fillStyle=cg;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
+      });
+    } else {
+      // Dark storm clouds
+      clouds.forEach(c=>{
+        c.x+=c.speed;if(c.x-c.r>W) c.x=-c.r;
+        const col=c.dark?'20,30,50':'30,55,90';
+        const cg=ctx.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r);
+        cg.addColorStop(0,`rgba(${col},${c.opacity})`);
+        cg.addColorStop(1,`rgba(${col},0)`);
+        ctx.fillStyle=cg;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.fill();
+      });
+    }
 
     // Rain
     if(bgMode==='rain'||bgMode==='storm'){
@@ -1020,16 +788,9 @@ function stopSiren(){
     bolts.forEach(b=>{
       const boltColor=bgMode==='tornado'?'255,180,80':bgMode==='storm'?'200,220,255':'180,210,255';
       if(b.life>0.85){
-  const fa=(b.life-0.85)/0.15*0.06;
-
-  // Blue atmospheric glow
-  ctx.fillStyle=`rgba(120,180,255,${fa*0.35})`;
-  ctx.fillRect(0,0,W,H);
-
-  // Main lightning flash
-  ctx.fillStyle=`rgba(200,220,255,${fa})`;
-  ctx.fillRect(0,0,W,H);
-}
+        const fa=(b.life-0.85)/0.15*0.06;
+        ctx.fillStyle=`rgba(200,220,255,${fa})`;ctx.fillRect(0,0,W,H);
+      }
       drawBoltPath(b.segments,b.life*b.bright,1.8,boltColor);
       b.branches.forEach(br=>drawBoltPath(br.segs,b.life*b.bright*br.opacity,0.8,boltColor));
       b.life-=b.decay;
@@ -1039,26 +800,23 @@ function stopSiren(){
     ctx.fillStyle='rgba(0,0,0,0.02)';
     for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,2);
 
-    setTimeout(()=>{
-  requestAnimationFrame(draw);
-},33);
+    requestAnimationFrame(draw);
   }
   draw();
 
   window.setBgMode=function(mode){
     if(bgMode===mode) return;
     bgMode=mode;
-    stars=null;
-    const dark=(mode==='storm'||mode==='tornado'||mode==='rain'||mode==='cloudy');
+    stars=null; // reset stars so they re-init
     switch(mode){
-      case 'storm':        initClouds(8,true);  initRain(140,true);  initSnow(0);   break;
-      case 'rain':         initClouds(6,true);  initRain(80,false);  initSnow(0);   break;
-      case 'tornado':      initClouds(9,true);  initRain(120,true);  initSnow(0);   break;
-      case 'snow':         initClouds(4,false); initRain(0,false);   initSnow(120); break;
-      case 'fog':          initClouds(3,false); initRain(0,false);   initSnow(0);   initFog(); break;
-      case 'cloudy':       initClouds(7,true);  initRain(0,false);   initSnow(0);   break;
-      case 'partlycloudy': initClouds(3,false); initRain(0,false);   initSnow(0);   break;
-      default:             initClouds(2,false); initRain(0,false);   initSnow(0);   break;
+      case 'storm':   initClouds(8,true);  initRain(140,true);  initSnow(0);   break;
+      case 'rain':    initClouds(6,true);  initRain(80,false);  initSnow(0);   break;
+      case 'tornado': initClouds(9,true);  initRain(120,true);  initSnow(0);   break;
+      case 'snow':    initClouds(4,false); initRain(0,false);   initSnow(120); break;
+      case 'fog':     initClouds(3,false); initRain(0,false);   initSnow(0);   initFog(); break;
+      case 'cloudy':  initClouds(7,true);  initRain(0,false);   initSnow(0);   break;
+      case 'partlycloudy': initClouds(3,false);initRain(0,false);initSnow(0);  break;
+      default:        initClouds(2,false); initRain(0,false);   initSnow(0);   break;
     }
   };
   window.setDaytime=function(isDay,sp,np){
@@ -1075,6 +833,7 @@ function stopSiren(){
 
 /* ===================== APP LOGIC ===================== */
 
+// Track open cards — don't close on refresh
 const openCards=new Set();
 
 function toggleCard(card){
@@ -1091,7 +850,6 @@ function toggleMenu(){
 }
 
 function showPopup(eventName,desc){
-  if(document.getElementById('popup').style.display==='block') return;
   let title='⚠ WEATHER ALERT';
   let message='Stay alert and monitor conditions.';
   if(eventName.includes('Particularly Dangerous Situation')||eventName.includes('PDS')){
@@ -1121,6 +879,7 @@ document.getElementById('popupClose').onclick=()=>document.getElementById('popup
 
 let lat=43,lon=-88;
 let userCounty='';
+// Track last background mode and risk so we only update if changed
 let lastBgMode='clear';
 let lastRisk='low';
 
@@ -1129,44 +888,17 @@ navigator.geolocation.getCurrentPosition(p=>{
   loadAll();
 },()=>loadAll());
 
-async function fetchWithTimeout(url,options={},timeout=10000){
-
-  const controller = new AbortController();
-
-  const timeoutId = setTimeout(()=>{
-    controller.abort();
-  },timeout);
-
-  try{
-
-    const response = await fetch(url,{
-      ...options,
-      signal:controller.signal
-    });
-
-    clearTimeout(timeoutId);
-
-    return response;
-
-  }catch(err){
-
-    clearTimeout(timeoutId);
-    throw err;
-
-  }
-
-}
-
 async function loadAll(){
   await loadLocation();
   loadWeather();
   loadAlerts();
-  loadTicker(true);
+  loadTicker(true); // first load always
   let now=new Date();
   document.getElementById('footerTime').innerText=
     `Data: NWS · Open-Meteo · Updated ${now.toLocaleTimeString()}`;
 }
 
+/* ── LOCATION ── */
 async function loadLocation(){
   try{
     let p=await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
@@ -1183,7 +915,9 @@ async function loadLocation(){
   }
 }
 
+/* ── SUN/NIGHT CALCULATION ── */
 function getSunTimes(lat,lon){
+  // Sunrise/sunset calculation (Duffett-Smith algorithm)
   const now=new Date();
   const JD=Math.floor(now/86400000)+2440587.5;
   const n=Math.round(JD-2451545.0);
@@ -1194,15 +928,21 @@ function getSunTimes(lat,lon){
   const sinDec=Math.sin(eps*Math.PI/180)*Math.sin(lambda*Math.PI/180);
   const cosDec=Math.sqrt(1-sinDec*sinDec);
   const cosH=(-Math.tan(lat*Math.PI/180)*sinDec/cosDec-0.01454/(cosDec*Math.cos(lat*Math.PI/180)));
-  if(cosH>1||cosH<-1) return {sunrise:null,sunset:null};
+  if(cosH>1) return {sunrise:null,sunset:null}; // polar night
+  if(cosH<-1) return {sunrise:null,sunset:null}; // midnight sun (treat as day)
   const H=Math.acos(cosH)*180/Math.PI;
+  // Time of transit
   const RA=(Math.atan2(Math.cos(eps*Math.PI/180)*Math.sin(lambda*Math.PI/180),Math.cos(lambda*Math.PI/180))*180/Math.PI)/15;
   const lngH=lon/15;
   const transit=12-lngH+(RA-(L/15));
   const sunriseUT=transit-H/15;
   const sunsetUT=transit+H/15;
-  const tzOff=new Date().getTimezoneOffset()/60;
-  return {sunrise:sunriseUT-tzOff,sunset:sunsetUT-tzOff};
+  // Convert to local hours using timezone offset
+  const tzOff=now.getTimezoneOffset()/60;
+  return {
+    sunrise:sunriseUT-tzOff,
+    sunset:sunsetUT-tzOff
+  };
 }
 
 function updateDayNight(){
@@ -1210,20 +950,26 @@ function updateDayNight(){
   const h=now.getHours()+now.getMinutes()/60;
   const st=getSunTimes(lat,lon);
   let isDay=true,sunProg=0.5,nightProg=0.5;
+
   if(st.sunrise&&st.sunset){
     isDay=h>=st.sunrise&&h<=st.sunset;
     if(isDay){
-      sunProg=Math.max(0,Math.min(1,(h-st.sunrise)/(st.sunset-st.sunrise)));
+      sunProg=(h-st.sunrise)/(st.sunset-st.sunrise);
+      sunProg=Math.max(0,Math.min(1,sunProg));
     } else {
+      // Night progress: 0=sunset, 1=next sunrise
       const nightLen=(24-st.sunset)+st.sunrise;
       const nightH=h<st.sunrise?h+(24-st.sunset):h-st.sunset;
-      nightProg=Math.max(0,Math.min(1,nightH/nightLen));
+      nightProg=nightH/nightLen;
+      nightProg=Math.max(0,Math.min(1,nightProg));
     }
   }
   window.setDaytime(isDay,sunProg,nightProg);
 }
 
+/* ── WEATHER CODE → BG MODE ── */
 function weatherCodeToMode(code,cape,li,windSpd){
+  // Tornado conditions override everything
   if(li<=-6&&cape>2000&&windSpd>=25) return 'tornado';
   if([71,73,75,77,85,86].includes(code)) return 'snow';
   if([45,48].includes(code)) return 'fog';
@@ -1234,6 +980,7 @@ function weatherCodeToMode(code,cape,li,windSpd){
   return 'clear';
 }
 
+/* ── HELPERS ── */
 function degToCompass(deg){
   const dirs=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
   return dirs[Math.round(deg/22.5)%16];
@@ -1279,9 +1026,14 @@ function windEnergyLabel(spd){
   return '⚡ Strong — significant shear/energy';
 }
 
+/* ── OVERALL RISK ASSESSMENT ── */
+// Returns 'low', 'medium', or 'high' based purely on meteorological soundings
+// Alerts can only elevate this, never lower it
 function computeWeatherRisk(li,cape,dewF,windSpd){
+  // High: tornado/extreme severe conditions
   if(li<=-6&&cape>2000&&dewF>=65&&windSpd>=20) return 'high';
   if(li<=-5&&cape>2500) return 'high';
+  // Medium: possible severe
   if(li<=-4&&cape>1000) return 'medium';
   if(li<=-3&&cape>500&&dewF>=55) return 'medium';
   if(li<=-2&&cape>1500) return 'medium';
@@ -1291,6 +1043,7 @@ function computeWeatherRisk(li,cape,dewF,windSpd){
 function setRiskDisplay(risk,label){
   const riskEl=document.getElementById('riskLevel');
   const riskTxt=document.getElementById('riskText');
+  // Preserve open state
   const wasOpen=riskEl.classList.contains('active');
   if(risk==='high'){
     riskTxt.innerText=label||'HIGH — ACTIVE SEVERE THREAT';
@@ -1305,9 +1058,11 @@ function setRiskDisplay(risk,label){
   lastRisk=risk;
 }
 
+/* ── LOAD WEATHER ── */
 async function loadWeather(){
   try{
     updateDayNight();
+
     let url=`https://api.open-meteo.com/v1/forecast?`+
       `latitude=${lat}&longitude=${lon}`+
       `&current=temperature_2m,relative_humidity_2m,apparent_temperature,`+
@@ -1315,42 +1070,57 @@ async function loadWeather(){
       `wind_gusts_10m,surface_pressure,weather_code`+
       `&hourly=cape,lifted_index`+
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`;
-    let r=await fetchWithTimeout(url,{},10000);
+
+    let r=await fetch(url);
     let d=await r.json();
     let c=d.current;
-    let tempF=Math.round(c.temperature_2m);
-    let feelsF=Math.round(c.apparent_temperature);
-    let hum=Math.round(c.relative_humidity_2m);
-    let dewF=Math.round(c.dew_point_2m);
-    let windSpd=Math.round(c.wind_speed_10m);
-    let windG=Math.round(c.wind_gusts_10m);
-    let windDeg=c.wind_direction_10m;
+
+    let tempF   =Math.round(c.temperature_2m);
+    let feelsF  =Math.round(c.apparent_temperature);
+    let hum     =Math.round(c.relative_humidity_2m);
+    let dewF    =Math.round(c.dew_point_2m);
+    let windSpd =Math.round(c.wind_speed_10m);
+    let windG   =Math.round(c.wind_gusts_10m);
+    let windDeg =c.wind_direction_10m;
     let pressHpa=Math.round(c.surface_pressure);
-    let wcode=c.weather_code||0;
+    let wcode   =c.weather_code||0;
+
     let tc=tempClass(tempF);
     document.getElementById('temp').innerHTML=`<span class="${tc}">${tempF}°F</span>`;
     document.getElementById('feels').innerText=`${feelsF}°F`;
     document.getElementById('pressure').innerText=`${pressHpa} mb`;
+
     let hl=humLabel(hum);
     document.getElementById('humidity').innerText=hum+'%';
     document.getElementById('moistureLevel').innerText=hl.level;
     document.getElementById('humidityFeel').innerText=hl.feel;
+
     document.getElementById('dew').innerHTML=`<span class="${tc}">${dewF}°F</span>`;
     document.getElementById('stormFuel').innerText=dewLabel(dewF);
+
     document.getElementById('wind').innerText=windSpd+' mph';
     document.getElementById('windDir').innerText=`${degToCompass(windDeg)} (${windDeg}°)`;
     document.getElementById('gusts').innerText=windG+' mph';
+
     let now=new Date();
     let hourIdx=now.getHours();
     let cape=Math.max(0,d.hourly.cape[hourIdx]??0);
     let li=d.hourly.lifted_index[hourIdx]??5;
+
+    // CAPE display
     let cl=capeLabel(cape);
     document.getElementById('cape').innerHTML=`<span style="color:${cl.color}">${Math.round(cape)} J/kg — ${cl.txt}</span>`;
+
+    // LI / Instability
     document.getElementById('instability').innerHTML=liLabel(li);
+
+    // Sounding breakdown — accurate meteorological labels
     document.getElementById('sndMoisture').innerText=dewLabel(dewF);
     document.getElementById('sndLift').innerText=
       li<=0?`⬆ Active lift (LI ${li.toFixed(1)})`:`⬇ Capping / stable (LI +${li.toFixed(1)})`;
     document.getElementById('sndWind').innerText=windEnergyLabel(windSpd);
+
+    // Tornado / Severe risk labels
     let torRiskTxt,sevRiskTxt;
     if(li<=-6&&cape>2000){torRiskTxt='🔴 High';sevRiskTxt='🔴 High';}
     else if(li<=-5&&cape>1500){torRiskTxt='🟠 Moderate–High';sevRiskTxt='🔴 High';}
@@ -1359,8 +1129,11 @@ async function loadWeather(){
     else if(li<=-2&&cape>200){torRiskTxt='🟡 Marginal';sevRiskTxt='🟡 Low';}
     else if(li<=0){torRiskTxt='🟢 Low';sevRiskTxt='🟡 Marginal';}
     else{torRiskTxt='🟢 Minimal';sevRiskTxt='🟢 Minimal';}
+
     document.getElementById('torRisk').innerText=torRiskTxt;
     document.getElementById('sevRisk').innerText=sevRiskTxt;
+
+    // CAPE explainer
     let capeExplain='';
     if(cape>2500) capeExplain='⚠ Extreme instability: explosive storm development possible.';
     else if(cape>1500) capeExplain='⚠ Significant instability: organized severe storms possible.';
@@ -1369,17 +1142,27 @@ async function loadWeather(){
     else capeExplain='Very little instability: storm development unlikely.';
     document.getElementById('capeWhy').innerText=
       `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph\n${capeExplain}`;
+
+    // Background mode
     let mode=weatherCodeToMode(wcode,cape,li,windSpd);
-    if(mode!==lastBgMode){window.setBgMode(mode);lastBgMode=mode;}
+    if(mode!==lastBgMode){
+      window.setBgMode(mode);
+      lastBgMode=mode;
+    }
+    // Always update day/night for correct sky rendering
     updateDayNight();
+
+    // Set risk from sounding (alerts may override in loadAlerts)
     const soundingRisk=computeWeatherRisk(li,cape,dewF,windSpd);
     setRiskDisplay(soundingRisk);
+
   }catch(e){
     console.error('Weather fetch error',e);
     document.getElementById('temp').innerText='N/A';
   }
 }
 
+/* ── ALERT PRIORITY ── */
 const ALERT_PRIORITY={
   'Tornado Warning':1,'Particularly Dangerous Situation':1,
   'Flash Flood Emergency':2,'Severe Thunderstorm Warning':3,
@@ -1409,6 +1192,7 @@ function alertDistance(a){
   return 9999;
 }
 
+/* ── ALERTS ── */
 window.shownAlerts=window.shownAlerts||[];
 
 async function loadAlerts(){
@@ -1422,38 +1206,51 @@ async function loadAlerts(){
       if(pa!==pb) return pa-pb;
       return alertDistance(a)-alertDistance(b);
     });
+
     let html='';
     let triggered=false;
     let alertRisk='low';
     let alertRiskLabel='';
     let needsSiren=false;
+
     features.forEach(a=>{
       let ev=a.properties.event||'';
       let desc=a.properties.description||'';
       let inst=a.properties.instruction||'';
       let areaDesc=a.properties.areaDesc||'';
+
       let style='alertOther';
       if(ev.includes('Tornado')) style='alertTornado';
       else if(ev.includes('Severe')||ev.includes('Flash Flood')) style='alertSevere';
-      if(ev.includes('Tornado Warning')||ev.includes('Flash Flood Emergency')||(ev.includes('Particularly Dangerous')||ev.includes('PDS'))){
+
+      // Determine alert-driven risk level (use most severe)
+      if(ev.includes('Tornado Warning')||ev.includes('Flash Flood Emergency')||
+         (ev.includes('Particularly Dangerous')||ev.includes('PDS'))){
         alertRisk='high';alertRiskLabel='HIGH — ACTIVE WARNING IN EFFECT';
-      } else if((ev.includes('Tornado Watch')||ev.includes('Severe Thunderstorm Warning')||ev.includes('Flash Flood Warning'))&&alertRisk!=='high'){
+      } else if((ev.includes('Tornado Watch')||ev.includes('Severe Thunderstorm Warning')||
+                 ev.includes('Flash Flood Warning'))&&alertRisk!=='high'){
         alertRisk='high';alertRiskLabel='HIGH — WARNING IN EFFECT';
-      } else if((ev.includes('Severe Thunderstorm Watch')||ev.includes('Flash Flood Watch')||ev.includes('Tornado Watch'))&&alertRisk==='low'){
+      } else if((ev.includes('Severe Thunderstorm Watch')||ev.includes('Flash Flood Watch')||
+                 ev.includes('Tornado Watch'))&&alertRisk==='low'){
         alertRisk='medium';alertRiskLabel='ELEVATED — WATCH IN EFFECT';
       } else if(alertRisk==='low'&&alertRiskLabel===''){
         alertRisk='medium';alertRiskLabel='ELEVATED — ADVISORY IN EFFECT';
       }
+
       const coversMyCounty=userCounty&&areaDesc.toLowerCase().includes(userCounty.toLowerCase());
-      if(coversMyCounty&&(ev.includes('Tornado Warning')||ev.includes('PDS')||ev.includes('Particularly Dangerous'))){
+      if(coversMyCounty&&(ev.includes('Tornado Warning')||ev.includes('PDS')||
+         ev.includes('Particularly Dangerous'))){
         needsSiren=true;
       }
+
       let uid=ev+(a.properties.sent||'')+areaDesc;
-      if(!triggered&&(ev.includes('Tornado')||ev.includes('Severe')||ev.includes('Flash Flood'))&&!window.shownAlerts.includes(uid)){
+      if(!triggered&&(ev.includes('Tornado')||ev.includes('Severe')||ev.includes('Flash Flood'))&&
+         !window.shownAlerts.includes(uid)){
         window.shownAlerts.push(uid);
         showPopup(ev,desc);
         triggered=true;
       }
+
       html+=`<div class="alertCard ${style}" onclick="toggleCard(this)">
         <b>${ev}</b>
         <div class="weatherDetails">
@@ -1462,87 +1259,37 @@ async function loadAlerts(){
         </div>
       </div>`;
     });
+
     document.getElementById('alerts').innerHTML=html||
       '<div style="color:#2a6a4a;padding:16px">✓ No active alerts for this location</div>';
+
     if(needsSiren&&!sirenActive) startSiren();
     else if(!needsSiren&&sirenActive) stopSiren();
+
+    // Alert risk overrides sounding risk (never lowers it)
     const riskPriority={low:0,medium:1,high:2};
     if(features.length>0&&riskPriority[alertRisk]>=riskPriority[lastRisk]){
       setRiskDisplay(alertRisk,alertRiskLabel);
+    } else if(features.length===0){
+      // no alerts — let sounding risk stand (already set in loadWeather)
     }
+
   }catch(e){
     document.getElementById('alerts').innerText='Failed to load alerts.';
   }
 }
 
-/* ── TICKER — organized by alert type ── */
+/* ── TICKER — never resets on refresh, only updates content ── */
 let tickerInitialized=false;
-
-// Group definitions: priority order, label, icon, CSS class
-const TICKER_GROUPS=[
-  {
-    key:'tornado',
-    label:'🌪️ TORNADO',
-    cls:'tg-tornado',
-    match:ev=>ev.includes('Tornado Warning')||ev.includes('Particularly Dangerous')||ev.includes('PDS')
-  },
-  {
-    key:'torwatch',
-    label:'🌀 TOR WATCH',
-    cls:'tg-tornado',
-    match:ev=>ev.includes('Tornado Watch')
-  },
-  {
-    key:'sevwarn',
-    label:'⛈️ SVR TSTM',
-    cls:'tg-severe',
-    match:ev=>ev.includes('Severe Thunderstorm Warning')
-  },
-  {
-    key:'sevwatch',
-    label:'⛈️ SVR WATCH',
-    cls:'tg-severe',
-    match:ev=>ev.includes('Severe Thunderstorm Watch')
-  },
-  {
-    key:'ffemerge',
-    label:'🌊 FF EMERGENCY',
-    cls:'tg-flood',
-    match:ev=>ev.includes('Flash Flood Emergency')
-  },
-  {
-    key:'ffwarn',
-    label:'🌊 FLASH FLOOD',
-    cls:'tg-flood',
-    match:ev=>ev.includes('Flash Flood Warning')||ev.includes('Flash Flood Watch')
-  },
-  {
-    key:'winter',
-    label:'❄️ WINTER',
-    cls:'tg-winter',
-    match:ev=>ev.includes('Blizzard')||ev.includes('Winter Storm')||ev.includes('Ice Storm')||ev.includes('Winter Weather')
-  },
-  {
-    key:'other',
-    label:'⚡ OTHER',
-    cls:'tg-other',
-    match:()=>true // catch-all
-  }
-];
 
 async function loadTicker(force){
   try{
-let r=await fetchWithTimeout(
-  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`,
-  {},
-  10000
-);
+    let r=await fetch('https://api.weather.gov/alerts/active?severity=Severe,Extreme');
     let d=await r.json();
     const majorTypes=[
-      'Tornado Warning','Tornado Watch','Severe Thunderstorm Warning','Severe Thunderstorm Watch',
-      'Flash Flood Warning','Flash Flood Emergency','Flash Flood Watch',
-      'Particularly Dangerous Situation','PDS',
-      'Blizzard Warning','Ice Storm Warning','Winter Storm Warning','Winter Storm Watch'
+      'Tornado Warning','Tornado Watch','Severe Thunderstorm Warning',
+      'Flash Flood Warning','Particularly Dangerous Situation','PDS',
+      'Flash Flood Emergency','Blizzard Warning','Ice Storm Warning'
     ];
     let features=(d.features||[]).filter(a=>{
       const ev=a.properties?.event||'';
@@ -1554,77 +1301,43 @@ let r=await fetchWithTimeout(
       if(pa!==pb) return pa-pb;
       return alertDistance(a)-alertDistance(b);
     });
-
-    // Deduplicate
+    features=features.slice(0,30);
+    const iconMap={
+      'Tornado Warning':'🌪️','Particularly Dangerous Situation':'🚨','PDS':'🚨',
+      'Flash Flood Emergency':'🌊','Severe Thunderstorm Warning':'⛈️',
+      'Flash Flood Warning':'🌊','Tornado Watch':'🌀','Severe Thunderstorm Watch':'⛈️',
+      'Blizzard Warning':'❄️','Ice Storm Warning':'🧊'
+    };
     let seen=new Set();
-    let deduped=[];
-    features.forEach(a=>{
-      const ev=a.properties?.event||'';
-      const area=a.properties?.areaDesc||'';
-      const key=ev+area;
-      if(!seen.has(key)){seen.add(key);deduped.push({ev,area});}
-    });
+    let parts=features.map(a=>{
+      let ev=a.properties?.event||'';
+      let area=a.properties?.areaDesc||'';
+      let key=ev+area;if(seen.has(key)) return null;seen.add(key);
+      let icon='⚡';
+      for(const [k,v] of Object.entries(iconMap)){if(ev.includes(k)){icon=v;break;}}
+      return `${icon} ${ev} — ${area}`;
+    }).filter(Boolean);
 
-    if(deduped.length===0){
-      // No alerts — simple scrolling text
-      const track=document.getElementById('tickerScrollTrack');
-      track.textContent='✓ No major severe weather alerts nationwide';
-      track.style.animation='none';void track.offsetWidth;
-      track.style.animation='tickerScroll 60s linear infinite';
-      document.getElementById('tickerGroups').innerHTML='';
-      return;
-    }
+    const newText=parts.length
+      ?parts.join('      ✦      ')
+      :'✓ No major severe weather alerts nationwide';
 
-    // Build scrolling summary line (top row)
-    const summaryParts=deduped.map(({ev,area})=>`${ev} — ${area}`);
-    const newSummary=summaryParts.join('   ✦   ');
-    const track=document.getElementById('tickerScrollTrack');
+    const ticker=document.getElementById('tickerContent');
+    const currentText=ticker.innerText;
+
     if(!tickerInitialized||force){
-      track.style.animation='none';
-      track.textContent=newSummary;
-      void track.offsetWidth;
-      track.style.animation='tickerScroll 120s linear infinite';
+      // First load: start fresh animation
+      ticker.style.animation='none';
+      ticker.innerText=newText;
+      void ticker.offsetWidth;
+      ticker.style.animation='tickerScroll 110s linear infinite';
       tickerInitialized=true;
-    } else if(track.textContent!==newSummary){
-      track.textContent=newSummary;
+    } else if(currentText!==newText){
+      // Content changed but DON'T restart animation — just update text mid-scroll
+      // We swap the text without touching animation so scroll position is preserved
+      ticker.innerText=newText;
     }
-
-    // Build grouped lower row
-    const groupsEl=document.getElementById('tickerGroups');
-
-    // Bucket alerts into groups
-    const buckets={};
-    TICKER_GROUPS.forEach(g=>{buckets[g.key]=[];});
-    deduped.forEach(item=>{
-      for(const g of TICKER_GROUPS){
-        if(g.match(item.ev)){
-          buckets[g.key].push(item);
-          break;
-        }
-      }
-    });
-
-    let groupsHTML='';
-    TICKER_GROUPS.forEach(g=>{
-      const items=buckets[g.key];
-      if(!items||items.length===0) return;
-      groupsHTML+=`<div class="tickerGroup ${g.cls}">
-        <span class="tickerGroupLabel">${g.label} <span style="background:rgba(255,255,255,0.12);border-radius:3px;padding:1px 5px;font-size:11px">${items.length}</span></span>`;
-      // Show up to 4 area abbreviations
-      items.slice(0,6).forEach(({ev,area})=>{
-        // Shorten area — take first county/state segment
-        const short=area.split(';')[0].split(',').slice(0,2).join(',').trim();
-        const truncated=short.length>40?short.substring(0,38)+'…':short;
-        groupsHTML+=`<span class="tickerItem">${truncated}</span>`;
-      });
-      if(items.length>6){
-        groupsHTML+=`<span class="tickerItem" style="opacity:0.55">+${items.length-6} more</span>`;
-      }
-      groupsHTML+=`</div>`;
-    });
-
-    groupsEl.innerHTML=groupsHTML||'<div class="tickerNone">✓ No major alerts</div>';
-
+    // If text hasn't changed, do nothing — ticker keeps scrolling seamlessly
   }catch(e){
     console.error('Ticker error',e);
   }
@@ -1654,42 +1367,27 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   },300);
 });
 
-window.addEventListener('offline',()=>{
-  document.getElementById('footerTime').innerText=
-    '⚠ Offline — data unavailable';
-});
-
-window.addEventListener('online',()=>{
-  document.getElementById('footerTime').innerText=
-    `Data: NWS · Open-Meteo · Reconnected ${new Date().toLocaleTimeString()}`;
-  loadAll();
-});
-
-let appPaused=false;
-
-document.addEventListener('visibilitychange',()=>{
-
-  appPaused=document.hidden;
-
-  if(appPaused){
-    stopSiren();
-  }else{
-    loadAll();
-  }
-
-});
-
 /* ── REFRESH TIMERS ── */
+// Alerts: every 60s (don't close open cards, don't reset ticker)
 setInterval(()=>{
   loadAlerts();
   document.getElementById('footerTime').innerText=
     `Data: NWS · Open-Meteo · Updated ${new Date().toLocaleTimeString()}`;
+},60000);
+
+// Weather: every 5 minutes
+setInterval(()=>{
+  loadWeather();
+},300000);
+
+// Ticker: every 2 minutes (seamless — won't reset if text unchanged)
+setInterval(()=>{
+  loadTicker(false);
 },120000);
-setInterval(loadWeather,300000);
-setInterval(()=>loadTicker(false),120000);
+
+// Day/night: recalc every 10 minutes
 setInterval(updateDayNight,600000);
+
 </script>
 </body>
 </html>
-HTMLEOF
-echo "Done"
