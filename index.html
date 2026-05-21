@@ -1285,7 +1285,7 @@ async function loadWeather(){
       `wind_gusts_10m,surface_pressure,weather_code`+
       `&hourly=cape,lifted_index`+
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`;
-    let r=await fetch(url);
+    let r=await fetchWithTimeout(url);
     let d=await r.json();
     let c=d.current;
     let tempF=Math.round(c.temperature_2m);
