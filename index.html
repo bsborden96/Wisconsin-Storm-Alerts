@@ -532,31 +532,7 @@ document.addEventListener('click', () => {
 }, { once:true });
 
 let sirenCtx=null, sirenNodes=[], sirenActive=false, sirenTimeout=null;
-async function fetchWithTimeout(url, options = {}, timeout = 8000){
-  const controller = new AbortController();
 
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, timeout);
-
-  try{
-    const response = await fetch(url,{
-      ...options,
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-    return response;
-
-  } catch(err){
-
-    clearTimeout(timeoutId);
-
-    console.error('Fetch timeout/error:', url, err);
-
-    throw err;
-  }
-}
 function startSiren(){
   if(sirenActive) return;
   sirenActive=true;
@@ -1285,7 +1261,7 @@ async function loadWeather(){
       `wind_gusts_10m,surface_pressure,weather_code`+
       `&hourly=cape,lifted_index`+
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`;
-    let r=await fetchWithTimeout(url);
+    let r=await fetch(url);
     let d=await r.json();
     let c=d.current;
     let tempF=Math.round(c.temperature_2m);
@@ -1383,8 +1359,7 @@ window.shownAlerts=window.shownAlerts||[];
 
 async function loadAlerts(){
   try{
-    let r=await fetchWithTimeout(
-  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`
+    let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`);
     let d=await r.json();
     let features=[...(d.features||[])];
     features.sort((a,b)=>{
