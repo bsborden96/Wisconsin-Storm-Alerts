@@ -16,6 +16,7 @@ body{
   color:#e0f0ff;
   text-align:center;
   overflow-x:hidden;
+  min-height:100vh;
   min-height:100dvh;
 }
 
@@ -219,12 +220,13 @@ body > *:not(#bgCanvas):not(#popup){
   align-items:center;
   height:38px;
   white-space:nowrap;
+  min-width:max-content;
   animation:tickerScroll 120s linear infinite;
   will-change:transform;
 }
 .tickerScrollWrap:hover .tickerScrollTrack{animation-play-state:paused}
 @keyframes tickerScroll{
-  from{transform:translateX(100vw)}
+  from{transform:translateX(100%)}
   to{transform:translateX(-100%)}
 }
 
@@ -527,7 +529,7 @@ footer{
 document.addEventListener('click', () => {
   if(window.AudioContext || window.webkitAudioContext){
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    ctx.resume(); ctx.close();
+    ctx.resume();
   }
 }, { once:true });
 
@@ -603,7 +605,7 @@ function stopSiren(){
     // Generate lobe offsets to form a convincing cumulus shape
     const lobes=[];
     // Main body lobes
-    const bodyCount=5+Math.floor(Math.random()*4);
+    const bodyCount=3+Math.floor(Math.random()*2);
     for(let i=0;i<bodyCount;i++){
       const angle=(i/bodyCount)*Math.PI*2;
       const dist=(0.2+Math.random()*0.45)*scale;
@@ -615,7 +617,7 @@ function stopSiren(){
       });
     }
     // Top billowing lobes
-    const topCount=3+Math.floor(Math.random()*3);
+    const topCount=2+Math.floor(Math.random()*2);
     for(let i=0;i<topCount;i++){
       const angle=-Math.PI/2+(i/(topCount-1)-0.5)*Math.PI*0.9;
       lobes.push({
@@ -760,8 +762,15 @@ function stopSiren(){
   function spawnBolt(){
     const x=W*0.15+Math.random()*W*0.7;
     const segments=buildBoltPath(x,0,x+(Math.random()-0.5)*180,H*(0.35+Math.random()*0.45),7);
-    bolts.push({segments,life:1.0,decay:0.045+Math.random()*0.04,bright:0.7+Math.random()*0.3,branches:generateBranches(segments)});
-  }
+    if(bolts.length < 12){
+  bolts.push({
+    segments,
+    life:1.0,
+    decay:0.045+Math.random()*0.04,
+    bright:0.7+Math.random()*0.3,
+    branches:generateBranches(segments)
+  });
+}
   function buildBoltPath(x1,y1,x2,y2,depth){
     if(depth===0) return [{x:x1,y:y1},{x:x2,y:y2}];
     const mx=(x1+x2)/2+(Math.random()-0.5)*(Math.abs(x2-x1)+80)*(0.8/depth);
@@ -875,6 +884,13 @@ function stopSiren(){
   window.setSunProgress=function(sp,np){sunProgress=sp;nightProgress=np||0.5;};
 
   function draw(){
+
+  if(appPaused){
+    setTimeout(()=>{
+      requestAnimationFrame(draw);
+    },1000);
+    return;
+  }
     frame++;
     ctx.clearRect(0,0,W,H);
 
@@ -1004,9 +1020,16 @@ function stopSiren(){
     bolts.forEach(b=>{
       const boltColor=bgMode==='tornado'?'255,180,80':bgMode==='storm'?'200,220,255':'180,210,255';
       if(b.life>0.85){
-        const fa=(b.life-0.85)/0.15*0.06;
-        ctx.fillStyle=`rgba(200,220,255,${fa})`;ctx.fillRect(0,0,W,H);
-      }
+  const fa=(b.life-0.85)/0.15*0.06;
+
+  // Blue atmospheric glow
+  ctx.fillStyle=`rgba(120,180,255,${fa*0.35})`;
+  ctx.fillRect(0,0,W,H);
+
+  // Main lightning flash
+  ctx.fillStyle=`rgba(200,220,255,${fa})`;
+  ctx.fillRect(0,0,W,H);
+}
       drawBoltPath(b.segments,b.life*b.bright,1.8,boltColor);
       b.branches.forEach(br=>drawBoltPath(br.segs,b.life*b.bright*br.opacity,0.8,boltColor));
       b.life-=b.decay;
@@ -1016,7 +1039,9 @@ function stopSiren(){
     ctx.fillStyle='rgba(0,0,0,0.02)';
     for(let y=0;y<H;y+=4) ctx.fillRect(0,y,W,2);
 
-    requestAnimationFrame(draw);
+    setTimeout(()=>{
+  requestAnimationFrame(draw);
+},33);
   }
   draw();
 
@@ -1066,6 +1091,7 @@ function toggleMenu(){
 }
 
 function showPopup(eventName,desc){
+  if(document.getElementById('popup').style.display==='block') return;
   let title='⚠ WEATHER ALERT';
   let message='Stay alert and monitor conditions.';
   if(eventName.includes('Particularly Dangerous Situation')||eventName.includes('PDS')){
@@ -1102,6 +1128,34 @@ navigator.geolocation.getCurrentPosition(p=>{
   lat=p.coords.latitude;lon=p.coords.longitude;
   loadAll();
 },()=>loadAll());
+
+async function fetchWithTimeout(url,options={},timeout=10000){
+
+  const controller = new AbortController();
+
+  const timeoutId = setTimeout(()=>{
+    controller.abort();
+  },timeout);
+
+  try{
+
+    const response = await fetch(url,{
+      ...options,
+      signal:controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    return response;
+
+  }catch(err){
+
+    clearTimeout(timeoutId);
+    throw err;
+
+  }
+
+}
 
 async function loadAll(){
   await loadLocation();
@@ -1261,7 +1315,7 @@ async function loadWeather(){
       `wind_gusts_10m,surface_pressure,weather_code`+
       `&hourly=cape,lifted_index`+
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`;
-    let r=await fetch(url);
+    let r=await fetchWithTimeout(url,{},10000);
     let d=await r.json();
     let c=d.current;
     let tempF=Math.round(c.temperature_2m);
@@ -1478,7 +1532,11 @@ const TICKER_GROUPS=[
 
 async function loadTicker(force){
   try{
-    let r=await fetch('https://api.weather.gov/alerts/active?severity=Severe,Extreme');
+let r=await fetchWithTimeout(
+  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`,
+  {},
+  10000
+);
     let d=await r.json();
     const majorTypes=[
       'Tornado Warning','Tornado Watch','Severe Thunderstorm Warning','Severe Thunderstorm Watch',
@@ -1596,12 +1654,37 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   },300);
 });
 
+window.addEventListener('offline',()=>{
+  document.getElementById('footerTime').innerText=
+    '⚠ Offline — data unavailable';
+});
+
+window.addEventListener('online',()=>{
+  document.getElementById('footerTime').innerText=
+    `Data: NWS · Open-Meteo · Reconnected ${new Date().toLocaleTimeString()}`;
+  loadAll();
+});
+
+let appPaused=false;
+
+document.addEventListener('visibilitychange',()=>{
+
+  appPaused=document.hidden;
+
+  if(appPaused){
+    stopSiren();
+  }else{
+    loadAll();
+  }
+
+});
+
 /* ── REFRESH TIMERS ── */
 setInterval(()=>{
   loadAlerts();
   document.getElementById('footerTime').innerText=
     `Data: NWS · Open-Meteo · Updated ${new Date().toLocaleTimeString()}`;
-},60000);
+},120000);
 setInterval(loadWeather,300000);
 setInterval(()=>loadTicker(false),120000);
 setInterval(updateDayNight,600000);
