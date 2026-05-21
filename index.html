@@ -855,7 +855,7 @@ function stopSiren(){
       case 'cloudy':  initClouds(7,true);  initRain(0,false);   initSnow(0);   break;
       default:        initClouds(3,false); initRain(0,false);   initSnow(0);   break; // clear
     }
-    window.stars = null; // reset stars
+     window._stars = null;
   };
 
   // Legacy shim
