@@ -137,7 +137,7 @@ body > *:not(#bgCanvas):not(#popup){
   white-space:nowrap;
   padding-left:140px;
   min-width:100%;
-  animation:tickerScroll 160s linear infinite;
+  animation:tickerScroll 110s linear infinite;
   will-change:transform;
   font-family:'Bebas Neue',cursive;
   font-size:18px;letter-spacing:1px;
@@ -408,6 +408,13 @@ footer{
 
 <script>
 /* ===================== SIREN AUDIO ===================== */
+document.addEventListener('click', () => {
+  if(window.AudioContext || window.webkitAudioContext){
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    ctx.resume();
+    ctx.close();
+  }
+}, { once:true });
 let sirenCtx = null;
 let sirenNodes = [];
 let sirenActive = false;
@@ -1282,7 +1289,7 @@ async function loadTicker(){
       ? parts.join('      ✦      ')
       : '✓ No major severe weather alerts nationwide';
     void ticker.offsetWidth;
-    ticker.style.animation='tickerScroll 160s linear infinite';
+    ticker.style.animation='tickerScroll 110s linear infinite';
   }catch(e){
     console.error('Ticker error',e);
   }
@@ -1316,7 +1323,9 @@ document.getElementById('searchInput').addEventListener('input',()=>{
   },300);
 });
 
-setInterval(loadAll,30000);
+setInterval(loadAlerts, 15000);
+setInterval(loadTicker, 45000);
+setInterval(loadWeather, 120000);
 </script>
 
 </body>
