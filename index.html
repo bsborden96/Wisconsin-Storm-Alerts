@@ -1383,7 +1383,8 @@ window.shownAlerts=window.shownAlerts||[];
 
 async function loadAlerts(){
   try{
-    let r=await fetch(`https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`);
+    let r=await fetchWithTimeout(
+  `https://api.weather.gov/alerts/active?point=${lat.toFixed(4)},${lon.toFixed(4)}`
     let d=await r.json();
     let features=[...(d.features||[])];
     features.sort((a,b)=>{
