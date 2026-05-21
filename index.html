@@ -418,7 +418,7 @@ document.addEventListener('click', () => {
 let sirenCtx = null;
 let sirenNodes = [];
 let sirenActive = false;
-
+let sirenTimeout = null;
 function startSiren(){
   if(sirenActive) return;
   sirenActive = true;
@@ -488,6 +488,37 @@ function playSirenLoop(){
   osc2.stop(now + duration);
 
   sirenNodes = [osc, osc2, gain, gain2];
+  
+    // Loop safely
+  clearTimeout(sirenTimeout);
+
+  sirenTimeout = setTimeout(() => {
+    if(sirenActive){
+      playSirenLoop();
+    }
+  }, duration * 1000);
+}
+
+function stopSiren(){
+  sirenActive = false;
+
+  document.getElementById('sirenBanner').style.display = 'none';
+
+  clearTimeout(sirenTimeout);
+
+  sirenNodes.forEach(n => {
+    try{
+      n.disconnect();
+    }catch(e){}
+  });
+
+  sirenNodes = [];
+
+  if(sirenCtx){
+    sirenCtx.close();
+    sirenCtx = null;
+  }
+}
 
 
 /* ===================== ANIMATED BACKGROUND ===================== */
