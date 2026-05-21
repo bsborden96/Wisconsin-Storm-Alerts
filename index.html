@@ -15,7 +15,7 @@ body{
   color:#e0f0ff;
   text-align:center;
   overflow-x:hidden;
-  min-height:100vh;
+  min-height:100dvh;
 }
 
 #bgCanvas{
@@ -920,11 +920,11 @@ navigator.geolocation.getCurrentPosition(p=>{
   lat=p.coords.latitude; lon=p.coords.longitude; loadAll();
 }, ()=>loadAll());
 
-function loadAll(){
-  loadTicker();
-  loadLocation();
+async function loadAll(){
+  await loadLocation();
   loadWeather();
   loadAlerts();
+  loadTicker();
   let now=new Date();
   document.getElementById('footerTime').innerText=
     `Data: NWS · Open-Meteo · Updated ${now.toLocaleTimeString()}`;
@@ -949,10 +949,10 @@ async function loadLocation(){
 
 /* ── WEATHER CODE → BG MODE ── */
 // WMO weather codes: https://open-meteo.com/en/docs
-function weatherCodeToMode(code, cape, li){
-  // Tornado / extreme storm conditions from instability
-  if(li<=-6 && cape>2000) return 'tornado'; // extreme instability → tornado mode
-  // Snow codes
+  function weatherCodeToMode(code, cape, li, windSpd){
+  if(li <= -6 && cape > 2000 && windSpd >= 25){
+    return 'tornado';
+  }
   if([71,73,75,77,85,86].includes(code)) return 'snow';
   // Fog codes
   if([45,48].includes(code)) return 'fog';
@@ -1075,7 +1075,7 @@ async function loadWeather(){
       (cape>1500?' · ⚠ Significant instability present':'');
 
     // Background: weather code takes priority, instability can override to storm/tornado
-    let bgMode = weatherCodeToMode(wcode, cape, li);
+    let bgMode = weatherCodeToMode(wcode, cape, li, windSpd);
     window.setBgMode(bgMode);
 
     // Fallback risk level from instability (alerts can override below)
