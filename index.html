@@ -1962,6 +1962,20 @@ function weatherCodeToMode(code, cape, li, windSpd, dewF, windDeg, pressure, has
 /* ════════════════════════════════════════════════
    GEOLOCATION + LOAD
 ════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════
+   FETCH TIMEOUT
+════════════════════════════════════════════════ */
+async function fetchWithTimeout(url, ms = 8000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ms);
+
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 navigator.geolocation.getCurrentPosition(
   p => { appLat=p.coords.latitude; appLon=p.coords.longitude; loadAll(); },
   ()  => loadAll()
@@ -2143,7 +2157,7 @@ async function loadAlerts() {
   if (fetchInProgress.alerts) return;
   fetchInProgress.alerts = true;
   try {
-    const res = await fetch(`https://api.weather.gov/alerts/active?point=${appLat.toFixed(4)},${appLon.toFixed(4)}`);
+    const res = await fetchWithTimeout(`https://api.weather.gov/alerts/active?point=${appLat.toFixed(4)},${appLon.toFixed(4)}`);
     if (!res.ok) throw new Error('Alerts API error');
     const data = await res.json();
     activeAlertFeatures = sortAlerts(data.features||[]);
