@@ -2479,9 +2479,9 @@ document.addEventListener('click', e=>{
 /* ════════════════════════════════════════════════
    REFRESH INTERVALS (staggered)
 ════════════════════════════════════════════════ */
-setInterval(()=>{ loadAlerts(); updateFooter(); },         60_000);
+setInterval(()=>{ loadAlerts(); updateFooter(); },         15_000);
 setInterval(()=>{ loadWeather(); },                       300_000);
-setInterval(()=>{ loadTicker(); },                        120_000);
+setInterval(()=>{ loadTicker(); },                        30_000);
 setInterval(()=>{ updateDayNight(); },                    600_000);
 </script>
 </body>
