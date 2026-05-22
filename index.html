@@ -2342,7 +2342,7 @@ async function loadTicker() {
   if (fetchInProgress.ticker) return;
   fetchInProgress.ticker = true;
   try {
-    const res = await fetch('https://api.weather.gov/alerts/active?severity=Severe,Extreme');
+    const res = await fetch('https://api.weather.gov/alerts/active');
     if (!res.ok) throw new Error('Ticker API error');
     const data = await res.json();
 
