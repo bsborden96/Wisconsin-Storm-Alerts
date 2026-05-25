@@ -310,6 +310,43 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 
 /* ════════════════════════════════════════════
+   BOTTOM LOGO
+════════════════════════════════════════════ */
+.bottom-logo-wrap{
+  padding: 26px 0 8px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.bottom-logo{
+  width:min(160px,42vw);
+  opacity:0.82;
+  filter:
+    drop-shadow(0 0 12px rgba(0,207,255,0.28))
+    drop-shadow(0 0 22px rgba(0,120,255,0.12));
+  transition:
+    transform .25s ease,
+    opacity .25s ease,
+    filter .25s ease;
+  pointer-events:none;
+}
+
+.bottom-logo:hover{
+  opacity:1;
+  transform:scale(1.03);
+  filter:
+    drop-shadow(0 0 16px rgba(0,207,255,0.4))
+    drop-shadow(0 0 28px rgba(0,120,255,0.2));
+}
+
+@media (prefers-reduced-motion: reduce){
+  .bottom-logo{
+    transition:none;
+  }
+}
+
+/* ════════════════════════════════════════════
    TICKER SYSTEM — FIX #2, #3, #7, #14
    
    Key changes:
@@ -1107,7 +1144,14 @@ footer {
     <div id="alertsContainer" class="alerts-container" aria-live="polite">Loading…</div>
   </div>
 
-  <footer id="footerTime">Data: NWS · Open-Meteo · Initializing…</footer>
+  <!-- Bottom Logo -->
+<div class="bottom-logo-wrap">
+  <img src="bottom-logo.png" alt="Storm Alerts Footer Logo" class="bottom-logo">
+</div>
+
+<footer id="footerTime">
+  Data: NWS · Open-Meteo · Initializing…
+</footer>
 
 </main>
 
