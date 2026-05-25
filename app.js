@@ -105,7 +105,8 @@ const TICKER_EVENT_TYPES = [
 ];
 // Build NWS API event filter param
 const TICKER_EVENT_PARAM = TICKER_EVENT_TYPES.map(e => encodeURIComponent(e)).join('&event=');
-const TICKER_API_URL = `https://api.weather.gov/alerts/active?status=actual&message_type=alert&event=${TICKER_EVENT_PARAM}`;
+const TICKER_API_URL =
+'https://api.weather.gov/alerts/active';
 
 /* ════════════════════════════════════════════════
    STATE
