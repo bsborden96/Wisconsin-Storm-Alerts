@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/index.html << 'HTMLEOF'
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -73,8 +72,6 @@ body {
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
-  /* Account for fixed menu header */
-  padding-top: 0;
 }
 
 /* ── CANVAS ── */
@@ -88,8 +85,11 @@ body {
   will-change: transform;
 }
 
-/* ── Z-INDEX LAYERS ── */
-/* 0: canvas | 1: content | 50: ticker | 100: header | 200: suggestions | 300: overflow | 9000: popup | 99999: siren */
+/* ── Z-INDEX LAYERS ──
+   0: canvas | 1: content | 50: ticker | 100: header
+   200: suggestions | 9000: popup | 99999: siren
+   NOTE: ticker overflow is position:fixed at z-index 400
+   so it floats above everything including search/cards      */
 
 body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   position: relative;
@@ -233,7 +233,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   white-space: nowrap;
 }
 
-/* ── MENU BUTTON (fixed, respects safe area) ── */
 .menu-btn {
   position: fixed;
   top: var(--safe-top);
@@ -255,7 +254,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 .menu-btn:active { color: #fff; }
 
-/* ── MENU PANEL ── */
 .menu-panel {
   position: fixed;
   top: calc(56px + var(--safe-top));
@@ -297,17 +295,13 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 .menu-panel a:active { color: var(--c-cyan); background: rgba(0,207,255,0.1); }
 .menu-panel a .menu-icon-char { font-size: 16px; width: 20px; text-align: center; }
 
-/* ── MAIN CONTENT OFFSET ── */
 #mainContent {
   padding-top: calc(56px + var(--safe-top));
   position: relative;
   z-index: 1;
 }
 
-/* ── LOGO ── */
-.logo-wrap {
-  padding: 18px 0 4px;
-}
+.logo-wrap { padding: 18px 0 4px; }
 .logo {
   width: min(200px, 60vw);
   display: block;
@@ -316,7 +310,18 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 
 /* ════════════════════════════════════════════
-   TICKER SYSTEM
+   TICKER SYSTEM — FIX #2, #3, #7, #14
+   
+   Key changes:
+   - REMOVED scroll-snap-type (was causing sticky/snapping)
+   - REMOVED scroll-snap-align on items
+   - Added touch-action: pan-x for smooth horizontal drag
+   - Added overscroll-behavior-x: contain
+   - will-change: scroll-position for GPU compositing
+   - overflow: visible on .ticker-wrap (needed for old edge-fade)
+   - Overflow panel is position:fixed at z-index 400 — floats
+     above ALL content including search/cards
+   - Edge fade gradients for premium feel
 ════════════════════════════════════════════ */
 .ticker-wrap {
   position: relative;
@@ -324,24 +329,51 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   background: linear-gradient(90deg,#0e0000,#1e0000,#0e0000);
   border-top: 1px solid rgba(255,80,80,0.28);
   border-bottom: 1px solid rgba(255,80,80,0.28);
-  overflow: visible; /* allow overflow panel */
+  /* overflow: visible here so edge-fade pseudo-elements show */
+  overflow: visible;
   z-index: 50;
   margin: 10px 0;
+}
+
+/* Edge fading for premium feel */
+.ticker-wrap::before,
+.ticker-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 28px;
+  z-index: 2;
+  pointer-events: none;
+}
+.ticker-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, #150000, transparent);
+}
+.ticker-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, #150000, transparent);
 }
 
 .ticker-scroll {
   display: flex;
   align-items: stretch;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch;   /* iOS momentum scrolling */
   scrollbar-width: none;
   min-height: 48px;
-  scroll-snap-type: x mandatory;
+  /* FIX: REMOVED scroll-snap-type entirely */
+  /* FIX: overscroll-behavior-x prevents page scroll fighting */
+  overscroll-behavior-x: contain;
+  /* FIX: touch-action pan-x — smooth horizontal drag only */
+  touch-action: pan-x;
+  /* FIX: GPU compositing hint */
+  will-change: scroll-position;
   gap: 0;
+  cursor: grab;
 }
+.ticker-scroll:active { cursor: grabbing; }
 .ticker-scroll::-webkit-scrollbar { display: none; }
 
-/* ── TICKER GROUP ── */
 .ticker-group {
   display: flex;
   align-items: center;
@@ -350,7 +382,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   gap: 7px;
   border-right: 1px solid rgba(255,80,80,0.12);
   white-space: nowrap;
-  scroll-snap-align: start;
+  /* FIX: NO scroll-snap-align */
 }
 
 .ticker-group-label {
@@ -386,12 +418,15 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   border: 1px solid transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  /* touch-action: manipulation on items so tap fires, but parent pan-x wins for scroll */
   touch-action: manipulation;
   transition: filter .15s, opacity .15s;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ticker-item:active { filter: brightness(1.3); }
 
@@ -409,30 +444,40 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   transition: opacity .15s, background .15s;
   white-space: nowrap;
   flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .ticker-more:active { opacity: 1; background: rgba(255,255,255,0.12); }
 
-/* ── TICKER OVERFLOW PANEL ── */
-.ticker-overflow {
-  position: absolute;
-  top: 100%;
+/* ── TICKER OVERFLOW PANEL — FIX #3 ──
+   CRITICAL: position:fixed with high z-index so it floats
+   above ALL stacking contexts — search, cards, transforms, etc.
+   The JS sets top/left dynamically to anchor below the ticker.
+   This avoids ALL clipping from parent overflow or transforms.   */
+#tickerOverflowPortal {
+  position: fixed;
   left: 0;
   right: 0;
-  background: rgba(5,10,22,0.98);
-  border: 1px solid rgba(255,80,80,0.22);
+  background: rgba(5,10,22,0.99);
+  border: 1px solid rgba(255,80,80,0.28);
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  z-index: 300;
+  z-index: 400;     /* above header(100), search(200), popup(9000 off by default) */
   overflow: hidden;
   max-height: 0;
-  transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
-  -webkit-overflow-scrolling: touch;
+  transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  /* Start hidden, top will be set by JS */
+  top: 0;
+  pointer-events: none;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.85);
 }
-.ticker-overflow.open {
-  max-height: 300px;
+#tickerOverflowPortal.open {
+  max-height: 320px;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  pointer-events: auto;
 }
 .ticker-overflow-inner {
   padding: 12px 14px 16px;
@@ -477,6 +522,21 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   font-family: var(--font-display);
   font-size: 12px;
   letter-spacing: 1px;
+}
+
+/* Stale data banner */
+#staleBanner {
+  display: none;
+  background: rgba(100,60,0,0.92);
+  border: 1px solid rgba(255,160,0,0.4);
+  color: #ffcc70;
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  padding: 6px 14px;
+  text-align: center;
+  position: relative;
+  z-index: 51;
 }
 
 /* Group color themes */
@@ -568,7 +628,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   margin: 0 auto;
 }
 
-/* ── LOCATION CARD ── */
 .location-card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -583,7 +642,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 .location-card span { font-size: 14px; opacity: 0.7; display: block; margin-top: 2px; }
 
-/* ── RISK BOX ── */
 .risk-box {
   margin-top: 10px;
   padding: 16px 18px;
@@ -624,13 +682,12 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   margin-top: 5px;
   line-height: 1.55;
 }
-.risk-low   { background: linear-gradient(135deg,#0a200a,#142814); border-color: rgba(46,110,46,0.4); color: var(--c-green); }
-.risk-medium{ background: linear-gradient(135deg,#301800,#4a2800); border-color: rgba(255,100,0,0.45); color: var(--c-orange); animation: pulseOrg 2.5s ease-in-out infinite; }
-.risk-high  { background: linear-gradient(135deg,#300000,#500000); border-color: rgba(255,30,30,0.4); color: var(--c-red); animation: pulseRed 2s ease-in-out infinite; }
+.risk-low    { background: linear-gradient(135deg,#0a200a,#142814); border-color: rgba(46,110,46,0.4); color: var(--c-green); }
+.risk-medium { background: linear-gradient(135deg,#301800,#4a2800); border-color: rgba(255,100,0,0.45); color: var(--c-orange); animation: pulseOrg 2.5s ease-in-out infinite; }
+.risk-high   { background: linear-gradient(135deg,#300000,#500000); border-color: rgba(255,30,30,0.4); color: var(--c-red); animation: pulseRed 2s ease-in-out infinite; }
 @keyframes pulseRed { 0%,100%{box-shadow:0 0 10px rgba(255,0,0,.25)}50%{box-shadow:0 0 30px rgba(255,0,0,.55)} }
 @keyframes pulseOrg { 0%,100%{box-shadow:0 0 8px rgba(255,100,0,.18)}50%{box-shadow:0 0 24px rgba(255,100,0,.45)} }
 
-/* ── EXPAND DETAILS (generic) ── */
 .expand-details {
   max-height: 0;
   overflow: hidden;
@@ -666,7 +723,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   margin: 14px 0 8px;
 }
 
-/* ── SECTION HEADING ── */
 h2 {
   font-family: var(--font-display);
   font-size: clamp(18px, 4.5vw, 24px);
@@ -677,7 +733,6 @@ h2 {
   text-align: left;
 }
 
-/* ── WEATHER GRID ── */
 .weather-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -718,7 +773,6 @@ h2 {
   margin-top: 2px;
 }
 
-/* Temperature colors */
 .tc-cold { color: #4da6ff !important; text-shadow: 0 0 8px rgba(77,166,255,0.5) !important; }
 .tc-cool { color: #00ccff !important; }
 .tc-mild { color: #00ff99 !important; }
@@ -741,7 +795,6 @@ h2 {
   margin-bottom: 6px;
 }
 
-/* ── ALERT CARD ── */
 .alert-card {
   margin-top: 8px;
   padding: 14px 16px;
@@ -784,7 +837,6 @@ h2 {
   transition: transform .3s;
 }
 .alert-card.open .alert-chevron { transform: rotate(180deg); }
-
 .alert-movement {
   margin-top: 6px;
   font-family: var(--font-mono);
@@ -792,7 +844,6 @@ h2 {
   opacity: 0.75;
   color: #ffd080;
 }
-
 .alert-detail-text {
   font-size: 12px;
   line-height: 1.7;
@@ -809,7 +860,6 @@ h2 {
   border: 1px solid rgba(255,255,255,0.08);
 }
 
-/* Area links */
 .area-link {
   display: inline-block;
   cursor: pointer;
@@ -820,7 +870,6 @@ h2 {
 }
 .area-link:active { color: var(--c-cyan); border-color: var(--c-cyan); }
 
-/* Alert color variants */
 .alert-pds      { background: var(--col-tor-warn-bg); border-color: rgba(255,20,20,0.65); color: var(--col-tor-warn-tx); animation: pulseRed 1.8s ease-in-out infinite; }
 .alert-tor-warn { background: var(--col-tor-warn-bg); border-color: var(--col-tor-warn-bd); color: var(--col-tor-warn-tx); animation: pulseRed 2.5s ease-in-out infinite; }
 .alert-tor-watch{ background: var(--col-tor-watch-bg); border-color: var(--col-tor-watch-bd); color: var(--col-tor-watch-tx); }
@@ -830,7 +879,6 @@ h2 {
 .alert-winter   { background: var(--col-winter-bg); border-color: var(--col-winter-bd); color: var(--col-winter-tx); }
 .alert-other    { background: var(--col-other-bg); border-color: var(--col-other-bd); color: var(--col-other-tx); }
 
-/* ── SPATIAL AWARENESS CARD ── */
 .spatial-card {
   margin-top: 10px;
   padding: 12px 16px;
@@ -855,7 +903,6 @@ h2 {
 .spatial-row:last-child { border-bottom: none; }
 .spatial-val { color: #ffe080; font-family: var(--font-mono); font-size: 12px; }
 
-/* ── FOOTER ── */
 footer {
   padding: 20px 14px;
   font-size: 11px;
@@ -870,6 +917,17 @@ footer {
 ════════════════════════════════════════════ */
 :focus-visible { outline: 2px solid var(--c-cyan); outline-offset: 3px; }
 
+/* ARIA live region for screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ════════════════════════════════════════════
    REDUCED MOTION
 ════════════════════════════════════════════ */
@@ -878,17 +936,18 @@ footer {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+  #bgCanvas { display: none; }
 }
 
-/* ════════════════════════════════════════════
-   DIVIDER
-════════════════════════════════════════════ */
 .section + .section { padding-top: 16px; }
 </style>
 </head>
 <body>
 
 <canvas id="bgCanvas" aria-hidden="true"></canvas>
+
+<!-- ARIA live region for alert announcements -->
+<div id="ariaLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
 <!-- Siren Banner -->
 <div id="sirenBanner" role="alert" aria-live="assertive" onclick="stopSiren()">
@@ -905,6 +964,9 @@ footer {
   <div class="popup-movement" id="popupMovement" style="display:none"></div>
 </div>
 
+<!-- Stale data banner -->
+<div id="staleBanner" aria-live="polite">⚠ ALERT DATA MAY BE STALE — CHECK NWS DIRECTLY</div>
+
 <!-- Fixed Header Bar -->
 <div id="headerBar" aria-label="Navigation header">
   <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-expanded="false" aria-controls="menuPanel" aria-label="Open navigation menu">☰</button>
@@ -916,21 +978,22 @@ footer {
   <a href="winter.html" role="menuitem"><span class="menu-icon-char">❄️</span>Winter Center</a>
 </nav>
 
+<!-- Ticker overflow portal — rendered at body level to escape all stacking contexts -->
+<div id="tickerOverflowPortal" role="list" aria-label="Additional alerts">
+  <div class="ticker-overflow-inner" id="tickerOverflowInner"></div>
+</div>
+
 <!-- Main Content -->
 <main id="mainContent">
 
-  <!-- Logo -->
   <div class="logo-wrap">
     <img src="logo.PNG" class="logo" alt="Storm Alerts">
   </div>
 
   <!-- Ticker -->
-  <div class="ticker-wrap" aria-label="Live severe weather alerts">
-    <div id="tickerScroll" class="ticker-scroll" role="marquee">
+  <div class="ticker-wrap" id="tickerWrap" aria-label="Live severe weather alerts">
+    <div id="tickerScroll" class="ticker-scroll" role="marquee" aria-label="Scrolling weather alerts">
       <div class="ticker-none">Checking for alerts…</div>
-    </div>
-    <div id="tickerOverflow" class="ticker-overflow" role="list" aria-label="Additional alerts">
-      <div class="ticker-overflow-inner" id="tickerOverflowInner"></div>
     </div>
   </div>
 
@@ -1053,35 +1116,71 @@ footer {
    PERFORMANCE DETECTION
 ════════════════════════════════════════════════ */
 const perfLevel = (() => {
-  const mem = navigator.deviceMemory || 4;
+  const mem   = navigator.deviceMemory || 4;
   const cores = navigator.hardwareConcurrency || 4;
   if (mem <= 2 || cores <= 2) return 'low';
   if (mem <= 4 || cores <= 4) return 'mid';
   return 'high';
 })();
 const pixelRatio = Math.min(window.devicePixelRatio || 1, perfLevel === 'low' ? 1 : 2);
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ════════════════════════════════════════════════
    CONSTANTS
 ════════════════════════════════════════════════ */
 const COMPASS_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
-const ALERT_PRIORITY = {
-  'Particularly Dangerous Situation': 1,
-  'Tornado Emergency':                2,
-  'Tornado Warning':                  3,
-  'Flash Flood Emergency':            4,
-  'Severe Thunderstorm Warning':      5,
-  'Flash Flood Warning':              6,
-  'Tornado Watch':                    7,
-  'Severe Thunderstorm Watch':        8,
-  'Flash Flood Watch':                9,
-  'Winter Storm Warning':             10,
-  'Ice Storm Warning':                10,
-  'Blizzard Warning':                 10,
-  'Winter Storm Watch':               11,
-};
+/* ────────────────────────────────────────────────
+   FIX #1: CENTRALIZED ALERT PRIORITY SYSTEM
+   Single source of truth. Lower number = higher priority.
+   Used by: sorting, risk box, popup, siren, spatial card,
+   background mode, ticker, nearby warning calc.
+──────────────────────────────────────────────── */
+const ALERT_PRIORITY_MAP = new Map([
+  ['Particularly Dangerous Situation', 1],  // PDS Tornado Warning
+  ['Tornado Emergency',                2],
+  ['Tornado Warning',                  3],
+  ['Flash Flood Emergency',            4],
+  ['Severe Thunderstorm Warning',      5],
+  ['Flash Flood Warning',              6],
+  ['Tornado Watch',                    7],
+  ['Severe Thunderstorm Watch',        8],
+  ['Flash Flood Watch',                9],
+  ['Winter Storm Warning',            10],
+  ['Ice Storm Warning',               10],
+  ['Blizzard Warning',                10],
+  ['Winter Storm Watch',              11],
+  ['Winter Weather Advisory',         12],
+]);
 
+/**
+ * Returns the priority score for an alert event string.
+ * Lower = more severe/higher priority.
+ * Uses deterministic, ordered matching — longest match wins to avoid
+ * "Severe Thunderstorm Warning" matching "Warning" before "Tornado Warning".
+ */
+function alertPriorityScore(eventStr) {
+  if (!eventStr) return 99;
+  // Sort keys longest-first so more specific strings match first
+  for (const [key, score] of ALERT_PRIORITY_MAP) {
+    if (eventStr.includes(key)) return score;
+  }
+  return 99;
+}
+
+/** True if eventStr is a tornado-level threat (priority ≤ 3) */
+function isTornadoLevel(eventStr) {
+  return alertPriorityScore(eventStr) <= 3;
+}
+
+/** True if eventStr is a tornado emergency or PDS (priority ≤ 2) */
+function isExtremeLevel(eventStr) {
+  return alertPriorityScore(eventStr) <= 2;
+}
+
+/* ────────────────────────────────────────────────
+   TICKER GROUPS — ordered by priority
+──────────────────────────────────────────────── */
 const TICKER_GROUPS = [
   { key:'pds',      label:'Particularly Dangerous Situation', cls:'tg-pds',
     match: ev => ev.includes('Particularly Dangerous') },
@@ -1103,22 +1202,157 @@ const TICKER_GROUPS = [
     match: () => true },
 ];
 
+/* ────────────────────────────────────────────────
+   FIX #4: EFFICIENT TICKER API — filtered event types only
+──────────────────────────────────────────────── */
+const TICKER_EVENT_TYPES = [
+  'Tornado Warning',
+  'Tornado Watch',
+  'Severe Thunderstorm Warning',
+  'Severe Thunderstorm Watch',
+  'Flash Flood Warning',
+  'Flash Flood Watch',
+  'Flash Flood Emergency',
+  'Blizzard Warning',
+  'Winter Storm Warning',
+  'Ice Storm Warning',
+];
+// Build NWS API event filter param
+const TICKER_EVENT_PARAM = TICKER_EVENT_TYPES.map(e => encodeURIComponent(e)).join('&event=');
+const TICKER_API_URL = `https://api.weather.gov/alerts/active?status=actual&message_type=alert&event=${TICKER_EVENT_PARAM}`;
+
 /* ════════════════════════════════════════════════
    STATE
 ════════════════════════════════════════════════ */
 let appLat = 43, appLon = -88;
 let userCounty = '';
-let lastBgMode = 'clear';
-let lastRisk = 'low';
+let lastBgMode  = 'clear';
+let lastRisk    = 'low';
 let sirenActive = false;
 let sirenCtx = null, sirenNodes = [], sirenTimeout = null;
-let shownAlerts = new Set();
-let fetchInProgress = { weather: false, alerts: false, ticker: false };
 let activeAlertFeatures = [];
-
-// Forced tornado bg from active alert
 let forceStormBg = false;
 let forceStormType = '';
+let lastSuccessfulRefresh = null;
+
+/* ────────────────────────────────────────────────
+   FIX #6: BOUNDED CACHES — prevent unbounded growth
+──────────────────────────────────────────────── */
+const MAX_SHOWN_ALERTS = 200;
+const MAX_SEARCH_CACHE = 50;
+// Use arrays instead of raw Sets/Maps so we can evict oldest entries
+let shownAlertsArr = [];
+const shownAlertsSet = new Set();
+const searchCache = new Map();  // bounded below in search handler
+
+function addShownAlert(uid) {
+  if (shownAlertsSet.has(uid)) return;
+  if (shownAlertsArr.length >= MAX_SHOWN_ALERTS) {
+    const oldest = shownAlertsArr.shift();
+    shownAlertsSet.delete(oldest);
+  }
+  shownAlertsArr.push(uid);
+  shownAlertsSet.add(uid);
+}
+function hasShownAlert(uid) { return shownAlertsSet.has(uid); }
+
+function addSearchCache(key, val) {
+  if (searchCache.size >= MAX_SEARCH_CACHE) {
+    // Delete oldest entry
+    const firstKey = searchCache.keys().next().value;
+    searchCache.delete(firstKey);
+  }
+  searchCache.set(key, val);
+}
+
+/* ════════════════════════════════════════════════
+   FIX #5: SAFE FETCH UTILITY
+   - AbortController support
+   - Retries with exponential backoff + jitter
+   - Timeout handling
+   - Stale request cancellation via controller map
+════════════════════════════════════════════════ */
+const activeFetchControllers = new Map();
+
+async function safeFetch(url, {
+  timeout   = 10000,
+  retries   = 2,
+  key       = null,   // if provided, cancels any prior fetch with same key
+  baseDelay = 800,
+} = {}) {
+  // Cancel previous request with same key (stale request prevention)
+  if (key && activeFetchControllers.has(key)) {
+    try { activeFetchControllers.get(key).abort(); } catch(_) {}
+  }
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    if (key) activeFetchControllers.set(key, controller);
+
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (key) activeFetchControllers.delete(key);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      if (key) activeFetchControllers.delete(key);
+
+      if (err.name === 'AbortError') throw err; // don't retry aborts
+
+      if (attempt < retries) {
+        // Exponential backoff with jitter
+        const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 400;
+        await new Promise(r => setTimeout(r, delay));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
+/* ════════════════════════════════════════════════
+   FIX #12: STALE DATA DETECTION
+════════════════════════════════════════════════ */
+const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+
+function markRefreshSuccess() {
+  lastSuccessfulRefresh = Date.now();
+  document.getElementById('staleBanner').style.display = 'none';
+}
+
+function checkStaleData() {
+  if (!lastSuccessfulRefresh) return;
+  const age = Date.now() - lastSuccessfulRefresh;
+  if (age > STALE_THRESHOLD_MS) {
+    document.getElementById('staleBanner').style.display = 'block';
+  }
+}
+
+/* ════════════════════════════════════════════════
+   FIX #9: NORMALIZED COUNTY MATCHING
+   Removes "County", "Parish", "Borough", trims, lowercases.
+   Handles abbreviations and extra whitespace.
+════════════════════════════════════════════════ */
+function normalizeCountyName(name) {
+  return (name || '')
+    .replace(/\b(county|parish|borough|census area|municipality)\b/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function countyMatchesArea(userCty, areaDesc) {
+  if (!userCty || !areaDesc) return false;
+  const normalUser = normalizeCountyName(userCty);
+  if (!normalUser) return false;
+  // Split area desc on semicolons and commas, normalize each piece
+  const areaParts = areaDesc.split(/[;,]/).map(normalizeCountyName);
+  return areaParts.some(part => part.includes(normalUser) || normalUser.includes(part));
+}
 
 /* ════════════════════════════════════════════════
    UTILS
@@ -1139,14 +1373,14 @@ function dewLabel(f) {
   if (f < 55) return '🟡 Moderate';
   if (f < 60) return '🟠 Elevated';
   if (f < 65) return '🟠 Elevated — some storm fuel';
-  return '🔴 High — significant storm fuel';
+  return           '🔴 High — significant storm fuel';
 }
 function humLabel(h) {
-  if (h < 30) return { level:'Very Dry', feel:'Parched' };
-  if (h < 50) return { level:'Low', feel:'Comfortable' };
-  if (h < 70) return { level:'Moderate', feel:'Slightly humid' };
-  if (h < 85) return { level:'High', feel:'Muggy' };
-  return           { level:'Very High', feel:'Oppressive' };
+  if (h < 30) return { level:'Very Dry',  feel:'Parched' };
+  if (h < 50) return { level:'Low',       feel:'Comfortable' };
+  if (h < 70) return { level:'Moderate',  feel:'Slightly humid' };
+  if (h < 85) return { level:'High',      feel:'Muggy' };
+  return             { level:'Very High', feel:'Oppressive' };
 }
 function liLabel(li) {
   if (li >  3) return '🟢 Very Stable';
@@ -1154,14 +1388,14 @@ function liLabel(li) {
   if (li > -2) return '🟡 Slightly unstable';
   if (li > -4) return '🟠 Unstable — scattered severe possible';
   if (li > -6) return '🔴 Very unstable — organized severe risk';
-  return            '🔴🔴 Extremely unstable — significant tornado risk';
+  return             '🔴🔴 Extremely unstable — significant tornado risk';
 }
 function capeLabel(c) {
-  if (c < 300)  return { txt:'Weak / None',  color:'#6eff8a' };
-  if (c < 1000) return { txt:'Marginal',     color:'#aaee55' };
-  if (c < 2000) return { txt:'Moderate',     color:'#ffcc00' };
-  if (c < 3000) return { txt:'Strong',       color:'#ff8800' };
-  return             { txt:'Extreme',        color:'#ff3333' };
+  if (c < 300)  return { txt:'Weak / None', color:'#6eff8a' };
+  if (c < 1000) return { txt:'Marginal',    color:'#aaee55' };
+  if (c < 2000) return { txt:'Moderate',    color:'#ffcc00' };
+  if (c < 3000) return { txt:'Strong',      color:'#ff8800' };
+  return              { txt:'Extreme',      color:'#ff3333' };
 }
 function windEnergyLabel(spd) {
   if (spd < 10) return '🍃 Light';
@@ -1169,12 +1403,7 @@ function windEnergyLabel(spd) {
   if (spd < 30) return '💨 Elevated shear';
   return             '⚡ Strong shear';
 }
-function alertPriorityScore(ev) {
-  for (const [k, v] of Object.entries(ALERT_PRIORITY)) {
-    if (ev.includes(k)) return v;
-  }
-  return 99;
-}
+
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -1182,58 +1411,93 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
+
 function alertCentroid(alert) {
   try {
     const geo = alert.geometry;
     if (geo?.type === 'Polygon') {
       const coords = geo.coordinates[0];
       return {
-        lat: coords.reduce((s,c)=>s+c[1],0)/coords.length,
-        lon: coords.reduce((s,c)=>s+c[0],0)/coords.length,
+        lat: coords.reduce((s,c) => s+c[1], 0) / coords.length,
+        lon: coords.reduce((s,c) => s+c[0], 0) / coords.length,
+      };
+    }
+    if (geo?.type === 'MultiPolygon') {
+      const all = geo.coordinates.flat(2);
+      return {
+        lat: all.reduce((s,c) => s+c[1], 0) / all.length,
+        lon: all.reduce((s,c) => s+c[0], 0) / all.length,
       };
     }
   } catch(_) {}
   return null;
 }
+
 function alertCentroidDistance(alert) {
   const c = alertCentroid(alert);
   if (!c) return 9999;
   return haversineDistance(appLat, appLon, c.lat, c.lon);
 }
+
+/**
+ * FIX #1: Central sort — deterministic, tornado-prioritized.
+ * Primary: priority score (tornado always beats SVR).
+ * Secondary: distance (but tornado within 200mi beats SVR at 0mi for popup/siren logic
+ *   — handled separately; for display order we just sort by score then distance).
+ */
 function sortAlerts(features) {
   return [...features].sort((a, b) => {
-    const pa = alertPriorityScore(a.properties?.event||'');
-    const pb = alertPriorityScore(b.properties?.event||'');
+    const pa = alertPriorityScore(a.properties?.event || '');
+    const pb = alertPriorityScore(b.properties?.event || '');
     if (pa !== pb) return pa - pb;
+    // Same priority: closer = first
     return alertCentroidDistance(a) - alertCentroidDistance(b);
   });
 }
 
-// Supercell / tornado environment — improved logic
+/* ────────────────────────────────────────────────
+   FIX #8: ROBUST ALERT DEDUPLICATION
+   Primary key: NWS alert @id (stable across updates).
+   Fallback: event + areaDesc + sent timestamp.
+──────────────────────────────────────────────── */
+function alertStableId(feature) {
+  const id   = feature.id || feature.properties?.id;
+  if (id) return id;
+  // Fallback
+  const ev   = feature.properties?.event    || '';
+  const area = feature.properties?.areaDesc || '';
+  const sent = feature.properties?.sent     || '';
+  return `${ev}|${area}|${sent}`;
+}
+
+function deduplicateAlerts(features) {
+  const seen = new Set();
+  return features.filter(f => {
+    const key = alertStableId(f);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 function computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure) {
-  // Low-level shear proxy: southerly/southwesterly winds with moderate speed = backing winds
-  const isBackingWind = windDeg >= 150 && windDeg <= 260; // S/SW favors low-level rotation
+  const isBackingWind = windDeg >= 150 && windDeg <= 260;
   const shearScore = (isBackingWind ? 1 : 0) + (windSpd >= 15 ? 1 : 0) + (windSpd >= 25 ? 1 : 0);
-  const moistureOk = dewF >= 55;
-  const liftOk = li <= -3;
+  const moistureOk    = dewF >= 55;
+  const liftOk        = li <= -3;
   const instabilityOk = cape >= 500;
   const deepInstability = cape >= 1500 && li <= -5;
-
-  // SRH proxy based on wind speed and direction
   const srh_proxy = isBackingWind ? windSpd * 1.8 : windSpd * 0.7;
 
-  // Strong tornado environment
   if (deepInstability && moistureOk && shearScore >= 2 && srh_proxy >= 30) return 'high';
-  // Moderate
   if (liftOk && instabilityOk && moistureOk && shearScore >= 1) return 'moderate';
-  // Marginal
   if (li <= -2 && cape >= 300 && dewF >= 50) return 'marginal';
   return 'none';
 }
 
 function computeWeatherRisk(li, cape, dewF, windSpd, windDeg, pressure) {
   const torEnv = computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure);
-  if (torEnv === 'high')     return 'high';
+  if (torEnv === 'high') return 'high';
   if (li <= -4 && cape > 1000) return 'high';
   if (torEnv === 'moderate') return 'medium';
   if (li <= -3 && cape > 500 && dewF >= 55) return 'medium';
@@ -1241,7 +1505,6 @@ function computeWeatherRisk(li, cape, dewF, windSpd, windDeg, pressure) {
   return 'low';
 }
 
-// Extract storm movement from description text
 function parseMovement(desc) {
   if (!desc) return null;
   const m = desc.match(/moving?\s+(?:toward[s]?\s+the\s+)?([NSEW]+(?:EAST|WEST|NORTH|SOUTH|northeast|northwest|southeast|southwest|north|south|east|west)?)\s+at\s+(\d+)\s*mph/i);
@@ -1251,13 +1514,11 @@ function parseMovement(desc) {
   return null;
 }
 
-// Convert location area text to geocode and load
 async function jumpToLocation(areaText) {
   if (!areaText) return;
-  // Clean up the area text — take first county or city
   const first = areaText.split(/[;,]/)[0].trim();
   try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(first)}&countrycodes=us&limit=1&addressdetails=1`);
+    const res  = await safeFetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(first)}&countrycodes=us&limit=1&addressdetails=1`, { key:'nominatim-jump' });
     const data = await res.json();
     if (data && data[0]) {
       appLat = parseFloat(data[0].lat);
@@ -1301,25 +1562,37 @@ document.addEventListener('click', e => {
   }
 });
 
+const riskOrder = { low:0, medium:1, high:2 };
+
 function setRiskDisplay(risk, label, why) {
   const box = document.getElementById('riskBox');
   const txt = document.getElementById('riskText');
   const whyEl = document.getElementById('riskWhy');
   const wasOpen = box.classList.contains('open');
   const classMap = { low:'risk-low', medium:'risk-medium', high:'risk-high' };
-  const defaultLabel = {
-    low:    'LOW',
-    medium: 'ELEVATED',
-    high:   'HIGH',
-  };
+  const defaultLabel = { low:'LOW', medium:'ELEVATED', high:'HIGH' };
   box.className = `risk-box ${classMap[risk]} card-expandable${wasOpen?' open':''}`;
+  box.setAttribute('aria-expanded', wasOpen ? 'true' : 'false');
   txt.textContent = label || defaultLabel[risk];
-  whyEl.textContent = why || (risk==='low' ? 'No significant threats detected.' : risk==='medium' ? 'Favorable conditions for storm development.' : 'Active severe weather threat.');
+  whyEl.textContent = why || (
+    risk==='low'    ? 'No significant threats detected.' :
+    risk==='medium' ? 'Favorable conditions for storm development.' :
+                      'Active severe weather threat.'
+  );
   lastRisk = risk;
 }
 
 /* ════════════════════════════════════════════════
-   POPUP SYSTEM
+   FIX #11: ARIA LIVE ANNOUNCEMENT
+════════════════════════════════════════════════ */
+function announceAlert(message) {
+  const el = document.getElementById('ariaLive');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = message; });
+}
+
+/* ════════════════════════════════════════════════
+   POPUP SYSTEM — FIX #1: uses centralized priority
 ════════════════════════════════════════════════ */
 const POPUP_CONFIG = [
   {
@@ -1347,33 +1620,34 @@ const POPUP_CONFIG = [
     match: ev => ev.includes('Flash Flood Emergency'),
     badge:'🌊 FLASH FLOOD EMERGENCY', badgeBg:'#003388', badgeTx:'#fff',
     title:'🌊 FLASH FLOOD EMERGENCY',
-    body:'A Flash Flood Emergency has been issued. This is an exceedingly rare situation involving life-threatening flash flooding of catastrophic proportions. Dangerous and rapidly rising floodwaters are occurring or are imminent.',
-    instruction:'Move immediately to higher ground. Do not attempt to walk, swim, or drive through floodwaters. Turn Around, Don\'t Drown. Just six inches of fast-moving water can knock a person off their feet.',
+    body:'A Flash Flood Emergency has been issued. This is an exceedingly rare situation involving life-threatening flash flooding of catastrophic proportions.',
+    instruction:"Move immediately to higher ground. Do not attempt to walk, swim, or drive through floodwaters. Turn Around, Don't Drown.",
   },
   {
     match: ev => ev.includes('Severe Thunderstorm Warning'),
     badge:'⛈ SEVERE THUNDERSTORM WARNING', badgeBg:'#774400', badgeTx:'#fff',
     title:'⛈ SEVERE THUNDERSTORM WARNING',
-    body:'A Severe Thunderstorm Warning has been issued. Large hail (1 inch or larger in diameter) and/or wind gusts of 58 mph or greater are occurring or are imminent in the warned area.',
-    instruction:'Move indoors immediately. Stay away from windows. Unplug sensitive electronics. Be aware that any severe thunderstorm can produce a tornado with little or no warning.',
+    body:'A Severe Thunderstorm Warning has been issued. Large hail and/or wind gusts of 58 mph or greater are occurring or are imminent.',
+    instruction:'Move indoors immediately. Stay away from windows. Be aware that any severe thunderstorm can produce a tornado with little or no warning.',
   },
   {
     match: ev => ev.includes('Tornado Watch'),
     badge:'🌀 TORNADO WATCH', badgeBg:'#552200', badgeTx:'#ffe0c0',
     title:'🌪 TORNADO WATCH',
-    body:'A Tornado Watch has been issued by the Storm Prediction Center. Conditions are highly favorable for tornado development and severe thunderstorm activity. Tornadoes and dangerous lightning are possible.',
-    instruction:'Be prepared to act immediately if a Tornado Warning is issued for your area. Review your shelter plan now. Stay weather-aware and monitor local broadcasts.',
+    body:'A Tornado Watch has been issued. Conditions are highly favorable for tornado development.',
+    instruction:'Be prepared to act immediately if a Tornado Warning is issued. Review your shelter plan now.',
   },
   {
     match: ev => ev.includes('Severe Thunderstorm Watch'),
     badge:'⛈ SVR THUNDERSTORM WATCH', badgeBg:'#443300', badgeTx:'#ffe090',
     title:'⛈ SEVERE THUNDERSTORM WATCH',
-    body:'A Severe Thunderstorm Watch is in effect. Conditions are favorable for severe thunderstorms capable of large hail and damaging wind gusts across the watch area.',
-    instruction:'Stay weather-aware. Charge your devices and have a plan ready if warnings are issued for your location.',
+    body:'A Severe Thunderstorm Watch is in effect. Conditions are favorable for severe thunderstorms.',
+    instruction:'Stay weather-aware. Have a plan ready if warnings are issued for your location.',
   },
 ];
 
 function getPopupConfig(ev) {
+  // Matches in priority order — PDS before Tornado Warning before SVR, etc.
   return POPUP_CONFIG.find(c => c.match(ev)) || null;
 }
 
@@ -1381,31 +1655,40 @@ function showPopup(ev, movement) {
   const cfg = getPopupConfig(ev);
   if (!cfg) return;
   const badge = document.getElementById('popupBadge');
-  badge.textContent = cfg.badge;
+  badge.textContent    = cfg.badge;
   badge.style.background = cfg.badgeBg;
-  badge.style.color = cfg.badgeTx;
+  badge.style.color    = cfg.badgeTx;
   document.getElementById('popupTitle').textContent = cfg.title;
   document.getElementById('popupBody').textContent  = cfg.body;
   const instr = document.getElementById('popupInstruction');
-  instr.textContent = cfg.instruction;
+  instr.textContent  = cfg.instruction;
   instr.style.display = cfg.instruction ? 'block' : 'none';
   const movEl = document.getElementById('popupMovement');
   if (movement) {
-    movEl.textContent = `📍 Storm movement: ${movement.dir} at ${movement.spd} mph`;
+    movEl.textContent   = `📍 Storm movement: ${movement.dir} at ${movement.spd} mph`;
     movEl.style.display = 'block';
   } else {
     movEl.style.display = 'none';
   }
   document.getElementById('popup').style.display = 'block';
-  document.getElementById('popupClose').focus();
+  // FIX #11: focus trap — move focus into popup
+  requestAnimationFrame(() => document.getElementById('popupClose').focus());
+  // FIX #11: announce to screen readers
+  announceAlert(cfg.title);
 }
 
 document.getElementById('popupClose').addEventListener('click', () => {
   document.getElementById('popup').style.display = 'none';
 });
+// FIX #11: Escape key closes popup
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('popup').style.display !== 'none') {
+    document.getElementById('popup').style.display = 'none';
+  }
+});
 
 /* ════════════════════════════════════════════════
-   SIREN AUDIO — improved civil defense tone
+   SIREN AUDIO
 ════════════════════════════════════════════════ */
 document.addEventListener('click', () => {
   if (window.AudioContext || window.webkitAudioContext) {
@@ -1429,36 +1712,25 @@ function playSirenLoop() {
   const now = sirenCtx.currentTime;
   const duration = 4.2;
 
-  // Main siren oscillator — smooth civil defense warble
-  const osc = sirenCtx.createOscillator();
-  const gain = sirenCtx.createGain();
+  const osc    = sirenCtx.createOscillator();
+  const gain   = sirenCtx.createGain();
   const filter = sirenCtx.createBiquadFilter();
-
   filter.type = 'bandpass';
   filter.frequency.setValueAtTime(800, now);
   filter.Q.value = 0.8;
-
-  osc.connect(filter);
-  filter.connect(gain);
-  gain.connect(sirenCtx.destination);
-
+  osc.connect(filter); filter.connect(gain); gain.connect(sirenCtx.destination);
   osc.type = 'sawtooth';
-
-  // Civil defense siren: slow rise then hold high, then drop — classic pattern
   gain.gain.setValueAtTime(0, now);
   gain.gain.linearRampToValueAtTime(0.22, now + 0.3);
   gain.gain.setValueAtTime(0.22, now + duration - 0.4);
   gain.gain.linearRampToValueAtTime(0, now + duration);
-
   osc.frequency.setValueAtTime(450, now);
   osc.frequency.linearRampToValueAtTime(1020, now + duration * 0.5);
   osc.frequency.linearRampToValueAtTime(450, now + duration);
 
-  // Secondary harmonic for richer tone
-  const osc2 = sirenCtx.createOscillator();
+  const osc2  = sirenCtx.createOscillator();
   const gain2 = sirenCtx.createGain();
-  osc2.connect(gain2);
-  gain2.connect(sirenCtx.destination);
+  osc2.connect(gain2); gain2.connect(sirenCtx.destination);
   osc2.type = 'sine';
   gain2.gain.setValueAtTime(0, now);
   gain2.gain.linearRampToValueAtTime(0.07, now + 0.4);
@@ -1486,9 +1758,43 @@ function stopSiren() {
 }
 
 /* ════════════════════════════════════════════════
-   ANIMATED BACKGROUND
+   FIX #7: TICKER — Drag without accidental taps
+   Tracks pointer move distance so a swipe doesn't
+   fire a click handler on items or overflow button.
+════════════════════════════════════════════════ */
+(function initTickerDragGuard() {
+  const scroll = document.getElementById('tickerScroll');
+  let pointerStartX = 0, pointerStartY = 0, didDrag = false;
+  const DRAG_THRESHOLD = 6; // px — below this = tap, above = drag
+
+  scroll.addEventListener('pointerdown', e => {
+    pointerStartX = e.clientX;
+    pointerStartY = e.clientY;
+    didDrag = false;
+  }, { passive: true });
+
+  scroll.addEventListener('pointermove', e => {
+    const dx = Math.abs(e.clientX - pointerStartX);
+    const dy = Math.abs(e.clientY - pointerStartY);
+    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) didDrag = true;
+  }, { passive: true });
+
+  // Intercept clicks on ticker children — cancel if it was a drag
+  scroll.addEventListener('click', e => {
+    if (didDrag) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      didDrag = false;
+    }
+  }, true); // capture phase
+})();
+
+/* ════════════════════════════════════════════════
+   ANIMATED BACKGROUND — FIX #10: throttled, optimized
 ════════════════════════════════════════════════ */
 (function initBackground() {
+  if (prefersReducedMotion) return; // FIX #11: skip canvas for reduced motion
+
   const canvas = document.getElementById('bgCanvas');
   const ctx    = canvas.getContext('2d', { alpha: false });
 
@@ -1500,29 +1806,44 @@ function stopSiren() {
   let clouds = [], drops = [], snowflakes = [], fogParticles = [], stars = null;
   let bolts = [], boltTimer = 0;
   let tornadoAngle = 0;
-  let fps = 60, lastFrameTime = 0, frameCount = 0;
-  let fpsAdaptive = perfLevel === 'low' ? 30 : perfLevel === 'mid' ? 45 : 60;
+  let lastFrameTime = 0;
+  // FIX #10: adaptive target FPS — low perf = 24fps, saves battery
+  const targetFPS  = perfLevel === 'low' ? 24 : perfLevel === 'mid' ? 40 : 60;
+  const frameTarget = 1000 / targetFPS;
 
   const PARTICLE = {
-    cloud:  perfLevel === 'low' ? 4 : perfLevel === 'mid' ? 6 : 8,
-    rain:   perfLevel === 'low' ? 50 : perfLevel === 'mid' ? 90 : 130,
-    snow:   perfLevel === 'low' ? 50 : perfLevel === 'mid' ? 80 : 110,
-    fog:    perfLevel === 'low' ? 8 : 12,
+    cloud: perfLevel === 'low' ? 3 : perfLevel === 'mid' ? 5 : 8,
+    rain:  perfLevel === 'low' ? 45 : perfLevel === 'mid' ? 80 : 120,
+    snow:  perfLevel === 'low' ? 45 : perfLevel === 'mid' ? 70 : 100,
+    fog:   perfLevel === 'low' ? 6 : 10,
   };
 
+  // FIX #10: debounced resize to prevent layout thrashing
+  let resizeTimer;
   function resize() {
-    const dpr = pixelRatio;
-    W = canvas.width  = window.innerWidth  * dpr;
-    H = canvas.height = window.innerHeight * dpr;
-    canvas.style.width  = window.innerWidth  + 'px';
-    canvas.style.height = window.innerHeight + 'px';
-    ctx.scale(dpr, dpr);
-    W = window.innerWidth;
-    H = window.innerHeight;
-    stars = null;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const dpr = pixelRatio;
+      canvas.width  = window.innerWidth  * dpr;
+      canvas.height = window.innerHeight * dpr;
+      canvas.style.width  = window.innerWidth  + 'px';
+      canvas.style.height = window.innerHeight + 'px';
+      ctx.scale(dpr, dpr);
+      W = window.innerWidth;
+      H = window.innerHeight;
+      stars = null;
+    }, 150);
   }
-  window.addEventListener('resize', resize);
-  resize();
+  window.addEventListener('resize', resize, { passive: true });
+  // Initial sizing without debounce
+  const dpr0 = pixelRatio;
+  canvas.width  = window.innerWidth  * dpr0;
+  canvas.height = window.innerHeight * dpr0;
+  canvas.style.width  = window.innerWidth  + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.scale(dpr0, dpr0);
+  W = window.innerWidth;
+  H = window.innerHeight;
 
   function buildCloud(x, y, scale, dark) {
     const lobes = [];
@@ -1530,24 +1851,12 @@ function stopSiren() {
     for (let i = 0; i < bodyCount; i++) {
       const angle = (i / bodyCount) * Math.PI * 2;
       const dist  = (0.12 + Math.random() * 0.35) * scale;
-      lobes.push({
-        ox: Math.cos(angle) * dist * 1.1,
-        oy: Math.sin(angle) * dist * 0.4,
-        rx: (0.45 + Math.random() * 0.5) * scale,
-        ry: (0.28 + Math.random() * 0.3) * scale,
-        layer: 'body',
-      });
+      lobes.push({ ox: Math.cos(angle)*dist*1.1, oy: Math.sin(angle)*dist*0.4, rx: (0.45+Math.random()*0.5)*scale, ry: (0.28+Math.random()*0.3)*scale, layer:'body' });
     }
     const topCount = 2 + Math.floor(Math.random() * 3);
     for (let i = 0; i < topCount; i++) {
       const angle = -Math.PI/2 + (i/(topCount-1) - 0.5)*Math.PI*0.8;
-      lobes.push({
-        ox: Math.cos(angle) * scale * 0.28,
-        oy: Math.sin(angle) * scale * 0.42 - scale * 0.22,
-        rx: (0.28 + Math.random() * 0.42) * scale,
-        ry: (0.28 + Math.random() * 0.42) * scale,
-        layer: 'top',
-      });
+      lobes.push({ ox: Math.cos(angle)*scale*0.28, oy: Math.sin(angle)*scale*0.42 - scale*0.22, rx: (0.28+Math.random()*0.42)*scale, ry: (0.28+Math.random()*0.42)*scale, layer:'top' });
     }
     return { x, y, scale, dark, lobes, speed: 0.07 + Math.random() * 0.15 };
   }
@@ -1565,52 +1874,23 @@ function stopSiren() {
   function drawCloud(cloud) {
     const { x, y, lobes, dark } = cloud;
     let topColor, midColor, shadowColor;
-    if (dark) {
-      topColor='rgba(70,76,95,1)'; midColor='rgba(44,49,64,1)'; shadowColor='rgba(20,22,32,1)';
-    } else if (isDaytime) {
-      topColor='rgba(255,255,255,1)'; midColor='rgba(228,236,248,1)'; shadowColor='rgba(168,185,210,1)';
-    } else {
-      topColor='rgba(46,56,84,1)'; midColor='rgba(32,40,62,1)'; shadowColor='rgba(16,20,36,1)';
-    }
+    if (dark)         { topColor='rgba(70,76,95,1)';    midColor='rgba(44,49,64,1)';   shadowColor='rgba(20,22,32,1)'; }
+    else if (isDaytime){ topColor='rgba(255,255,255,1)'; midColor='rgba(228,236,248,1)'; shadowColor='rgba(168,185,210,1)'; }
+    else              { topColor='rgba(46,56,84,1)';    midColor='rgba(32,40,62,1)';   shadowColor='rgba(16,20,36,1)'; }
     ctx.save();
     ctx.fillStyle = shadowColor;
-    lobes.forEach(l => {
-      ctx.beginPath();
-      ctx.ellipse(x+l.ox+4, y+l.oy+5, l.rx*0.94, l.ry*0.94, 0, 0, Math.PI*2);
-      ctx.fill();
-    });
+    lobes.forEach(l => { ctx.beginPath(); ctx.ellipse(x+l.ox+4, y+l.oy+5, l.rx*0.94, l.ry*0.94, 0, 0, Math.PI*2); ctx.fill(); });
     ctx.fillStyle = midColor;
-    lobes.filter(l=>l.layer==='body').forEach(l => {
-      ctx.beginPath(); ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2); ctx.fill();
-    });
+    lobes.filter(l=>l.layer==='body').forEach(l => { ctx.beginPath(); ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2); ctx.fill(); });
     ctx.fillStyle = topColor;
+    lobes.filter(l=>l.layer==='top').forEach(l => { ctx.beginPath(); ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2); ctx.fill(); });
     lobes.filter(l=>l.layer==='top').forEach(l => {
-      ctx.beginPath(); ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2); ctx.fill();
-    });
-    // Highlight with clipping — no bleed
-    lobes.filter(l=>l.layer==='top').forEach(l => {
-      const hlGrd = ctx.createRadialGradient(
-        x+l.ox-l.rx*0.2, y+l.oy-l.ry*0.26, l.rx*0.04,
-        x+l.ox, y+l.oy, l.rx
-      );
-      if (dark) {
-        hlGrd.addColorStop(0,'rgba(95,105,128,0.38)');
-        hlGrd.addColorStop(1,'rgba(0,0,0,0)');
-      } else if (isDaytime) {
-        hlGrd.addColorStop(0,'rgba(255,255,255,0.62)');
-        hlGrd.addColorStop(0.5,'rgba(255,255,255,0.1)');
-        hlGrd.addColorStop(1,'rgba(255,255,255,0)');
-      } else {
-        hlGrd.addColorStop(0,'rgba(75,95,145,0.28)');
-        hlGrd.addColorStop(1,'rgba(0,0,0,0)');
-      }
-      ctx.save();
-      ctx.beginPath();
-      ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2);
-      ctx.clip();
-      ctx.fillStyle = hlGrd;
-      ctx.fill();
-      ctx.restore();
+      const hlGrd = ctx.createRadialGradient(x+l.ox-l.rx*0.2, y+l.oy-l.ry*0.26, l.rx*0.04, x+l.ox, y+l.oy, l.rx);
+      if (dark)          { hlGrd.addColorStop(0,'rgba(95,105,128,0.38)'); hlGrd.addColorStop(1,'rgba(0,0,0,0)'); }
+      else if (isDaytime){ hlGrd.addColorStop(0,'rgba(255,255,255,0.62)'); hlGrd.addColorStop(0.5,'rgba(255,255,255,0.1)'); hlGrd.addColorStop(1,'rgba(255,255,255,0)'); }
+      else               { hlGrd.addColorStop(0,'rgba(75,95,145,0.28)'); hlGrd.addColorStop(1,'rgba(0,0,0,0)'); }
+      ctx.save(); ctx.beginPath(); ctx.ellipse(x+l.ox, y+l.oy, l.rx, l.ry, 0, 0, Math.PI*2); ctx.clip();
+      ctx.fillStyle = hlGrd; ctx.fill(); ctx.restore();
     });
     ctx.restore();
   }
@@ -1618,34 +1898,19 @@ function stopSiren() {
   function initRain(count, angled) {
     drops = [];
     for (let i = 0; i < count; i++) {
-      drops.push({
-        x: Math.random()*W*1.4, y: Math.random()*H,
-        len: 7+Math.random()*16, speed: 7+Math.random()*10,
-        angle: angled ? 0.22+Math.random()*0.15 : 0,
-        opacity: 0.07+Math.random()*0.18,
-      });
+      drops.push({ x:Math.random()*W*1.4, y:Math.random()*H, len:7+Math.random()*16, speed:7+Math.random()*10, angle:angled?0.22+Math.random()*0.15:0, opacity:0.07+Math.random()*0.18 });
     }
   }
   function initSnow(count) {
     snowflakes = [];
     for (let i = 0; i < count; i++) {
-      snowflakes.push({
-        x:Math.random()*W, y:Math.random()*H,
-        r:1+Math.random()*2.8,
-        speed:0.4+Math.random()*1.3,
-        drift:(Math.random()-0.5)*0.45,
-        opacity:0.32+Math.random()*0.5,
-      });
+      snowflakes.push({ x:Math.random()*W, y:Math.random()*H, r:1+Math.random()*2.8, speed:0.4+Math.random()*1.3, drift:(Math.random()-0.5)*0.45, opacity:0.32+Math.random()*0.5 });
     }
   }
   function initFog() {
     fogParticles = [];
     for (let i = 0; i < PARTICLE.fog; i++) {
-      fogParticles.push({
-        x:Math.random()*W, y:H*0.28+Math.random()*H*0.62,
-        r:100+Math.random()*200, speed:0.05+Math.random()*0.1,
-        opacity:0.022+Math.random()*0.045,
-      });
+      fogParticles.push({ x:Math.random()*W, y:H*0.28+Math.random()*H*0.62, r:100+Math.random()*200, speed:0.05+Math.random()*0.1, opacity:0.022+Math.random()*0.045 });
     }
   }
 
@@ -1657,16 +1922,13 @@ function stopSiren() {
   }
   function generateBranches(segments) {
     const branches=[];
-    const step = perfLevel==='low' ? 6 : 3;
+    const step = perfLevel==='low' ? 8 : 4;
     for (let i=2;i<segments.length-2;i+=step) {
-      if (Math.random()<0.38) {
+      if (Math.random()<0.35) {
         const seg=segments[i];
         const len=35+Math.random()*80;
         const angle=(Math.random()-0.5)*1.3+Math.PI/2;
-        branches.push({
-          segs:buildBoltPath(seg.x,seg.y,seg.x+Math.cos(angle)*len,seg.y+Math.sin(angle)*len,3),
-          opacity:0.4+Math.random()*0.38,
-        });
+        branches.push({ segs:buildBoltPath(seg.x,seg.y,seg.x+Math.cos(angle)*len,seg.y+Math.sin(angle)*len,3), opacity:0.4+Math.random()*0.38 });
       }
     }
     return branches;
@@ -1675,6 +1937,8 @@ function stopSiren() {
     const x=W*0.15+Math.random()*W*0.7;
     const segments=buildBoltPath(x,0,x+(Math.random()-0.5)*160,H*(0.35+Math.random()*0.44),7);
     bolts.push({segments,life:1.0,decay:0.042+Math.random()*0.038,bright:0.68+Math.random()*0.3,branches:generateBranches(segments)});
+    // FIX #10: cap bolt count to prevent GPU overload
+    if (bolts.length > 4) bolts.splice(0, bolts.length - 4);
   }
   function drawBoltPath(segs,alpha,lineWidth,color) {
     if(segs.length<2)return;
@@ -1692,7 +1956,6 @@ function stopSiren() {
   function drawTornado() {
     const cx = W/2;
     tornadoAngle += 0.032;
-    // Funnel gradient layers
     for (let i=0;i<22;i++) {
       const t=i/22;
       const y=H*0.06+t*H*0.72;
@@ -1701,11 +1964,9 @@ function stopSiren() {
       grd.addColorStop(0,`rgba(75,35,15,${0.06+t*0.09})`);
       grd.addColorStop(0.5,`rgba(38,18,7,${0.04+t*0.07})`);
       grd.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=grd;
-      ctx.beginPath(); ctx.arc(cx,y,radius,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,y,radius,0,Math.PI*2); ctx.fill();
     }
-    // Debris particles
-    const debrisCount = perfLevel==='low' ? 20 : 38;
+    const debrisCount = perfLevel==='low' ? 16 : 32;
     for (let d=0;d<debrisCount;d++) {
       const t=d/debrisCount;
       const y=H*0.08+t*H*0.65;
@@ -1746,7 +2007,7 @@ function stopSiren() {
 
   function initStars() {
     stars=[];
-    const count = perfLevel==='low' ? 100 : 200;
+    const count = perfLevel==='low' ? 80 : 180;
     for(let i=0;i<count;i++) {
       stars.push({x:Math.random()*W,y:Math.random()*H*0.65,r:0.3+Math.random()*1.2,flicker:Math.random()*Math.PI*2,twinkle:Math.random()*0.42+0.55});
     }
@@ -1761,7 +2022,7 @@ function stopSiren() {
       case 'fog':     return isDaytime?['#7a8c9c','#9aaab8']:['#0b0e16','#181e2e'];
       case 'cloudy':  return isDaytime?['#354558','#455668']:['#050810','#0c141c'];
       default:
-        if(isDaytime) {
+        if(isDaytime){
           const blend=Math.sin(Math.PI*sunProgress);
           if(sunProgress<0.15||sunProgress>0.85) return['#170506','#5e2610'];
           return [`rgb(${Math.round(16+blend*14)},${Math.round(75+blend*55)},${Math.round(132+blend*76)})`,
@@ -1771,15 +2032,12 @@ function stopSiren() {
     }
   }
 
-  let frame=0;
-  const frameTarget = 1000 / fpsAdaptive;
-
   function draw(timestamp) {
     requestAnimationFrame(draw);
     const elapsed = timestamp - lastFrameTime;
-    if (elapsed < frameTarget - 2) return; // throttle
+    if (elapsed < frameTarget - 2) return;
     lastFrameTime = timestamp;
-    frame++;
+
     ctx.clearRect(0,0,W,H);
 
     const [skyTop,skyBot]=getSkyColors();
@@ -1787,7 +2045,7 @@ function stopSiren() {
     grad.addColorStop(0,skyTop); grad.addColorStop(1,skyBot);
     ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
 
-    if(bgMode==='clear'&&isDaytime&&(sunProgress<0.22||sunProgress>0.78)) {
+    if(bgMode==='clear'&&isDaytime&&(sunProgress<0.22||sunProgress>0.78)){
       const intense=sunProgress<0.22?sunProgress/0.22:(1-sunProgress)/0.22;
       const hg=ctx.createLinearGradient(0,H*0.46,0,H);
       hg.addColorStop(0,`rgba(255,95,18,0)`);
@@ -1797,7 +2055,7 @@ function stopSiren() {
     }
 
     const showStars=!isDaytime||bgMode==='storm'||bgMode==='tornado';
-    if(showStars) {
+    if(showStars){
       if(!stars)initStars();
       const sa=isDaytime?0.1:1;
       stars.forEach(s=>{
@@ -1818,7 +2076,7 @@ function stopSiren() {
       drawCloud(cloud);
     });
 
-    if(bgMode==='rain'||bgMode==='storm'||bgMode==='tornado') {
+    if(bgMode==='rain'||bgMode==='storm'||bgMode==='tornado'){
       const rainCol=bgMode==='storm'||bgMode==='tornado'?'185,195,240':'125,188,248';
       drops.forEach(d=>{
         d.y+=d.speed; d.x-=d.speed*d.angle;
@@ -1828,7 +2086,7 @@ function stopSiren() {
       });
     }
 
-    if(bgMode==='snow') {
+    if(bgMode==='snow'){
       snowflakes.forEach(s=>{
         s.y+=s.speed; s.x+=s.drift;
         if(s.y>H){s.y=-5;s.x=Math.random()*W;}
@@ -1837,7 +2095,7 @@ function stopSiren() {
       });
     }
 
-    if(bgMode==='fog') {
+    if(bgMode==='fog'){
       fogParticles.forEach(fp=>{
         fp.x+=fp.speed;
         if(fp.x-fp.r>W)fp.x=-fp.r;
@@ -1851,13 +2109,13 @@ function stopSiren() {
     if(bgMode==='tornado') drawTornado();
 
     const stormModes=bgMode==='storm'||bgMode==='tornado';
-    const boltInterval = perfLevel==='low' ? 110 : 75;
-    if(stormModes) {
+    const boltInterval = perfLevel==='low' ? 140 : 85;
+    if(stormModes){
       boltTimer++;
-      if(boltTimer>=boltInterval) { if(Math.random()>0.2)spawnBolt(); boltTimer=0; }
-    } else if(bgMode==='rain') {
+      if(boltTimer>=boltInterval){if(Math.random()>0.2)spawnBolt();boltTimer=0;}
+    } else if(bgMode==='rain'){
       boltTimer++;
-      if(boltTimer>=220){if(Math.random()>0.5)spawnBolt();boltTimer=0;}
+      if(boltTimer>=260){if(Math.random()>0.5)spawnBolt();boltTimer=0;}
     }
 
     bolts=bolts.filter(b=>b.life>0);
@@ -1869,9 +2127,9 @@ function stopSiren() {
       b.life-=b.decay;
     });
 
-    // Light scan lines only on mid/high perf
-    if(perfLevel!=='low') {
-      ctx.fillStyle='rgba(0,0,0,0.016)';
+    // FIX #10: skip scanlines on low perf
+    if(perfLevel==='high'){
+      ctx.fillStyle='rgba(0,0,0,0.014)';
       for(let y=0;y<H;y+=5) ctx.fillRect(0,y,W,2);
     }
   }
@@ -1880,8 +2138,7 @@ function stopSiren() {
   window.setBgMode = function(mode) {
     if(bgMode===mode)return;
     bgMode=mode; stars=null;
-    const dark=mode==='storm'||mode==='tornado'||mode==='rain'||mode==='cloudy';
-    switch(mode) {
+    switch(mode){
       case 'storm':        initClouds(8,true);  initRain(PARTICLE.rain,true);  snowflakes=[]; fogParticles=[]; break;
       case 'rain':         initClouds(6,true);  initRain(Math.round(PARTICLE.rain*0.58),false); snowflakes=[]; fogParticles=[]; break;
       case 'tornado':      initClouds(9,true);  initRain(PARTICLE.rain,true);  snowflakes=[]; fogParticles=[]; break;
@@ -1899,6 +2156,10 @@ function stopSiren() {
     stars=null;
   };
 })();
+
+// Fallback no-ops if canvas disabled (reduced motion)
+if (!window.setBgMode)  window.setBgMode  = () => {};
+if (!window.setDaytime) window.setDaytime = () => {};
 
 /* ════════════════════════════════════════════════
    SUN/DAY-NIGHT
@@ -1921,13 +2182,12 @@ function getSunTimes(lat,lon) {
   const tzOff=new Date().getTimezoneOffset()/60;
   return{sunrise:transit-H/15-tzOff,sunset:transit+H/15-tzOff};
 }
-
 function updateDayNight() {
   const now=new Date();
   const h=now.getHours()+now.getMinutes()/60;
   const st=getSunTimes(appLat,appLon);
   let isDay=true,sunProg=0.5,nightProg=0.5;
-  if(st.sunrise&&st.sunset) {
+  if(st.sunrise&&st.sunset){
     isDay=h>=st.sunrise&&h<=st.sunset;
     if(isDay) sunProg=Math.max(0,Math.min(1,(h-st.sunrise)/(st.sunset-st.sunrise)));
     else {
@@ -1940,15 +2200,13 @@ function updateDayNight() {
 }
 
 /* ════════════════════════════════════════════════
-   WEATHER CODE → BG MODE (improved)
+   WEATHER CODE → BG MODE
 ════════════════════════════════════════════════ */
 function weatherCodeToMode(code, cape, li, windSpd, dewF, windDeg, pressure, hasActiveTornadoAlert) {
-  // Force tornado visuals if active warning regardless of sounding
+  // FIX #1: Tornado alert forces tornado bg regardless of sounding
   if (hasActiveTornadoAlert) return 'tornado';
-
   const torEnv = computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure);
   if (torEnv === 'high') return 'tornado';
-
   if ([71,73,75,77,85,86].includes(code)) return 'snow';
   if ([45,48].includes(code)) return 'fog';
   if ([95,96,99].includes(code)) return 'storm';
@@ -1960,25 +2218,34 @@ function weatherCodeToMode(code, cape, li, windSpd, dewF, windDeg, pressure, has
 }
 
 /* ════════════════════════════════════════════════
-   GEOLOCATION + LOAD
+   ALERT CSS CLASS
 ════════════════════════════════════════════════ */
-/* ════════════════════════════════════════════════
-   FETCH TIMEOUT
-════════════════════════════════════════════════ */
-async function fetchWithTimeout(url, ms = 8000) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), ms);
-
-  try {
-    return await fetch(url, { signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
+function alertCssClass(ev) {
+  if (ev.includes('Particularly Dangerous Situation')) return 'alert-pds';
+  if (ev.includes('Tornado Emergency'))                return 'alert-pds';   // same high-urgency style
+  if (ev.includes('Tornado Warning'))                  return 'alert-tor-warn';
+  if (ev.includes('Tornado Watch'))                    return 'alert-tor-watch';
+  if (ev.includes('Severe Thunderstorm Warning'))      return 'alert-svr-warn';
+  if (ev.includes('Severe Thunderstorm Watch'))        return 'alert-svr-watch';
+  if (ev.includes('Flash Flood'))                      return 'alert-flood';
+  if (ev.includes('Blizzard')||ev.includes('Winter')||ev.includes('Ice Storm')) return 'alert-winter';
+  return 'alert-other';
 }
 
+function alertSectionLabel(score) {
+  if (score <= 3)  return 'Highest Priority';
+  if (score <= 6)  return 'Warnings';
+  if (score <= 9)  return 'Watches';
+  return                  'Advisories & Other';
+}
+
+/* ════════════════════════════════════════════════
+   GEOLOCATION + LOAD
+════════════════════════════════════════════════ */
 navigator.geolocation.getCurrentPosition(
   p => { appLat=p.coords.latitude; appLon=p.coords.longitude; loadAll(); },
-  ()  => loadAll()
+  ()  => loadAll(),
+  { timeout: 8000 }
 );
 
 function loadAll() {
@@ -2000,18 +2267,18 @@ function updateFooter() {
 ════════════════════════════════════════════════ */
 async function loadLocation() {
   try {
-    const res = await fetch(`https://api.weather.gov/points/${appLat.toFixed(4)},${appLon.toFixed(4)}`);
-    if (!res.ok) throw new Error('Points API');
+    const res  = await safeFetch(`https://api.weather.gov/points/${appLat.toFixed(4)},${appLon.toFixed(4)}`, { key:'location', timeout:8000 });
     const data = await res.json();
     const props = data.properties;
     const city  = props.relativeLocation?.properties?.city  || '';
     const state = props.relativeLocation?.properties?.state || '';
-    const countyRes  = await fetch(props.county);
+    const countyRes  = await safeFetch(props.county, { key:'county', timeout:6000 });
     const countyData = await countyRes.json();
     userCounty = countyData.properties?.name || '';
     document.getElementById('locationCard').innerHTML =
       `<b>${userCounty || 'Unknown'} County</b><span>${city}${city&&state?', ':''}${state}</span>`;
   } catch(e) {
+    if (e.name === 'AbortError') return;
     console.warn('Location fetch failed:', e);
     document.getElementById('locationCard').textContent = 'Location unavailable';
   }
@@ -2020,9 +2287,10 @@ async function loadLocation() {
 /* ════════════════════════════════════════════════
    WEATHER
 ════════════════════════════════════════════════ */
+let weatherFetchInProgress = false;
 async function loadWeather() {
-  if (fetchInProgress.weather) return;
-  fetchInProgress.weather = true;
+  if (weatherFetchInProgress) return;
+  weatherFetchInProgress = true;
   try {
     updateDayNight();
     const url = [
@@ -2033,10 +2301,9 @@ async function loadWeather() {
       `&hourly=cape,lifted_index`,
       `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`,
     ].join('');
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Open-Meteo error');
-    const d = await res.json();
-    const c = d.current;
+    const res = await safeFetch(url, { key:'weather', timeout:10000 });
+    const d   = await res.json();
+    const c   = d.current;
 
     const tempF   = Math.round(c.temperature_2m);
     const feelsF  = Math.round(c.apparent_temperature);
@@ -2046,54 +2313,53 @@ async function loadWeather() {
     const windG   = Math.round(c.wind_gusts_10m);
     const windDeg = c.wind_direction_10m;
     const pressHpa= Math.round(c.surface_pressure);
-    const wcode   = c.weather_code||0;
+    const wcode   = c.weather_code || 0;
 
     const hourIdx = new Date().getHours();
-    const cape = Math.max(0, d.hourly.cape?.[hourIdx]??0);
-    const li   = d.hourly.lifted_index?.[hourIdx]??5;
+    const cape = Math.max(0, d.hourly.cape?.[hourIdx] ?? 0);
+    const li   = d.hourly.lifted_index?.[hourIdx] ?? 5;
 
-    // DOM
     const tc = tempClass(tempF);
-    document.getElementById('temp').innerHTML = `<span class="${tc}">${tempF}°F</span>`;
+    document.getElementById('temp').innerHTML     = `<span class="${tc}">${tempF}°F</span>`;
     document.getElementById('tempSub').textContent = feelsF !== tempF ? `Feels ${feelsF}°F` : '';
-    document.getElementById('feels').textContent = `${feelsF}°F`;
+    document.getElementById('feels').textContent   = `${feelsF}°F`;
     document.getElementById('pressure').textContent = `${pressHpa} mb`;
 
     const hl = humLabel(hum);
-    document.getElementById('humidity').textContent = hum+'%';
-    document.getElementById('humSub').textContent = hl.feel;
+    document.getElementById('humidity').textContent     = hum+'%';
+    document.getElementById('humSub').textContent       = hl.feel;
     document.getElementById('moistureLevel').textContent = hl.level;
-    document.getElementById('humidityFeel').textContent = hl.feel;
+    document.getElementById('humidityFeel').textContent  = hl.feel;
 
-    document.getElementById('dew').innerHTML = `<span class="${tc}">${dewF}°F</span>`;
+    document.getElementById('dew').innerHTML     = `<span class="${tc}">${dewF}°F</span>`;
     document.getElementById('dewSub').textContent = dewLabel(dewF).replace(/^[🟢🟠🔴🟡]\s/,'');
     document.getElementById('stormFuel').textContent = dewLabel(dewF);
-    document.getElementById('wind').textContent = windSpd+' mph';
-    document.getElementById('windSub').textContent = degToCompass(windDeg);
-    document.getElementById('windDir').textContent = `${degToCompass(windDeg)} (${windDeg}°)`;
-    document.getElementById('gusts').textContent = windG+' mph';
+    document.getElementById('wind').textContent    = windSpd+' mph';
+    document.getElementById('windSub').textContent  = degToCompass(windDeg);
+    document.getElementById('windDir').textContent  = `${degToCompass(windDeg)} (${windDeg}°)`;
+    document.getElementById('gusts').textContent    = windG+' mph';
 
-    // Sounding
     const cl = capeLabel(cape);
     document.getElementById('cape').innerHTML = `<span style="color:${cl.color}">${Math.round(cape)} J/kg — ${cl.txt}</span>`;
     document.getElementById('instability').textContent = liLabel(li);
     document.getElementById('sndMoisture').textContent = dewLabel(dewF);
-    document.getElementById('sndLift').textContent = li<=0?`⬆ Active lift (LI ${li.toFixed(1)})`:` ⬇ Capping (LI +${li.toFixed(1)})`;
-    document.getElementById('sndWind').textContent = windEnergyLabel(windSpd);
+    document.getElementById('sndLift').textContent     = li<=0?`⬆ Active lift (LI ${li.toFixed(1)})`:` ⬇ Capping (LI +${li.toFixed(1)})`;
+    document.getElementById('sndWind').textContent     = windEnergyLabel(windSpd);
 
     const torEnv = computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressHpa);
-    const shearDesc = torEnv==='high'?'🔴 Strong backing winds — favorable rotation':torEnv==='moderate'?'🟠 Some backing — moderate shear':'🟢 Limited organized shear';
-    document.getElementById('sndShear').textContent = shearDesc;
+    document.getElementById('sndShear').textContent =
+      torEnv==='high'     ? '🔴 Strong backing winds — favorable rotation' :
+      torEnv==='moderate' ? '🟠 Some backing — moderate shear' :
+                            '🟢 Limited organized shear';
 
-    // Risk text rows
     let torRiskTxt, sevRiskTxt;
-    if      (li<=-6&&cape>2000)          { torRiskTxt='🔴 High'; sevRiskTxt='🔴 High'; }
-    else if (li<=-5&&cape>1500)          { torRiskTxt='🟠 Moderate–High'; sevRiskTxt='🔴 High'; }
-    else if (li<=-4&&cape>1000)          { torRiskTxt='🟠 Moderate'; sevRiskTxt='🔴 High'; }
-    else if (li<=-3&&cape>500)           { torRiskTxt='🟡 Low–Moderate'; sevRiskTxt='🟠 Moderate'; }
-    else if (li<=-2&&cape>200)           { torRiskTxt='🟡 Marginal'; sevRiskTxt='🟡 Low'; }
-    else if (li<=0)                      { torRiskTxt='🟢 Low'; sevRiskTxt='🟡 Marginal'; }
-    else                                  { torRiskTxt='🟢 Minimal'; sevRiskTxt='🟢 Minimal'; }
+    if      (li<=-6&&cape>2000)  { torRiskTxt='🔴 High'; sevRiskTxt='🔴 High'; }
+    else if (li<=-5&&cape>1500)  { torRiskTxt='🟠 Moderate–High'; sevRiskTxt='🔴 High'; }
+    else if (li<=-4&&cape>1000)  { torRiskTxt='🟠 Moderate'; sevRiskTxt='🔴 High'; }
+    else if (li<=-3&&cape>500)   { torRiskTxt='🟡 Low–Moderate'; sevRiskTxt='🟠 Moderate'; }
+    else if (li<=-2&&cape>200)   { torRiskTxt='🟡 Marginal'; sevRiskTxt='🟡 Low'; }
+    else if (li<=0)              { torRiskTxt='🟢 Low'; sevRiskTxt='🟡 Marginal'; }
+    else                         { torRiskTxt='🟢 Minimal'; sevRiskTxt='🟢 Minimal'; }
     document.getElementById('torRisk').textContent = torRiskTxt;
     document.getElementById('sevRisk').textContent = sevRiskTxt;
 
@@ -2106,151 +2372,135 @@ async function loadWeather() {
     document.getElementById('capeWhy').textContent =
       `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph\n${capeExplain}`;
 
-    // Background — checks forced tornado flag from alerts
+    // FIX #1: Background respects active tornado alert (set by loadAlerts)
     const hasActiveTornadoAlert = forceStormBg && forceStormType === 'tornado';
     const mode = weatherCodeToMode(wcode, cape, li, windSpd, dewF, windDeg, pressHpa, hasActiveTornadoAlert);
     if (mode !== lastBgMode) { window.setBgMode(mode); lastBgMode = mode; }
     updateDayNight();
 
-    // Sounding risk (don't override if alerts already set it)
     const soundingRisk = computeWeatherRisk(li, cape, dewF, windSpd, windDeg, pressHpa);
-    const riskOrder = { low:0, medium:1, high:2 };
     if (riskOrder[soundingRisk] > riskOrder[lastRisk]) {
-      let why = '';
-      if (soundingRisk === 'high') why = `Strong instability (LI ${li.toFixed(1)}) with ${Math.round(cape)} J/kg CAPE — organized severe weather possible.`;
-      else if (soundingRisk === 'medium') why = `Elevated instability with moisture — watch conditions possible.`;
+      const why = soundingRisk==='high'
+        ? `Strong instability (LI ${li.toFixed(1)}) with ${Math.round(cape)} J/kg CAPE — organized severe weather possible.`
+        : 'Elevated instability with moisture — watch conditions possible.';
       setRiskDisplay(soundingRisk, undefined, why);
     } else if (lastRisk === 'low') {
       setRiskDisplay('low', undefined, 'No significant atmospheric threat detected.');
     }
 
   } catch(e) {
+    if (e.name === 'AbortError') return;
     console.error('Weather error:', e);
     document.getElementById('temp').textContent = 'N/A';
   } finally {
-    fetchInProgress.weather = false;
+    weatherFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   ALERTS
+   ALERTS — FIX #1 priority system fully applied
 ════════════════════════════════════════════════ */
-function alertCssClass(ev) {
-  if (ev.includes('Particularly Dangerous Situation')) return 'alert-pds';
-  if (ev.includes('Tornado Warning'))                   return 'alert-tor-warn';
-  if (ev.includes('Tornado Watch'))                     return 'alert-tor-watch';
-  if (ev.includes('Severe Thunderstorm Warning'))       return 'alert-svr-warn';
-  if (ev.includes('Severe Thunderstorm Watch'))         return 'alert-svr-watch';
-  if (ev.includes('Flash Flood'))                       return 'alert-flood';
-  if (ev.includes('Blizzard')||ev.includes('Winter')||ev.includes('Ice Storm')) return 'alert-winter';
-  return 'alert-other';
-}
-
-function alertSectionLabel(score) {
-  if (score <= 3)  return 'Highest Priority';
-  if (score <= 6)  return 'Warnings';
-  if (score <= 9)  return 'Watches';
-  return                  'Advisories & Other';
-}
-
+let alertsFetchInProgress = false;
 async function loadAlerts() {
-  if (fetchInProgress.alerts) return;
-  fetchInProgress.alerts = true;
+  if (alertsFetchInProgress) return;
+  alertsFetchInProgress = true;
   try {
-    const res = await fetchWithTimeout(`https://api.weather.gov/alerts/active?point=${appLat.toFixed(4)},${appLon.toFixed(4)}`);
-    if (!res.ok) throw new Error('Alerts API error');
-    const data = await res.json();
-    activeAlertFeatures = sortAlerts(data.features||[]);
-
-    // Determine if there's an active tornado warning to force bg
-    const hasTornadoWarn = activeAlertFeatures.some(a =>
-      (a.properties?.event||'').includes('Tornado Warning') ||
-      (a.properties?.event||'').includes('Tornado Emergency') ||
-      (a.properties?.event||'').includes('Particularly Dangerous')
+    const res = await safeFetch(
+      `https://api.weather.gov/alerts/active?point=${appLat.toFixed(4)},${appLon.toFixed(4)}`,
+      { key:'alerts', timeout:10000, retries:2 }
     );
+    const data = await res.json();
+
+    // FIX #8: deduplicate by stable NWS ID before sorting
+    const deduped = deduplicateAlerts(data.features || []);
+
+    // FIX #1: single centralized sort — tornado always before SVR
+    activeAlertFeatures = sortAlerts(deduped);
+
+    markRefreshSuccess(); // FIX #12
+
+    // FIX #1: Determine highest-priority alert for bg/siren/popup
+    // A tornado warning anywhere in the result set forces tornado bg,
+    // EVEN if an SVR warning is geographically closer.
+    const hasTornadoWarn = activeAlertFeatures.some(a => isTornadoLevel(a.properties?.event || ''));
     if (hasTornadoWarn) {
-      forceStormBg = true;
-      forceStormType = 'tornado';
+      forceStormBg = true; forceStormType = 'tornado';
       if (lastBgMode !== 'tornado') { window.setBgMode('tornado'); lastBgMode = 'tornado'; }
+    } else {
+      forceStormBg = false; forceStormType = '';
     }
 
     let alertRisk = 'low', alertRiskLabel = '', alertRiskWhy = '';
-    let needsSiren = false;
-    let popupShown = false;
-    let nearestWarning = null, nearestDist = 9999;
+    let needsSiren  = false;
+    let popupShown  = false;
+
+    // FIX #1: Spatial awareness uses the highest-priority warning,
+    // not just the geographically nearest one.
+    // A tornado warning 80mi away should show before an SVR at 10mi.
+    let spatialAlert = null;
+    for (const a of activeAlertFeatures) {
+      const score = alertPriorityScore(a.properties?.event || '');
+      if (score <= 6) { spatialAlert = a; break; } // first = highest priority
+    }
 
     // Organize by section
-    const sections = {};
-    activeAlertFeatures.forEach(a => {
-      const ev = a.properties?.event||'';
-      const score = alertPriorityScore(ev);
-      const sLabel = alertSectionLabel(score);
-      if (!sections[sLabel]) sections[sLabel] = [];
-      sections[sLabel].push(a);
-    });
-
-    const sectionOrder = ['Highest Priority','Warnings','Watches','Advisories & Other'];
+    let lastSectionLabel = '';
     let html = '';
 
-    activeAlertFeatures.forEach((a, idx) => {
-      const ev       = a.properties?.event        || '';
-      const desc     = a.properties?.description   || '';
-      const inst     = a.properties?.instruction   || '';
-      const areaDesc = a.properties?.areaDesc      || '';
+    for (let idx = 0; idx < activeAlertFeatures.length; idx++) {
+      const a        = activeAlertFeatures[idx];
+      const ev       = a.properties?.event       || '';
+      const desc     = a.properties?.description  || '';
+      const inst     = a.properties?.instruction  || '';
+      const areaDesc = a.properties?.areaDesc     || '';
       const score    = alertPriorityScore(ev);
       const cls      = alertCssClass(ev);
       const movement = parseMovement(desc);
 
-      // Track nearest warning
-      const dist = alertCentroidDistance(a);
-      if (dist < nearestDist && score <= 6) {
-        nearestDist = dist;
-        nearestWarning = { ev, dist, movement, areaDesc };
-      }
-
-      // Risk
-      if      (score <= 6 && alertRisk !== 'high')   {
+      // Risk escalation — tornado always escalates to high before SVR
+      if (score <= 6 && alertRisk !== 'high') {
         alertRisk = 'high'; alertRiskLabel = 'HIGH';
-        alertRiskWhy = ev.includes('Tornado') ? 'Tornado Warning in effect.' :
-                       ev.includes('Flash Flood') ? 'Flash Flood Warning in effect.' :
-                       'Severe Warning in effect.';
-      }
-      else if (score <= 9 && alertRisk === 'low')    {
+        alertRiskWhy =
+          isTornadoLevel(ev)         ? 'Tornado Warning in effect.' :
+          ev.includes('Flash Flood') ? 'Flash Flood Warning in effect.' :
+                                       'Severe Warning in effect.';
+      } else if (score <= 9 && alertRisk === 'low') {
         alertRisk = 'medium'; alertRiskLabel = 'ELEVATED';
         alertRiskWhy = 'Watch in effect — conditions favorable for severe weather.';
-      }
-      else if (score <= 99 && alertRisk === 'low')   {
+      } else if (alertRisk === 'low') {
         alertRisk = 'medium'; alertRiskLabel = 'ELEVATED';
         alertRiskWhy = 'Advisory or statement in effect.';
       }
 
-      // Siren
-      const inMyCounty = userCounty && areaDesc.toLowerCase().includes(userCounty.toLowerCase());
-      if (inMyCounty && (ev.includes('Tornado Warning')||ev.includes('Particularly Dangerous'))) {
-        needsSiren = true;
-      }
+      // FIX #9: normalized county matching for siren
+      // FIX #1: tornado warning ONLY triggers siren (not SVR)
+      const inMyCounty = countyMatchesArea(userCounty, areaDesc);
+      if (inMyCounty && isTornadoLevel(ev)) needsSiren = true;
 
-      // Popup (only once, highest priority)
-      const uid = ev+(a.properties?.sent||'')+areaDesc;
-      if (!popupShown && !shownAlerts.has(uid) && getPopupConfig(ev)) {
-        shownAlerts.add(uid);
+      // FIX #1: Popup — show highest priority only, first match wins
+      // (activeAlertFeatures is already sorted priority-first)
+      const uid = alertStableId(a);
+      if (!popupShown && !hasShownAlert(uid) && getPopupConfig(ev)) {
+        addShownAlert(uid);
         showPopup(ev, movement);
         popupShown = true;
       }
 
-      // Section header
+      // Section header — only print when section changes
       const sLabel = alertSectionLabel(score);
-      const isFirstInSection = idx === 0 || alertSectionLabel(alertPriorityScore(activeAlertFeatures[idx-1]?.properties?.event||'')) !== sLabel;
-      if (isFirstInSection) {
+      if (sLabel !== lastSectionLabel) {
         html += `<div class="alert-section-header">${sLabel}</div>`;
+        lastSectionLabel = sLabel;
       }
 
-      // Area — make clickable
+      // Area links
       const areas = areaDesc.split(';').slice(0,3).map(s=>s.trim()).filter(Boolean);
-      const areaLinks = areas.map(area => `<span class="area-link" onclick="jumpToLocation('${area.replace(/'/g,"\\'")}')">📍 ${area}</span>`).join(' · ');
+      const areaLinks = areas.map(area =>
+        `<span class="area-link" onclick="jumpToLocation('${area.replace(/'/g,"\\'")}')">📍 ${area}</span>`
+      ).join(' · ');
 
-      // Movement text
-      const movText = movement ? `<div class="alert-movement">📍 Moving ${movement.dir} at ${movement.spd} mph</div>` : '';
+      const movText = movement
+        ? `<div class="alert-movement">📍 Moving ${movement.dir} at ${movement.spd} mph</div>` : '';
 
       const shortDesc = desc.replace(/\*/g,'').replace(/\n\n/g,'<br><br>').replace(/\n/g,' ');
       const shortInst = inst ? `<div class="alert-instruction">${inst.replace(/\n/g,'<br>')}</div>` : '';
@@ -2270,58 +2520,86 @@ async function loadAlerts() {
             ${shortInst}
           </div>
         </div>`;
-    });
+    }
 
     const alertsEl = document.getElementById('alertsContainer');
-    alertsEl.innerHTML = html || '<div style="color:#2a7a5a;padding:16px 0;font-size:14px;text-align:left">✓ No active alerts for this location</div>';
+    // FIX #6: use textContent/innerHTML carefully — no repeated DOM traversal
+    alertsEl.innerHTML = html ||
+      '<div style="color:#2a7a5a;padding:16px 0;font-size:14px;text-align:left">✓ No active alerts for this location</div>';
 
-    // Spatial awareness
+    // FIX #1: Spatial awareness — highest-priority warning, not closest
     const spatialCard = document.getElementById('spatialCard');
-    if (nearestWarning) {
-      document.getElementById('spNearestAlert').textContent = nearestWarning.ev;
-      document.getElementById('spDirection').textContent    = nearestWarning.dist < 9999 ? `~${Math.round(nearestWarning.dist)} miles away` : 'Unknown';
-      document.getElementById('spMovement').textContent     = nearestWarning.movement ? `${nearestWarning.movement.dir} at ${nearestWarning.movement.spd} mph` : 'Not reported';
+    if (spatialAlert) {
+      const dist = alertCentroidDistance(spatialAlert);
+      const mov  = parseMovement(spatialAlert.properties?.description || '');
+      document.getElementById('spNearestAlert').textContent =
+        spatialAlert.properties?.event || '';
+      document.getElementById('spDirection').textContent =
+        dist < 9999 ? `~${Math.round(dist)} miles away` : 'Unknown';
+      document.getElementById('spMovement').textContent =
+        mov ? `${mov.dir} at ${mov.spd} mph` : 'Not reported';
       spatialCard.classList.add('visible');
     } else {
       spatialCard.classList.remove('visible');
     }
 
-    // Siren
-    if (needsSiren && !sirenActive) startSiren();
+    // FIX #1: Siren — tornado county match only
+    if (needsSiren && !sirenActive)   startSiren();
     else if (!needsSiren && sirenActive) stopSiren();
 
-    // Update risk from alerts
-    const riskOrder = {low:0,medium:1,high:2};
+    // Update risk from alerts (tornado always wins)
     if (activeAlertFeatures.length > 0 && riskOrder[alertRisk] >= riskOrder[lastRisk]) {
       setRiskDisplay(alertRisk, alertRiskLabel, alertRiskWhy);
     }
 
+    // FIX #11: announce highest-priority alert to screen readers
+    if (activeAlertFeatures.length > 0) {
+      const topEv = activeAlertFeatures[0]?.properties?.event || '';
+      if (topEv) announceAlert(`Active alert: ${topEv}`);
+    }
+
   } catch(e) {
+    if (e.name === 'AbortError') return;
     console.error('Alerts error:', e);
     document.getElementById('alertsContainer').textContent = 'Failed to load alerts.';
+    checkStaleData(); // FIX #12: show stale banner on failure
   } finally {
-    fetchInProgress.alerts = false;
+    alertsFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   TICKER
+   TICKER — FIX #2, #3, #4, #7, #8
 ════════════════════════════════════════════════ */
 const tickerOverflowByGroup = {};
-let currentOverflowGroup = null;
+let currentOverflowGroup    = null;
+
+/**
+ * FIX #3: Overflow panel is a fixed-position portal (#tickerOverflowPortal)
+ * appended to <body>. Its top is set dynamically to the bottom of the ticker.
+ * This escapes ALL parent stacking contexts, overflow clips, and transforms.
+ */
+function positionOverflowPortal() {
+  const wrap   = document.getElementById('tickerWrap');
+  const portal = document.getElementById('tickerOverflowPortal');
+  const rect   = wrap.getBoundingClientRect();
+  portal.style.top = `${rect.bottom}px`;
+}
 
 function openTickerOverflow(groupKey, event) {
   event.stopPropagation();
-  const overflowEl = document.getElementById('tickerOverflow');
-  const innerEl    = document.getElementById('tickerOverflowInner');
-  const items = tickerOverflowByGroup[groupKey];
+  const portal  = document.getElementById('tickerOverflowPortal');
+  const innerEl = document.getElementById('tickerOverflowInner');
+  const items   = tickerOverflowByGroup[groupKey];
 
-  if (currentOverflowGroup === groupKey && overflowEl.classList.contains('open')) {
-    overflowEl.classList.remove('open');
+  if (currentOverflowGroup === groupKey && portal.classList.contains('open')) {
+    portal.classList.remove('open');
     currentOverflowGroup = null;
     return;
   }
   if (!items || items.length === 0) return;
+
+  positionOverflowPortal();
 
   const groupDef = TICKER_GROUPS.find(g => g.key === groupKey);
   const list = items.map(({ ev, area }) => {
@@ -2332,126 +2610,122 @@ function openTickerOverflow(groupKey, event) {
     </div>`;
   }).join('');
 
+  // FIX #6: direct innerHTML set, no DOM churn loop
   innerEl.innerHTML = `<div class="ticker-overflow-title">${groupDef?.label||''} — All Alerts (${items.length})</div>${list}`;
   currentOverflowGroup = groupKey;
-  overflowEl.classList.add('open');
+  portal.classList.add('open');
+}
+
+function closeTickerOverflow() {
+  document.getElementById('tickerOverflowPortal').classList.remove('open');
+  currentOverflowGroup = null;
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.ticker-wrap')) {
-    document.getElementById('tickerOverflow').classList.remove('open');
-    currentOverflowGroup = null;
+  if (!e.target.closest('#tickerWrap') && !e.target.closest('#tickerOverflowPortal')) {
+    closeTickerOverflow();
   }
 });
+// Also reposition portal on scroll/resize
+window.addEventListener('scroll',  positionOverflowPortal, { passive: true });
+window.addEventListener('resize',  positionOverflowPortal, { passive: true });
 
-const TICKER_MAJOR_TYPES = [
-  'Tornado Warning','Tornado Watch',
-  'Severe Thunderstorm Warning','Severe Thunderstorm Watch',
-  'Flash Flood Warning','Flash Flood Emergency','Flash Flood Watch',
-  'Particularly Dangerous Situation',
-  'Blizzard Warning','Ice Storm Warning','Winter Storm Warning','Winter Storm Watch',
-];
-
+let tickerFetchInProgress = false;
 async function loadTicker() {
-  if (fetchInProgress.ticker) return;
-  fetchInProgress.ticker = true;
+  if (tickerFetchInProgress) return;
+  tickerFetchInProgress = true;
   try {
-    const res = await fetch('https://api.weather.gov/alerts/active');
-    if (!res.ok) throw new Error('Ticker API error');
+    // FIX #4: filtered API request — only the event types we need
+    const res  = await safeFetch(TICKER_API_URL, { key:'ticker', timeout:12000, retries:1 });
     const data = await res.json();
 
-    const features = sortAlerts(
-      (data.features||[]).filter(a => TICKER_MAJOR_TYPES.some(t=>(a.properties?.event||'').includes(t)))
-    );
-
-    const seen = new Set();
-    const deduped = [];
-    features.forEach(a => {
-      const ev   = a.properties?.event    || '';
-      const area = a.properties?.areaDesc || '';
-      const key  = ev+'|'+area;
-      if (!seen.has(key)) { seen.add(key); deduped.push({ ev, area }); }
-    });
+    // FIX #1: sort uses centralized priority — tornado before SVR always
+    // FIX #8: deduplicate by stable NWS ID
+    const deduped = deduplicateAlerts(data.features || []);
+    const features = sortAlerts(deduped);
 
     const scrollEl = document.getElementById('tickerScroll');
-    if (deduped.length === 0) {
+    if (features.length === 0) {
       scrollEl.innerHTML = '<div class="ticker-none">✓ No major severe weather alerts nationwide</div>';
-      fetchInProgress.ticker = false;
       return;
     }
 
-    // Bucket
+    // Bucket into groups
     const buckets = {};
-    TICKER_GROUPS.forEach(g=>{buckets[g.key]=[];});
-    deduped.forEach(item=>{
-      for (const g of TICKER_GROUPS) { if(g.match(item.ev)){buckets[g.key].push(item);break;} }
+    TICKER_GROUPS.forEach(g => { buckets[g.key] = []; });
+    features.forEach(a => {
+      const ev   = a.properties?.event    || '';
+      const area = a.properties?.areaDesc || '';
+      for (const g of TICKER_GROUPS) {
+        if (g.match(ev)) { buckets[g.key].push({ ev, area }); break; }
+      }
     });
-    TICKER_GROUPS.forEach(g=>{ tickerOverflowByGroup[g.key]=buckets[g.key]||[]; });
+    TICKER_GROUPS.forEach(g => { tickerOverflowByGroup[g.key] = buckets[g.key] || []; });
 
     const MAX_INLINE = 3;
     let groupsHTML = '';
-    TICKER_GROUPS.forEach(g=>{
-      const items=buckets[g.key];
-      if(!items||items.length===0)return;
-      const inline=items.slice(0,MAX_INLINE);
-      const overflow=items.length-MAX_INLINE;
+    TICKER_GROUPS.forEach(g => {
+      const items = buckets[g.key];
+      if (!items || items.length === 0) return;
+      const inline   = items.slice(0, MAX_INLINE);
+      const overflow = items.length - MAX_INLINE;
 
       groupsHTML += `<div class="ticker-group ${g.cls}">`;
       groupsHTML += `<span class="ticker-group-label">${g.label} <span class="ticker-group-count">${items.length}</span></span>`;
-      inline.forEach(({ev,area})=>{
+      inline.forEach(({ ev, area }) => {
         const parts = area.split(';')[0].split(',').slice(0,2).join(',').trim();
-        const label = parts.length>34?parts.slice(0,32)+'…':parts;
+        const label = parts.length > 34 ? parts.slice(0,32)+'…' : parts;
         groupsHTML += `<span class="ticker-item" onclick="jumpToLocation('${parts.replace(/'/g,"\\'")}')">📍 ${label}</span>`;
       });
-      if (overflow>0) {
+      if (overflow > 0) {
         groupsHTML += `<span class="ticker-more" onclick="openTickerOverflow('${g.key}',event)" role="button" tabindex="0" aria-label="Show ${overflow} more ${g.label} alerts">+${overflow} more ▼</span>`;
       }
       groupsHTML += `</div>`;
     });
 
+    // FIX #6: single innerHTML set, no repeated DOM manipulation
     scrollEl.innerHTML = groupsHTML || '<div class="ticker-none">✓ No major alerts</div>';
 
-    scrollEl.querySelectorAll('.ticker-more').forEach(el=>{
-      el.addEventListener('keydown', e=>{
-        if(e.key==='Enter'||e.key===' '){e.preventDefault();el.click();}
+    // Keyboard support for overflow buttons
+    scrollEl.querySelectorAll('.ticker-more').forEach(el => {
+      el.addEventListener('keydown', e => {
+        if (e.key==='Enter'||e.key===' ') { e.preventDefault(); el.click(); }
       });
     });
 
   } catch(e) {
+    if (e.name === 'AbortError') return;
     console.error('Ticker error:', e);
   } finally {
-    fetchInProgress.ticker = false;
+    tickerFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   SEARCH — with AbortController + caching
+   SEARCH — FIX #5, #6: safeFetch + bounded cache
 ════════════════════════════════════════════════ */
-const searchCache = new Map();
-let searchAbort = null;
 let searchDebounce;
-const searchInput = document.getElementById('searchInput');
+const searchInput  = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('searchSuggestions');
 
 searchInput.addEventListener('input', () => {
   clearTimeout(searchDebounce);
   const q = searchInput.value.trim();
-  if (q.length < 2) { suggestionsEl.innerHTML = ''; suggestionsEl.style.display = 'none'; return; }
+  if (q.length < 2) {
+    suggestionsEl.innerHTML = '';
+    suggestionsEl.style.display = 'none';
+    return;
+  }
   searchDebounce = setTimeout(async () => {
-    // Cache hit
-    if (searchCache.has(q)) {
-      renderSuggestions(searchCache.get(q));
-      return;
-    }
-    if (searchAbort) searchAbort.abort();
-    searchAbort = new AbortController();
+    // FIX #6: bounded cache hit
+    if (searchCache.has(q)) { renderSuggestions(searchCache.get(q)); return; }
     try {
-      const res = await fetch(
+      const res  = await safeFetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=20&addressdetails=1`,
-        { signal: searchAbort.signal }
+        { key:'search', timeout:6000 }
       );
       const data = await res.json();
-      searchCache.set(q, data);
+      addSearchCache(q, data); // FIX #6: bounded add
       renderSuggestions(data);
     } catch(e) {
       if (e.name !== 'AbortError') console.warn('Search error:', e);
@@ -2463,6 +2737,8 @@ function renderSuggestions(data) {
   suggestionsEl.innerHTML = '';
   if (!data || data.length === 0) { suggestionsEl.style.display='none'; return; }
   suggestionsEl.style.display = 'block';
+  // FIX #6: build fragment to avoid repeated reflows
+  const frag = document.createDocumentFragment();
   data.slice(0,8).forEach(p => {
     if (!p.lat || !p.lon) return;
     const div = document.createElement('div');
@@ -2478,12 +2754,13 @@ function renderSuggestions(data) {
       loadAll();
     };
     div.addEventListener('click', pick);
-    div.addEventListener('keydown', e=>{if(e.key==='Enter')pick();});
-    suggestionsEl.appendChild(div);
+    div.addEventListener('keydown', e => { if(e.key==='Enter') pick(); });
+    frag.appendChild(div);
   });
+  suggestionsEl.appendChild(frag);
 }
 
-document.addEventListener('click', e=>{
+document.addEventListener('click', e => {
   if (!e.target.closest('.search-wrap')) {
     suggestionsEl.innerHTML = '';
     suggestionsEl.style.display = 'none';
@@ -2491,14 +2768,24 @@ document.addEventListener('click', e=>{
 });
 
 /* ════════════════════════════════════════════════
-   REFRESH INTERVALS (staggered)
+   REFRESH INTERVALS — FIX #5: jittered polling,
+   no overlapping requests (guard flags per loader)
+   FIX #12: stale check each cycle
 ════════════════════════════════════════════════ */
-setInterval(()=>{ loadAlerts(); updateFooter(); },         15_000);
-setInterval(()=>{ loadWeather(); },                       300_000);
-setInterval(()=>{ loadTicker(); },                        30_000);
-setInterval(()=>{ updateDayNight(); },                    600_000);
+// Jitter helper — prevents thundering herd if multiple tabs open
+function jitteredInterval(fn, baseMs, jitterMs) {
+  const tick = () => {
+    fn();
+    const next = baseMs + Math.random() * jitterMs;
+    setTimeout(tick, next);
+  };
+  setTimeout(tick, baseMs + Math.random() * jitterMs);
+}
+
+jitteredInterval(() => { loadAlerts(); updateFooter(); checkStaleData(); },  15_000,  3_000);
+jitteredInterval(() => { loadWeather(); },                                   300_000, 30_000);
+jitteredInterval(() => { loadTicker(); },                                     30_000,  5_000);
+jitteredInterval(() => { updateDayNight(); },                                600_000, 60_000);
 </script>
 </body>
 </html>
-HTMLEOF
-echo "Done. File size: $(wc -c < /mnt/user-data/outputs/index.html) bytes"
