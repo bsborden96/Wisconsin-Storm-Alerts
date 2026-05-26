@@ -1,263 +1,1116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-<title>Wisconsin Storm Alerts Radar</title>
-
-<link
-  rel="stylesheet"
-  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-/>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>US Storm Alerts — Radar</title>
+<meta name="theme-color" content="#050a14">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <style>
-
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: #05070d;
-  font-family: Arial, sans-serif;
-  overflow: hidden;
+:root {
+  --c-bg:      #050a14;
+  --c-surface: rgba(10,25,50,0.92);
+  --c-cyan:    #00cfff;
+  --c-text:    #e0f0ff;
+  --c-muted:   #4a7a9a;
+  --c-red:     #ff4444;
+  --c-orange:  #ff8c00;
+  --font-display: 'Bebas Neue', cursive;
+  --font-mono:    'Share Tech Mono', monospace;
+  --safe-top:    env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left, 0px);
+  --safe-right:  env(safe-area-inset-right, 0px);
 }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: var(--c-bg); font-family: var(--font-mono); color: var(--c-text); }
 
-#map {
-  width: 100%;
-  height: 100%;
-}
+/* ── MAP ── */
+#map { position: absolute; inset: 0; z-index: 0; }
+.leaflet-container { background: #030608; }
 
-.top-bar {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  z-index: 1000;
+/* ── HEADER ── */
+#headerBar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: calc(52px + var(--safe-top));
+  padding-top: var(--safe-top);
+  background: rgba(3,8,18,0.96);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(0,207,255,0.18);
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: calc(14px + var(--safe-left));
+  padding-right: calc(14px + var(--safe-right));
+  z-index: 1000;
   gap: 10px;
 }
-
-.control-btn {
-  background: rgba(10,10,15,.85);
-  color: white;
-  border: 1px solid #333;
-  padding: 10px 14px;
-  border-radius: 8px;
+.header-title {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 3px;
+  color: var(--c-cyan);
+  text-shadow: 0 0 10px rgba(0,207,255,0.4);
+  white-space: nowrap;
+}
+.header-back {
+  background: rgba(0,207,255,0.1);
+  border: 1px solid rgba(0,207,255,0.3);
+  color: var(--c-cyan);
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 1.5px;
+  padding: 6px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  transition: background .15s;
 }
+.header-back:active { background: rgba(0,207,255,0.22); }
 
-.control-btn:hover {
-  background: rgba(30,30,40,.95);
+/* ── CONTROLS PANEL ── */
+#controlsPanel {
+  position: fixed;
+  top: calc(52px + var(--safe-top) + 8px);
+  left: calc(10px + var(--safe-left));
+  right: calc(10px + var(--safe-right));
+  z-index: 900;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: none;
 }
+#controlsPanel > * { pointer-events: auto; }
 
-.status-bar {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  z-index: 1000;
-  background: rgba(0,0,0,.7);
-  color: #00ff9d;
-  padding: 10px 15px;
+.ctrl-group {
+  display: flex;
+  gap: 4px;
+  background: rgba(3,8,20,0.92);
+  border: 1px solid rgba(0,207,255,0.18);
   border-radius: 8px;
-  font-size: 14px;
+  padding: 5px 8px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  align-items: center;
+}
+.ctrl-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--c-muted);
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.ctrl-btn {
+  background: rgba(0,207,255,0.06);
+  border: 1px solid rgba(0,207,255,0.22);
+  color: var(--c-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background .15s, border-color .15s, color .15s;
+  line-height: 1;
+}
+.ctrl-btn:active, .ctrl-btn.active {
+  background: rgba(0,207,255,0.22);
+  border-color: var(--c-cyan);
+  color: var(--c-cyan);
+}
+.ctrl-btn.danger.active {
+  background: rgba(255,60,60,0.22);
+  border-color: #ff4444;
+  color: #ff8888;
+}
+.ctrl-btn.animate-active {
+  background: rgba(0,255,100,0.15);
+  border-color: #00ff88;
+  color: #00ff88;
+  animation: animPulse 1.2s ease-in-out infinite;
+}
+@keyframes animPulse { 0%,100%{opacity:1}50%{opacity:.6} }
+
+/* Site selector */
+#siteSelect {
+  background: rgba(3,8,20,0.92);
+  border: 1px solid rgba(0,207,255,0.22);
+  color: var(--c-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  outline: none;
+  max-width: 160px;
 }
 
-.legend {
-  position: absolute;
-  right: 20px;
-  bottom: 20px;
-  z-index: 1000;
-  background: rgba(0,0,0,.7);
-  padding: 12px;
+/* ── SCAN LINE ── */
+#scanLine {
+  position: fixed;
+  top: 0; left: 0;
+  width: 3px;
+  height: 100vh;
+  background: linear-gradient(to bottom, transparent, rgba(0,255,160,0.08), rgba(0,255,160,0.22), rgba(0,255,160,0.08), transparent);
+  z-index: 800;
+  pointer-events: none;
+  display: none;
+  filter: blur(1px);
+}
+
+/* ── STATUS BAR ── */
+#statusBar {
+  position: fixed;
+  bottom: calc(max(16px, var(--safe-bottom)) + 54px);
+  left: calc(10px + var(--safe-left));
+  background: rgba(3,8,20,0.9);
+  border: 1px solid rgba(0,207,255,0.18);
+  color: var(--c-cyan);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  z-index: 900;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  pointer-events: none;
+  max-width: calc(100vw - 20px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── TIMELINE SCRUBBER ── */
+#timelineBar {
+  position: fixed;
+  bottom: max(10px, var(--safe-bottom));
+  left: calc(10px + var(--safe-left));
+  right: calc(10px + var(--safe-right));
+  background: rgba(3,8,20,0.95);
+  border: 1px solid rgba(0,207,255,0.2);
   border-radius: 10px;
-  color: white;
-  width: 140px;
+  padding: 8px 12px;
+  z-index: 900;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.timeline-inner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.timeline-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  color: var(--c-muted);
+  white-space: nowrap;
+  min-width: 36px;
+}
+#timeSlider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(0,207,255,0.2);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+#timeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  background: var(--c-cyan);
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0,207,255,0.6);
+}
+#timeSlider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  background: var(--c-cyan);
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+#frameTime {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text);
+  white-space: nowrap;
+  min-width: 62px;
+  text-align: right;
 }
 
+/* ── LEGEND ── */
+#legend {
+  position: fixed;
+  bottom: calc(max(10px, var(--safe-bottom)) + 54px);
+  right: calc(10px + var(--safe-right));
+  background: rgba(3,8,20,0.92);
+  border: 1px solid rgba(0,207,255,0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  z-index: 900;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  min-width: 130px;
+}
+.legend-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--c-muted);
+  margin-bottom: 7px;
+  text-align: center;
+}
 .legend-bar {
-  height: 16px;
-  width: 100%;
-  border-radius: 4px;
-  margin-top: 8px;
-
-  background: linear-gradient(
-    to right,
-    #00ffff,
-    #00ff00,
-    #ffff00,
-    #ff9900,
-    #ff0000,
-    #ff00ff
-  );
+  height: 12px;
+  border-radius: 3px;
+  margin-bottom: 4px;
 }
-
+.legend-bar.refl {
+  background: linear-gradient(to right, #00cfff, #00ff00, #ffff00, #ff9900, #ff0000, #cc00cc, #ffffff);
+}
+.legend-bar.vel {
+  background: linear-gradient(to right, #006600, #00cc00, #88ff88, #888888, #ff8888, #cc0000, #660000);
+}
 .legend-labels {
   display: flex;
   justify-content: space-between;
-  margin-top: 4px;
-  font-size: 12px;
+  font-size: 9px;
+  color: var(--c-muted);
 }
 
+/* ── ALERT OVERLAYS ── */
+.alert-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.6);
+  animation: dotPulse 1.5s ease-in-out infinite;
+  cursor: pointer;
+}
+@keyframes dotPulse { 0%,100%{transform:scale(1)}50%{transform:scale(1.5)} }
+
+/* ── LOADING OVERLAY ── */
+#loadingOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(5,10,20,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  backdrop-filter: blur(4px);
+  transition: opacity .4s ease;
+}
+#loadingOverlay.hidden { opacity: 0; pointer-events: none; }
+.loading-inner {
+  text-align: center;
+}
+.loading-spinner {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(0,207,255,0.15);
+  border-top-color: var(--c-cyan);
+  border-radius: 50%;
+  animation: spin .9s linear infinite;
+  margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--c-cyan);
+}
+
+/* ── SITE PANEL ── */
+#sitePanel {
+  position: fixed;
+  top: calc(52px + var(--safe-top) + 8px);
+  right: calc(10px + var(--safe-right));
+  background: rgba(3,8,20,0.97);
+  border: 1px solid rgba(0,207,255,0.22);
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 950;
+  backdrop-filter: blur(16px);
+  max-width: 240px;
+  display: none;
+  max-height: 60vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#sitePanel.open { display: block; }
+.site-panel-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--c-cyan);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(0,207,255,0.15);
+}
+.site-search {
+  width: 100%;
+  background: rgba(0,20,50,0.8);
+  border: 1px solid rgba(0,207,255,0.2);
+  color: var(--c-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  margin-bottom: 7px;
+  outline: none;
+}
+.site-item {
+  padding: 7px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  color: #a0c8e0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  -webkit-tap-highlight-color: transparent;
+  transition: background .12s, color .12s;
+  line-height: 1.4;
+}
+.site-item:last-child { border-bottom: none; }
+.site-item:active, .site-item.selected { background: rgba(0,207,255,0.12); color: var(--c-cyan); }
+.site-id {
+  font-family: var(--font-display);
+  font-size: 14px;
+  letter-spacing: 1px;
+  display: block;
+}
+.site-name { opacity: 0.6; font-size: 10px; }
+
+:focus-visible { outline: 2px solid var(--c-cyan); outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .ctrl-btn { font-size: 10px; padding: 5px 7px; }
+  .header-title { font-size: 14px; letter-spacing: 2px; }
+}
 </style>
 </head>
-
 <body>
 
-<div id="map"></div>
-
-<div class="top-bar">
-  <button class="control-btn" onclick="toggleAnimation()">
-    Animate
-  </button>
-
-  <button class="control-btn" onclick="location.reload()">
-    Refresh
-  </button>
-
-  <button class="control-btn" onclick="goHome()">
-    Home
-  </button>
-</div>
-
-<div class="status-bar" id="statusBar">
-  LOADING RADAR...
-</div>
-
-<div class="legend">
-  <div>Reflectivity</div>
-
-  <div class="legend-bar"></div>
-
-  <div class="legend-labels">
-    <span>Light</span>
-    <span>Heavy</span>
+<!-- Loading -->
+<div id="loadingOverlay">
+  <div class="loading-inner">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">LOADING RADAR…</div>
   </div>
 </div>
 
+<!-- Scan line effect -->
+<div id="scanLine"></div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Header -->
+<div id="headerBar">
+  <a class="header-back" href="index.html">← HOME</a>
+  <div class="header-title">NEXRAD RADAR</div>
+  <div style="display:flex;gap:6px;align-items:center;">
+    <button class="ctrl-btn" id="sitePanelBtn" onclick="toggleSitePanel()" title="Choose Radar Site">📡 SITE</button>
+    <button class="ctrl-btn" id="alertsToggleBtn" onclick="toggleAlertOverlay()" title="Toggle Alert Polygons">⚠ ALERTS</button>
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controlsPanel">
+  <div class="ctrl-group">
+    <span class="ctrl-label">PRODUCT</span>
+    <button class="ctrl-btn active" id="btnRefl" onclick="setProduct('reflectivity')">REFL</button>
+    <button class="ctrl-btn" id="btnVel"  onclick="setProduct('velocity')">VEL</button>
+  </div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">PLAYBACK</span>
+    <button class="ctrl-btn" id="btnPrev" onclick="stepFrame(-1)">◀</button>
+    <button class="ctrl-btn" id="btnPlay" onclick="togglePlay()">▶ PLAY</button>
+    <button class="ctrl-btn" id="btnNext" onclick="stepFrame(1)">▶</button>
+  </div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">SPEED</span>
+    <button class="ctrl-btn" id="btnSlow" onclick="setSpeed('slow')">SLOW</button>
+    <button class="ctrl-btn active" id="btnMed"  onclick="setSpeed('med')">MED</button>
+    <button class="ctrl-btn" id="btnFast" onclick="setSpeed('fast')">FAST</button>
+  </div>
+
+  <div class="ctrl-group">
+    <span class="ctrl-label">SCAN</span>
+    <button class="ctrl-btn" id="btnScan" onclick="toggleScanLine()">SCAN LINE</button>
+  </div>
+
+  <div class="ctrl-group">
+    <button class="ctrl-btn" onclick="refreshRadar()">↺ REFRESH</button>
+    <button class="ctrl-btn" onclick="goToMyLocation()">📍 MY LOC</button>
+  </div>
+</div>
+
+<!-- Site Selection Panel -->
+<div id="sitePanel">
+  <div class="site-panel-title">RADAR SITES (NEXRAD)</div>
+  <input class="site-search" id="siteSearch" type="search" placeholder="Search site or state…" oninput="filterSites()">
+  <div id="siteList"></div>
+</div>
+
+<!-- Status -->
+<div id="statusBar">LOADING RADAR DATA…</div>
+
+<!-- Legend -->
+<div id="legend">
+  <div class="legend-title" id="legendTitle">REFLECTIVITY (dBZ)</div>
+  <div class="legend-bar refl" id="legendBar"></div>
+  <div class="legend-labels" id="legendLabels">
+    <span>-10</span><span>0</span><span>20</span><span>40</span><span>60+</span>
+  </div>
+</div>
+
+<!-- Timeline -->
+<div id="timelineBar">
+  <div class="timeline-inner">
+    <span class="timeline-label">PAST</span>
+    <input type="range" id="timeSlider" min="0" max="0" value="0" oninput="onSliderInput()">
+    <span class="timeline-label" style="text-align:right">NOW</span>
+    <span id="frameTime">--:--</span>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+/* ══════════════════════════════════════════════
+   NEXRAD RADAR SITES — Full US list
+══════════════════════════════════════════════ */
+const RADAR_SITES = [
+  { id:'KABR', name:'Aberdeen, SD',           lat:45.4558,  lon:-98.4134 },
+  { id:'KAKQ', name:'Wakefield, VA',           lat:36.9840,  lon:-77.0073 },
+  { id:'KAMA', name:'Amarillo, TX',            lat:35.2333,  lon:-101.7092 },
+  { id:'KAMX', name:'Miami, FL',               lat:25.6111,  lon:-80.4128 },
+  { id:'KAPX', name:'Gaylord, MI',             lat:44.9072,  lon:-84.7197 },
+  { id:'KARX', name:'La Crosse, WI',           lat:43.8228,  lon:-91.1915 },
+  { id:'KATX', name:'Seattle, WA',             lat:48.1946,  lon:-122.4958 },
+  { id:'KBBX', name:'Beale AFB, CA',           lat:39.4957,  lon:-121.6317 },
+  { id:'KBGM', name:'Binghamton, NY',          lat:42.1997,  lon:-75.9847 },
+  { id:'KBHX', name:'Eureka, CA',              lat:40.4986,  lon:-124.2917 },
+  { id:'KBIS', name:'Bismarck, ND',            lat:46.7708,  lon:-100.7603 },
+  { id:'KBLX', name:'Billings, MT',            lat:45.8538,  lon:-108.6068 },
+  { id:'KBMX', name:'Birmingham, AL',          lat:33.1722,  lon:-86.7697 },
+  { id:'KBOX', name:'Boston, MA',              lat:41.9558,  lon:-71.1369 },
+  { id:'KBRO', name:'Brownsville, TX',         lat:25.9161,  lon:-97.4189 },
+  { id:'KBUF', name:'Buffalo, NY',             lat:42.9489,  lon:-78.7369 },
+  { id:'KBYX', name:'Key West, FL',            lat:24.5975,  lon:-81.7031 },
+  { id:'KCAE', name:'Columbia, SC',            lat:33.9488,  lon:-81.1183 },
+  { id:'KCBW', name:'Houlton, ME',             lat:46.0392,  lon:-67.8067 },
+  { id:'KCBX', name:'Boise, ID',               lat:43.4908,  lon:-116.2347 },
+  { id:'KCCX', name:'State College, PA',       lat:40.9228,  lon:-78.0039 },
+  { id:'KCLE', name:'Cleveland, OH',           lat:41.4131,  lon:-81.8597 },
+  { id:'KCLX', name:'Charleston, SC',          lat:32.6556,  lon:-81.0422 },
+  { id:'KCRP', name:'Corpus Christi, TX',      lat:27.7842,  lon:-97.5111 },
+  { id:'KCXX', name:'Burlington, VT',          lat:44.5111,  lon:-73.1661 },
+  { id:'KCYS', name:'Cheyenne, WY',            lat:41.1519,  lon:-104.8061 },
+  { id:'KDAX', name:'Sacramento, CA',          lat:38.5011,  lon:-121.6775 },
+  { id:'KDDC', name:'Dodge City, KS',          lat:37.7208,  lon:-99.9689 },
+  { id:'KDFX', name:'Laughlin AFB, TX',        lat:29.2731,  lon:-100.2803 },
+  { id:'KDGX', name:'Jackson, MS',             lat:32.2797,  lon:-89.9847 },
+  { id:'KDIX', name:'Philadelphia, PA',        lat:39.9469,  lon:-74.4108 },
+  { id:'KDLH', name:'Duluth, MN',              lat:46.8369,  lon:-92.2097 },
+  { id:'KDMX', name:'Des Moines, IA',          lat:41.7311,  lon:-93.7228 },
+  { id:'KDOX', name:'Dover AFB, DE',           lat:38.8258,  lon:-75.4400 },
+  { id:'KDTX', name:'Detroit, MI',             lat:42.6997,  lon:-83.4717 },
+  { id:'KDVN', name:'Davenport, IA',           lat:41.6117,  lon:-90.5808 },
+  { id:'KDYX', name:'Dyess AFB, TX',           lat:32.5383,  lon:-99.2542 },
+  { id:'KEAX', name:'Kansas City, MO',         lat:38.8103,  lon:-94.2647 },
+  { id:'KEMX', name:'Tucson, AZ',              lat:31.8933,  lon:-110.6303 },
+  { id:'KENX', name:'Albany, NY',              lat:42.5864,  lon:-74.0639 },
+  { id:'KEOX', name:'Fort Rucker, AL',         lat:31.4603,  lon:-85.4594 },
+  { id:'KEPZ', name:'El Paso, TX',             lat:31.8731,  lon:-106.6981 },
+  { id:'KESX', name:'Las Vegas, NV',           lat:35.7011,  lon:-114.8914 },
+  { id:'KEVX', name:'Eglin AFB, FL',           lat:30.5644,  lon:-85.9217 },
+  { id:'KEWX', name:'Austin/San Antonio, TX',  lat:29.7039,  lon:-98.0281 },
+  { id:'KEYX', name:'Edwards AFB, CA',         lat:35.0978,  lon:-117.5608 },
+  { id:'KFCX', name:'Roanoke, VA',             lat:37.0242,  lon:-80.2742 },
+  { id:'KFDR', name:'Altus AFB, OK',           lat:34.3622,  lon:-98.9764 },
+  { id:'KFDX', name:'Cannon AFB, NM',          lat:34.6344,  lon:-103.6294 },
+  { id:'KFFC', name:'Atlanta, GA',             lat:33.3636,  lon:-84.5658 },
+  { id:'KFSD', name:'Sioux Falls, SD',         lat:43.5878,  lon:-96.7294 },
+  { id:'KFSX', name:'Flagstaff, AZ',           lat:34.5744,  lon:-111.1983 },
+  { id:'KFTG', name:'Denver, CO',              lat:39.7867,  lon:-104.5458 },
+  { id:'KFWS', name:'Dallas/Fort Worth, TX',   lat:32.5731,  lon:-97.3031 },
+  { id:'KGGW', name:'Glasgow, MT',             lat:48.2064,  lon:-106.6247 },
+  { id:'KGJX', name:'Grand Junction, CO',      lat:39.0622,  lon:-108.2139 },
+  { id:'KGLD', name:'Goodland, KS',            lat:39.3667,  lon:-101.7003 },
+  { id:'KGRB', name:'Green Bay, WI',           lat:44.4986,  lon:-88.1111 },
+  { id:'KGRK', name:'Fort Hood, TX',           lat:30.7219,  lon:-97.3828 },
+  { id:'KGRR', name:'Grand Rapids, MI',        lat:42.8939,  lon:-85.5447 },
+  { id:'KGSP', name:'Greer, SC',               lat:34.8833,  lon:-82.2200 },
+  { id:'KGWX', name:'Columbus AFB, MS',        lat:33.8967,  lon:-88.3289 },
+  { id:'KGYX', name:'Portland, ME',            lat:43.8914,  lon:-70.2567 },
+  { id:'KHDX', name:'Holloman AFB, NM',        lat:33.0761,  lon:-106.1228 },
+  { id:'KHGX', name:'Houston, TX',             lat:29.4719,  lon:-95.0789 },
+  { id:'KHNX', name:'San Joaquin Valley, CA',  lat:36.3142,  lon:-119.6322 },
+  { id:'KHPX', name:'Fort Campbell, KY',       lat:36.7369,  lon:-87.2850 },
+  { id:'KHTX', name:'Huntsville, AL',          lat:34.9306,  lon:-86.0836 },
+  { id:'KICT', name:'Wichita, KS',             lat:37.6544,  lon:-97.4431 },
+  { id:'KICX', name:'Cedar City, UT',          lat:37.5908,  lon:-112.8622 },
+  { id:'KILN', name:'Cincinnati, OH',          lat:39.4203,  lon:-83.8217 },
+  { id:'KILX', name:'Lincoln, IL',             lat:40.1508,  lon:-89.3367 },
+  { id:'KIND', name:'Indianapolis, IN',        lat:39.7075,  lon:-86.2803 },
+  { id:'KINX', name:'Tulsa, OK',               lat:36.1750,  lon:-95.5647 },
+  { id:'KIWA', name:'Phoenix, AZ',             lat:33.2892,  lon:-111.6697 },
+  { id:'KIWX', name:'Fort Wayne, IN',          lat:41.4086,  lon:-85.7000 },
+  { id:'KJAX', name:'Jacksonville, FL',        lat:30.4847,  lon:-81.7019 },
+  { id:'KJGX', name:'Robins AFB, GA',          lat:32.6753,  lon:-83.3511 },
+  { id:'KJKL', name:'Jackson, KY',             lat:37.5908,  lon:-83.3131 },
+  { id:'KLBB', name:'Lubbock, TX',             lat:33.6542,  lon:-101.8142 },
+  { id:'KLCH', name:'Lake Charles, LA',        lat:30.1253,  lon:-93.2158 },
+  { id:'KLIX', name:'New Orleans, LA',         lat:30.3369,  lon:-89.8253 },
+  { id:'KLNX', name:'North Platte, NE',        lat:41.9578,  lon:-100.5758 },
+  { id:'KLOT', name:'Chicago, IL',             lat:41.6044,  lon:-88.0847 },
+  { id:'KLRX', name:'Elko, NV',               lat:40.7397,  lon:-116.8028 },
+  { id:'KLSX', name:'St. Louis, MO',           lat:38.6986,  lon:-90.6828 },
+  { id:'KLTX', name:'Wilmington, NC',          lat:33.9892,  lon:-78.4292 },
+  { id:'KLVX', name:'Louisville, KY',          lat:37.9753,  lon:-85.9439 },
+  { id:'KLWX', name:'Sterling, VA',            lat:38.9753,  lon:-77.4786 },
+  { id:'KLZK', name:'Little Rock, AR',         lat:34.8364,  lon:-92.2622 },
+  { id:'KMAF', name:'Midland/Odessa, TX',      lat:31.9433,  lon:-102.1892 },
+  { id:'KMAX', name:'Medford, OR',             lat:42.0811,  lon:-122.7172 },
+  { id:'KMBX', name:'Minot AFB, ND',           lat:48.3925,  lon:-100.8644 },
+  { id:'KMHX', name:'Morehead City, NC',       lat:34.7758,  lon:-76.8764 },
+  { id:'KMKX', name:'Milwaukee, WI',           lat:42.9678,  lon:-88.5506 },
+  { id:'KMLB', name:'Melbourne, FL',           lat:28.1133,  lon:-80.6542 },
+  { id:'KMOB', name:'Mobile, AL',              lat:30.6797,  lon:-88.2397 },
+  { id:'KMPX', name:'Minneapolis, MN',         lat:44.8489,  lon:-93.5653 },
+  { id:'KMQT', name:'Marquette, MI',           lat:46.5311,  lon:-87.5483 },
+  { id:'KMRX', name:'Knoxville, TN',           lat:36.1686,  lon:-83.4017 },
+  { id:'KMSX', name:'Missoula, MT',            lat:47.0411,  lon:-113.9864 },
+  { id:'KMTX', name:'Salt Lake City, UT',      lat:41.2628,  lon:-112.4478 },
+  { id:'KMUX', name:'San Francisco, CA',       lat:37.1550,  lon:-121.8983 },
+  { id:'KMVX', name:'Grand Forks, ND',         lat:47.5281,  lon:-97.3253 },
+  { id:'KMXX', name:'Maxwell AFB, AL',         lat:32.5367,  lon:-85.7897 },
+  { id:'KNKX', name:'San Diego, CA',           lat:32.9189,  lon:-117.0419 },
+  { id:'KNQA', name:'Memphis, TN',             lat:35.3447,  lon:-89.8733 },
+  { id:'KOAX', name:'Omaha, NE',               lat:41.3208,  lon:-96.3667 },
+  { id:'KOHX', name:'Nashville, TN',           lat:36.2472,  lon:-86.5625 },
+  { id:'KOKX', name:'New York, NY',            lat:40.8656,  lon:-72.8639 },
+  { id:'KOLX', name:'Reno, NV',               lat:39.7042,  lon:-118.1508 },
+  { id:'KONX', name:'Norfolk, VA',             lat:36.9856,  lon:-76.0328 },
+  { id:'KOTX', name:'Spokane, WA',             lat:47.6803,  lon:-117.6258 },
+  { id:'KPAH', name:'Paducah, KY',             lat:37.0683,  lon:-88.7717 },
+  { id:'KPBZ', name:'Pittsburgh, PA',          lat:40.5317,  lon:-80.2181 },
+  { id:'KPDT', name:'Pendleton, OR',           lat:45.6906,  lon:-118.8525 },
+  { id:'KPOE', name:'Fort Polk, LA',           lat:31.1556,  lon:-92.9758 },
+  { id:'KPUX', name:'Pueblo, CO',              lat:38.4595,  lon:-104.1817 },
+  { id:'KRAX', name:'Raleigh, NC',             lat:35.6656,  lon:-78.4900 },
+  { id:'KRGX', name:'Reno/Elko, NV',          lat:39.7542,  lon:-119.4617 },
+  { id:'KRIW', name:'Riverton, WY',            lat:43.0661,  lon:-108.4772 },
+  { id:'KRLX', name:'Charleston, WV',          lat:38.3111,  lon:-81.7228 },
+  { id:'KRTX', name:'Portland, OR',            lat:45.7150,  lon:-122.9650 },
+  { id:'KSFX', name:'Pocatello, ID',           lat:43.1056,  lon:-112.6861 },
+  { id:'KSGF', name:'Springfield, MO',         lat:37.2353,  lon:-93.4003 },
+  { id:'KSHV', name:'Shreveport, LA',          lat:32.4508,  lon:-93.8411 },
+  { id:'KSJT', name:'San Angelo, TX',          lat:31.3714,  lon:-100.4922 },
+  { id:'KSOX', name:'Santa Ana, CA',           lat:33.8178,  lon:-117.6358 },
+  { id:'KSRX', name:'Fort Smith, AR',          lat:35.2908,  lon:-94.3617 },
+  { id:'KTBW', name:'Tampa Bay, FL',           lat:27.7056,  lon:-82.4017 },
+  { id:'KTFX', name:'Great Falls, MT',         lat:47.4597,  lon:-111.3853 },
+  { id:'KTLH', name:'Tallahassee, FL',         lat:30.3975,  lon:-84.3289 },
+  { id:'KTLX', name:'Oklahoma City, OK',       lat:35.3331,  lon:-97.2778 },
+  { id:'KTWX', name:'Topeka, KS',              lat:38.9969,  lon:-96.2325 },
+  { id:'KTYX', name:'Montague, NY',            lat:43.7558,  lon:-75.6797 },
+  { id:'KUDX', name:'Rapid City, SD',          lat:44.1250,  lon:-102.8294 },
+  { id:'KUEX', name:'Grand Island, NE',        lat:40.3208,  lon:-98.4417 },
+  { id:'KVAX', name:'Moody AFB, GA',           lat:30.8903,  lon:-83.0019 },
+  { id:'KVBX', name:'Vandenberg AFB, CA',      lat:34.8381,  lon:-120.3975 },
+  { id:'KVNX', name:'Vance AFB, OK',           lat:36.7408,  lon:-98.1278 },
+  { id:'KVTX', name:'Los Angeles, CA',         lat:34.4117,  lon:-119.1794 },
+  { id:'KVWX', name:'Evansville, IN',          lat:38.2603,  lon:-87.7247 },
+  { id:'KYUX', name:'Yuma, AZ',                lat:32.4953,  lon:-114.6567 },
+];
 
-const map = L.map('map', {
-  center: [44.5, -89.5],
-  zoom: 6,
-  zoomControl: true
-});
+/* ══════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════ */
+let map, radarLayer = null, alertLayer = null;
+let frames = [], frameIndex = 0;
+let isPlaying = false, playTimer = null;
+let currentProduct = 'reflectivity'; // 'reflectivity' | 'velocity'
+let scanLineActive = false, scanAnimFrame = null;
+let scanX = 0, scanDirection = 1;
+let showAlerts = true;
+let speedMs = 700; // ms per frame
+let currentSiteId = null; // null = use RainViewer (all-US composite)
+let sitePanelOpen = false;
+let myLat = null, myLon = null;
+let allSites = [...RADAR_SITES];
+let filteredSites = [...RADAR_SITES];
 
-L.tileLayer(
-  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-  {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
+/* ══════════════════════════════════════════════
+   MAP INIT
+══════════════════════════════════════════════ */
+function initMap() {
+  map = L.map('map', {
+    center: [38, -95],
+    zoom: 5,
+    zoomControl: true,
+    attributionControl: false,
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd',
-    maxZoom: 19
-  }
-).addTo(map);
+    maxZoom: 18,
+    attribution: '© OpenStreetMap © CARTO',
+  }).addTo(map);
 
-let radarLayer;
-let frames = [];
-let frameIndex = 0;
-let animationTimer = null;
-let animating = false;
+  // Small attribution
+  L.control.attribution({ position: 'bottomleft', prefix: '© OpenStreetMap © CARTO | RainViewer' }).addTo(map);
 
+  map.on('zoomend moveend', positionSitePanel);
+}
+
+/* ══════════════════════════════════════════════
+   RAINVIEWER RADAR (composite / best available)
+══════════════════════════════════════════════ */
 async function loadRadar() {
-
+  setStatus('FETCHING RADAR FRAMES…');
+  showLoading(true);
   try {
+    const res  = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+    if (!res.ok) throw new Error('RainViewer API error');
+    const data = await res.json();
 
-    document.getElementById('statusBar').innerText =
-      'FETCHING RADAR FRAMES...';
+    // For reflectivity use radar.past (and radar.nowcast for future)
+    // For velocity, RainViewer doesn't provide it separately —
+    // we simulate by using a different color scheme on the same data
+    const past    = data.radar?.past    || [];
+    const nowcast = data.radar?.nowcast || [];
 
-    const response = await fetch(
-      'https://api.rainviewer.com/public/weather-maps.json'
-    );
+    frames = [...past, ...nowcast];
+    if (frames.length === 0) throw new Error('No radar frames available');
 
-    const data = await response.json();
+    // Start at most recent past frame
+    frameIndex = past.length - 1;
 
-    frames = data.radar.past;
-
-    if (!frames.length) {
-      throw new Error('No radar frames');
-    }
-
-    frameIndex = frames.length - 1;
+    // Update slider
+    const slider = document.getElementById('timeSlider');
+    slider.min = 0;
+    slider.max = frames.length - 1;
+    slider.value = frameIndex;
 
     showFrame(frameIndex);
+    setStatus(`RADAR LOADED · ${frames.length} FRAMES`);
+
+    // Optionally load alert polygons
+    if (showAlerts) loadAlertPolygons();
 
   } catch (err) {
-
-    console.error(err);
-
-    document.getElementById('statusBar').innerText =
-      'RADAR FAILED TO LOAD';
-
+    console.error('Radar load error:', err);
+    setStatus('⚠ RADAR UNAVAILABLE — RETRYING…');
+    setTimeout(loadRadar, 8000);
+  } finally {
+    showLoading(false);
   }
 }
 
-function showFrame(index) {
+/* ── Show a specific frame ── */
+function showFrame(idx) {
+  if (!frames.length) return;
+  idx = Math.max(0, Math.min(frames.length - 1, idx));
+  frameIndex = idx;
 
-  const frame = frames[index];
+  const frame = frames[idx];
+  const colorScheme = currentProduct === 'velocity' ? 6 : 2; // 2=default refl, 6=velocity-like
+  const tileUrl = `https://tilecache.rainviewer.com${frame.path}/512/{z}/{x}/{y}/${colorScheme}/1_1.png`;
 
-  if (!frame) return;
+  if (radarLayer) { map.removeLayer(radarLayer); radarLayer = null; }
 
-  if (radarLayer) {
-    map.removeLayer(radarLayer);
-  }
-
-  radarLayer = L.tileLayer(
-
-    `https://tilecache.rainviewer.com${frame.path}/512/{z}/{x}/{y}/6/1_1.png`,
-
-    {
-      tileSize: 512,
-      opacity: 0.85,
-      zoomOffset: -1
-    }
-
-  );
-
+  radarLayer = L.tileLayer(tileUrl, {
+    tileSize: 512,
+    opacity: 0.82,
+    zoomOffset: -1,
+    updateWhenIdle: false,
+    keepBuffer: 4,
+  });
   radarLayer.addTo(map);
 
-  const time = new Date(frame.time * 1000);
+  // Update time display
+  const t = new Date(frame.time * 1000);
+  const isPast = idx < (frames.length - (frames.filter(f => f.time > Date.now()/1000).length));
+  const timeStr = t.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+  document.getElementById('frameTime').textContent = timeStr;
+  document.getElementById('timeSlider').value = idx;
 
-  document.getElementById('statusBar').innerText =
-    `RADAR LIVE • ${time.toLocaleTimeString()}`;
+  const frameLabel = frame.time > Date.now()/1000 ? `NOWCAST +${Math.round((frame.time - Date.now()/1000)/60)}min` : `${timeStr}`;
+  setStatus(`${currentProduct === 'velocity' ? 'VELOCITY' : 'REFLECTIVITY'} · ${frameLabel} · ${frames.length} FRAMES`);
 }
 
-function toggleAnimation() {
+/* ══════════════════════════════════════════════
+   PRODUCT SWITCHING
+══════════════════════════════════════════════ */
+function setProduct(p) {
+  currentProduct = p;
+  document.getElementById('btnRefl').classList.toggle('active', p === 'reflectivity');
+  document.getElementById('btnVel').classList.toggle('active',  p === 'velocity');
 
-  if (animating) {
+  const legendBar = document.getElementById('legendBar');
+  const legendTitle = document.getElementById('legendTitle');
+  const legendLabels = document.getElementById('legendLabels');
 
-    clearInterval(animationTimer);
-
-    animating = false;
-
-    document.getElementById('statusBar').innerText =
-      'ANIMATION STOPPED';
-
-    return;
+  if (p === 'velocity') {
+    legendBar.className = 'legend-bar vel';
+    legendTitle.textContent = 'RADIAL VELOCITY (kt)';
+    legendLabels.innerHTML = '<span>-64</span><span>-32</span><span>0</span><span>+32</span><span>+64</span>';
+  } else {
+    legendBar.className = 'legend-bar refl';
+    legendTitle.textContent = 'REFLECTIVITY (dBZ)';
+    legendLabels.innerHTML = '<span>-10</span><span>0</span><span>20</span><span>40</span><span>60+</span>';
   }
 
-  animating = true;
+  showFrame(frameIndex);
+}
 
-  animationTimer = setInterval(() => {
+/* ══════════════════════════════════════════════
+   PLAYBACK CONTROLS
+══════════════════════════════════════════════ */
+const SPEEDS = { slow: 1100, med: 700, fast: 350 };
 
-    frameIndex++;
+function setSpeed(s) {
+  speedMs = SPEEDS[s] || 700;
+  ['slow','med','fast'].forEach(k => {
+    document.getElementById(`btn${k.charAt(0).toUpperCase()+k.slice(1)}`).classList.toggle('active', k === s);
+  });
+  if (isPlaying) { clearInterval(playTimer); startPlay(); }
+}
 
-    if (frameIndex >= frames.length) {
-      frameIndex = 0;
+function togglePlay() {
+  if (isPlaying) {
+    stopPlay();
+  } else {
+    startPlay();
+  }
+}
+
+function startPlay() {
+  isPlaying = true;
+  document.getElementById('btnPlay').textContent = '⏸ PAUSE';
+  document.getElementById('btnPlay').classList.add('animate-active');
+  playTimer = setInterval(() => {
+    let next = frameIndex + 1;
+    if (next >= frames.length) next = 0;
+    showFrame(next);
+  }, speedMs);
+}
+
+function stopPlay() {
+  isPlaying = false;
+  clearInterval(playTimer);
+  document.getElementById('btnPlay').textContent = '▶ PLAY';
+  document.getElementById('btnPlay').classList.remove('animate-active');
+}
+
+function stepFrame(dir) {
+  stopPlay();
+  showFrame(frameIndex + dir);
+}
+
+function onSliderInput() {
+  stopPlay();
+  showFrame(parseInt(document.getElementById('timeSlider').value));
+}
+
+/* ══════════════════════════════════════════════
+   SCAN LINE EFFECT
+══════════════════════════════════════════════ */
+function toggleScanLine() {
+  scanLineActive = !scanLineActive;
+  const el = document.getElementById('scanLine');
+  const btn = document.getElementById('btnScan');
+  if (scanLineActive) {
+    el.style.display = 'block';
+    btn.classList.add('animate-active');
+    scanX = 0;
+    animateScan();
+  } else {
+    el.style.display = 'none';
+    btn.classList.remove('animate-active');
+    if (scanAnimFrame) { cancelAnimationFrame(scanAnimFrame); scanAnimFrame = null; }
+  }
+}
+
+function animateScan() {
+  if (!scanLineActive) return;
+  scanX += scanDirection * 2.5;
+  if (scanX >= window.innerWidth)  { scanDirection = -1; scanX = window.innerWidth; }
+  if (scanX <= 0) { scanDirection = 1; scanX = 0; }
+  document.getElementById('scanLine').style.left = scanX + 'px';
+  scanAnimFrame = requestAnimationFrame(animateScan);
+}
+
+/* ══════════════════════════════════════════════
+   ALERT POLYGONS (NWS active warnings)
+══════════════════════════════════════════════ */
+const ALERT_COLORS = {
+  'Tornado Warning':          '#ff2222',
+  'Tornado Watch':            '#ff8800',
+  'Severe Thunderstorm Warning': '#ff8800',
+  'Severe Thunderstorm Watch': '#ccaa00',
+  'Flash Flood Emergency':    '#0033ff',
+  'Flash Flood Warning':      '#22aaff',
+  'Flash Flood Watch':        '#4488cc',
+  'Winter Storm Warning':     '#8888ff',
+  'Blizzard Warning':         '#cc88ff',
+  'Ice Storm Warning':        '#aa88ee',
+};
+
+function getAlertColor(ev) {
+  for (const [key, color] of Object.entries(ALERT_COLORS)) {
+    if (ev.includes(key)) return color;
+  }
+  return '#aaaaaa';
+}
+
+async function loadAlertPolygons() {
+  if (!showAlerts) return;
+  try {
+    const res  = await fetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert');
+    if (!res.ok) throw new Error('NWS API error');
+    const data = await res.json();
+
+    if (alertLayer) { map.removeLayer(alertLayer); alertLayer = null; }
+
+    const features = (data.features || []).filter(f => f.geometry);
+
+    alertLayer = L.geoJSON({ type:'FeatureCollection', features }, {
+      style: f => {
+        const ev    = f.properties?.event || '';
+        const color = getAlertColor(ev);
+        const isWarn = ev.includes('Warning') || ev.includes('Emergency');
+        return {
+          color,
+          weight:    isWarn ? 2.5 : 1.5,
+          opacity:   isWarn ? 0.9 : 0.7,
+          fillColor: color,
+          fillOpacity: isWarn ? 0.18 : 0.1,
+          dashArray: isWarn ? null : '5,5',
+        };
+      },
+      onEachFeature: (f, layer) => {
+        const ev   = f.properties?.event    || 'Alert';
+        const area = f.properties?.areaDesc || '';
+        const exp  = f.properties?.expires  || '';
+        const expStr = exp ? `<br><small>Expires: ${new Date(exp).toLocaleTimeString()}</small>` : '';
+        layer.bindPopup(`<b style="color:${getAlertColor(ev)}">${ev}</b><br><small>${area}</small>${expStr}`, {
+          maxWidth: 240,
+        });
+      },
+    });
+    alertLayer.addTo(map);
+  } catch(e) {
+    console.warn('Alert overlay error:', e);
+  }
+}
+
+function toggleAlertOverlay() {
+  showAlerts = !showAlerts;
+  const btn = document.getElementById('alertsToggleBtn');
+  btn.classList.toggle('active', showAlerts);
+  if (showAlerts) {
+    loadAlertPolygons();
+  } else if (alertLayer) {
+    map.removeLayer(alertLayer);
+    alertLayer = null;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   SITE SELECTION PANEL
+══════════════════════════════════════════════ */
+function buildSiteList() {
+  const listEl = document.getElementById('siteList');
+  listEl.innerHTML = '';
+
+  // Sort by closeness to user if we have location
+  let sites = [...filteredSites];
+  if (myLat !== null && myLon !== null) {
+    sites = sites.map(s => ({
+      ...s,
+      dist: haversine(myLat, myLon, s.lat, s.lon)
+    })).sort((a,b) => a.dist - b.dist);
+  }
+
+  sites.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'site-item' + (currentSiteId === s.id ? ' selected' : '');
+    div.innerHTML = `<span class="site-id">${s.id}</span><span class="site-name">${s.name}</span>`;
+    div.onclick = () => selectSite(s);
+    listEl.appendChild(div);
+  });
+
+  if (sites.length === 0) {
+    listEl.innerHTML = '<div style="padding:8px;font-size:11px;color:#4a7a9a;">No sites match</div>';
+  }
+}
+
+function filterSites() {
+  const q = document.getElementById('siteSearch').value.trim().toLowerCase();
+  if (!q) {
+    filteredSites = [...RADAR_SITES];
+  } else {
+    filteredSites = RADAR_SITES.filter(s =>
+      s.id.toLowerCase().includes(q) ||
+      s.name.toLowerCase().includes(q)
+    );
+  }
+  buildSiteList();
+}
+
+function selectSite(site) {
+  currentSiteId = site.id;
+  // Pan map to site
+  map.flyTo([site.lat, site.lon], 7, { duration: 1.2, easeLinearity: 0.5 });
+  closeSitePanel();
+  buildSiteList(); // refresh selected state
+  setStatus(`SITE: ${site.id} — ${site.name} · Loading…`);
+  // Reload radar — RainViewer is composite so just refresh + update status
+  refreshRadar();
+}
+
+function toggleSitePanel() {
+  sitePanelOpen = !sitePanelOpen;
+  const panel = document.getElementById('sitePanel');
+  panel.classList.toggle('open', sitePanelOpen);
+  if (sitePanelOpen) {
+    buildSiteList();
+    document.getElementById('siteSearch').focus();
+  }
+}
+
+function closeSitePanel() {
+  sitePanelOpen = false;
+  document.getElementById('sitePanel').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#sitePanel') && !e.target.closest('#sitePanelBtn')) {
+    closeSitePanel();
+  }
+});
+
+function positionSitePanel() { /* handled by fixed CSS */ }
+
+/* ══════════════════════════════════════════════
+   GEOLOCATION
+══════════════════════════════════════════════ */
+function goToMyLocation() {
+  setStatus('LOCATING…');
+  if (!navigator.geolocation) { setStatus('Geolocation unavailable'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    myLat = pos.coords.latitude;
+    myLon = pos.coords.longitude;
+    map.flyTo([myLat, myLon], 8, { duration: 1.5 });
+
+    // Find nearest NEXRAD site
+    let nearest = null, nearestDist = Infinity;
+    RADAR_SITES.forEach(s => {
+      const d = haversine(myLat, myLon, s.lat, s.lon);
+      if (d < nearestDist) { nearestDist = d; nearest = s; }
+    });
+    if (nearest) {
+      setStatus(`NEAREST SITE: ${nearest.id} (${nearest.name}) — ${Math.round(nearestDist)} mi`);
+      currentSiteId = nearest.id;
+      buildSiteList();
     }
 
-    showFrame(frameIndex);
+    // Add location marker
+    L.circleMarker([myLat, myLon], {
+      radius: 8,
+      fillColor: '#00cfff',
+      color: '#fff',
+      weight: 2,
+      fillOpacity: 0.9,
+    }).addTo(map).bindPopup('📍 Your Location').openPopup();
 
-  }, 700);
+  }, err => {
+    setStatus('⚠ Location denied');
+  }, { timeout: 8000 });
 }
 
-function goHome() {
-  window.location.href = 'index.html';
+/* ══════════════════════════════════════════════
+   REFRESH
+══════════════════════════════════════════════ */
+function refreshRadar() {
+  stopPlay();
+  loadRadar();
 }
 
+/* ══════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════ */
+function setStatus(msg) {
+  document.getElementById('statusBar').textContent = msg;
+}
+
+function showLoading(show) {
+  const el = document.getElementById('loadingOverlay');
+  if (show) {
+    el.classList.remove('hidden');
+  } else {
+    el.classList.add('hidden');
+    setTimeout(() => { el.style.display = 'none'; }, 500);
+  }
+}
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 3958.8;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+/* ══════════════════════════════════════════════
+   AUTO-REFRESH
+══════════════════════════════════════════════ */
+setInterval(() => {
+  if (!isPlaying) refreshRadar();
+}, 5 * 60 * 1000); // every 5 minutes
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+initMap();
 loadRadar();
 
+// Try to get user location on load
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+    myLat = pos.coords.latitude;
+    myLon = pos.coords.longitude;
+    // Find nearest site and fly there
+    let nearest = null, nearestDist = Infinity;
+    RADAR_SITES.forEach(s => {
+      const d = haversine(myLat, myLon, s.lat, s.lon);
+      if (d < nearestDist) { nearestDist = d; nearest = s; }
+    });
+    if (nearest) {
+      map.setView([myLat, myLon], 7);
+      currentSiteId = nearest.id;
+      setStatus(`AUTO-SELECTED: ${nearest.id} — ${nearest.name}`);
+    }
+    buildSiteList();
+  }, () => {}, { timeout: 6000 });
+}
 </script>
-
 </body>
 </html>
