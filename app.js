@@ -67,25 +67,87 @@ function isExtremeLevel(eventStr) {
 /* ────────────────────────────────────────────────
    TICKER GROUPS — ordered by priority
 ──────────────────────────────────────────────── */
+function normalizeEventName(ev = '') {
+  return ev.toLowerCase().trim();
+}
 const TICKER_GROUPS = [
-  { key:'pds',      label:'Particularly Dangerous Situation', cls:'tg-pds',
-    match: ev => ev.includes('Particularly Dangerous') },
-  { key:'tor-warn', label:'Tornado Warning',      cls:'tg-tor-warn',
-    match: ev => ev.includes('Tornado Warning') && !ev.includes('Watch') },
-  { key:'tor-watch',label:'Tornado Watch',        cls:'tg-tor-watch',
-    match: ev => ev.includes('Tornado Watch') },
-  { key:'svr-warn', label:'Severe Thunderstorm Warning', cls:'tg-svr-warn',
-    match: ev => ev.includes('Severe Thunderstorm Warning') },
-  { key:'svr-watch',label:'Severe Thunderstorm Watch',   cls:'tg-svr-watch',
-    match: ev => ev.includes('Severe Thunderstorm Watch') },
-  { key:'ff-emerg', label:'Flash Flood Emergency', cls:'tg-ff-emerg',
-    match: ev => ev.includes('Flash Flood Emergency') },
-  { key:'ff-warn',  label:'Flash Flood Warning / Watch', cls:'tg-ff-warn',
-    match: ev => ev.includes('Flash Flood Warning') || ev.includes('Flash Flood Watch') },
-  { key:'winter',   label:'Winter / Blizzard / Ice Storm', cls:'tg-winter',
-    match: ev => ev.includes('Blizzard') || ev.includes('Winter Storm') || ev.includes('Ice Storm') || ev.includes('Winter Weather') },
-  { key:'other',    label:'Other Alerts', cls:'tg-other',
-    match: () => true },
+
+  {
+    key:'pds',
+    label:'PDS',
+    cls:'tg-pds',
+    match: ev =>
+      normalizeEventName(ev).includes('particularly dangerous')
+  },
+
+  {
+    key:'tor-warn',
+    label:'Tornado Warning',
+    cls:'tg-tor-warn',
+    match: ev =>
+      normalizeEventName(ev).includes('tornado warning')
+  },
+
+  {
+    key:'tor-watch',
+    label:'Tornado Watch',
+    cls:'tg-tor-watch',
+    match: ev =>
+      normalizeEventName(ev).includes('tornado watch')
+  },
+
+  {
+    key:'svr-warn',
+    label:'Severe Thunderstorm Warning',
+    cls:'tg-svr-warn',
+    match: ev =>
+      normalizeEventName(ev).includes('severe thunderstorm warning')
+  },
+
+  {
+    key:'svr-watch',
+    label:'Severe Thunderstorm Watch',
+    cls:'tg-svr-watch',
+    match: ev =>
+      normalizeEventName(ev).includes('severe thunderstorm watch')
+  },
+
+  {
+    key:'ff-emerg',
+    label:'Flash Flood Emergency',
+    cls:'tg-ff-emerg',
+    match: ev =>
+      normalizeEventName(ev).includes('flash flood emergency')
+  },
+
+  {
+    key:'ff-warn',
+    label:'Flash Flood',
+    cls:'tg-ff-warn',
+    match: ev =>
+      normalizeEventName(ev).includes('flash flood')
+  },
+
+  {
+    key:'winter',
+    label:'Winter Weather',
+    cls:'tg-winter',
+    match: ev => {
+      ev = normalizeEventName(ev);
+
+      return ev.includes('winter') ||
+             ev.includes('blizzard') ||
+             ev.includes('ice storm');
+    }
+  },
+
+  {
+    key:'other',
+    label:'Other Alerts',
+    cls:'tg-other',
+    match: () => true
+  }
+
 ];
 
 /* ────────────────────────────────────────────────
