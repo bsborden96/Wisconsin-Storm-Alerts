@@ -82,7 +82,7 @@ const TICKER_GROUPS = [
    The multi-event filter param was malformed causing 0 results.
    We fetch all active alerts and filter client-side instead.
 ──────────────────────────────────────────────── */
-const TICKER_API_URL = `https://api.weather.gov/alerts/active?status=actual&message_type=alert`;
+const TICKER_API_URL = `https://api.weather.gov/alerts/active`;
 
 /* ════════════════════════════════════════════════
    STATE
@@ -148,7 +148,12 @@ async function safeFetch(url, {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      const res = await fetch(url, { signal: controller.signal });
+      const res = await fetch(url, {
+  signal: controller.signal,
+  headers: {
+    "Accept": "application/geo+json"
+  }
+});
       clearTimeout(timeoutId);
       if (key) activeFetchControllers.delete(key);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
