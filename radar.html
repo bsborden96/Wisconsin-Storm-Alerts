@@ -1,470 +1,263 @@
-Velocity (approx)', unit:'kts', legendClass:'legend-vel', legendMin:'-64', legendMax:'+64' },
-  CC:  { label:'Corr Coefficient (approx)', unit:'ρhv', legendClass:'legend-cc', legendMin:'0.0', legendMax:'1.05' },
-};
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-/* ════════════════════════════════════════════════
-   STATE
-════════════════════════════════════════════════ */
-let map;
-let radarLayer      = null;
-let siteMarkers     = [];
-let currentSite     = { id:'KLOT', name:'Chicago, IL', lat:41.604, lon:-88.085 };
-let lightningOn     = false;
-let lightningMarkers = [];
-let lightningInterval = null;
-let animating       = false;
-let animTimer       = null;
-let animFrameIdx    = 0;
-let opacity         = 0.85;
-let statusTimeout;
-let sitePanelOpen   = false;
+<title>Wisconsin Storm Alerts Radar</title>
 
-/* ════════════════════════════════════════════════
-   INIT MAP
-════════════════════════════════════════════════ */
-function initMap() {
-  map = L.map('mapContainer', {
-    center: [38.5, -96.5],
-    zoom: 5,
-    zoomControl: false,
-    attributionControl: true,
-    maxZoom: 12,
-    minZoom: 3,
-  });
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
 
-  // Dark basemap — CartoDB Dark Matter (no API key needed, very reliable)
-  L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }
-  ).addTo(map);
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  L.control.zoom({ position: 'bottomright' }).addTo(map);
+<style>
 
-  placeSiteMarkers();
-  loadRainViewerFrames();
-
-  map.on('click', () => {
-    closeSitePanel();
-    closeMenu();
-  });
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #05070d;
+  font-family: Arial, sans-serif;
+  overflow: hidden;
 }
 
-/* ════════════════════════════════════════════════
-   RAINVIEWER — fetch available frames then display
-════════════════════════════════════════════════ */
-async function loadRainViewerFrames() {
-  showLoading(true);
-  setStatus('FETCHING RADAR FRAMES…', false);
-  try {
-    const res  = await fetch(RV_API);
-    if (!res.ok) throw new Error('RainViewer API ' + res.status);
-    rvData = await res.json();
+#map {
+  width: 100%;
+  height: 100%;
+}
 
-    // Past radar frames (most recent last)
-    rvFrames = (rvData.radar?.past || []);
-    // Append "nowcast" frames if available
-    if (rvData.radar?.nowcast?.length) {
-      rvFrames = rvFrames.concat(rvData.radar.nowcast.slice(0, 2));
+.top-bar {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 1000;
+  display: flex;
+  gap: 10px;
+}
+
+.control-btn {
+  background: rgba(10,10,15,.85);
+  color: white;
+  border: 1px solid #333;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.control-btn:hover {
+  background: rgba(30,30,40,.95);
+}
+
+.status-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: rgba(0,0,0,.7);
+  color: #00ff9d;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.legend {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1000;
+  background: rgba(0,0,0,.7);
+  padding: 12px;
+  border-radius: 10px;
+  color: white;
+  width: 140px;
+}
+
+.legend-bar {
+  height: 16px;
+  width: 100%;
+  border-radius: 4px;
+  margin-top: 8px;
+
+  background: linear-gradient(
+    to right,
+    #00ffff,
+    #00ff00,
+    #ffff00,
+    #ff9900,
+    #ff0000,
+    #ff00ff
+  );
+}
+
+.legend-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div class="top-bar">
+  <button class="control-btn" onclick="toggleAnimation()">
+    Animate
+  </button>
+
+  <button class="control-btn" onclick="location.reload()">
+    Refresh
+  </button>
+
+  <button class="control-btn" onclick="goHome()">
+    Home
+  </button>
+</div>
+
+<div class="status-bar" id="statusBar">
+  LOADING RADAR...
+</div>
+
+<div class="legend">
+  <div>Reflectivity</div>
+
+  <div class="legend-bar"></div>
+
+  <div class="legend-labels">
+    <span>Light</span>
+    <span>Heavy</span>
+  </div>
+</div>
+
+<script>
+
+const map = L.map('map', {
+  center: [44.5, -89.5],
+  zoom: 6,
+  zoomControl: true
+});
+
+L.tileLayer(
+  'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  {
+    attribution: '&copy; OpenStreetMap &copy; CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }
+).addTo(map);
+
+let radarLayer;
+let frames = [];
+let frameIndex = 0;
+let animationTimer = null;
+let animating = false;
+
+async function loadRadar() {
+
+  try {
+
+    document.getElementById('statusBar').innerText =
+      'FETCHING RADAR FRAMES...';
+
+    const response = await fetch(
+      'https://api.rainviewer.com/public/weather-maps.json'
+    );
+
+    const data = await response.json();
+
+    frames = data.radar.past;
+
+    if (!frames.length) {
+      throw new Error('No radar frames');
     }
 
-    if (!rvFrames.length) throw new Error('No radar frames returned');
+    frameIndex = frames.length - 1;
 
-    animFrameIdx = rvFrames.length - 1; // start at most recent
-    document.getElementById('frameScrubber').max = rvFrames.length - 1;
-    document.getElementById('frameScrubber').value = animFrameIdx;
-
-    displayFrame(animFrameIdx);
-    updateScrubberLabels();
-    updateLegend();
+    showFrame(frameIndex);
 
   } catch (err) {
-    console.error('RainViewer error:', err);
-    showLoading(false);
-    setStatus('⚠ RADAR UNAVAILABLE — CHECK CONNECTION', false);
+
+    console.error(err);
+
+    document.getElementById('statusBar').innerText =
+      'RADAR FAILED TO LOAD';
+
   }
 }
 
-function frameUrl(frame) {
-  // RainViewer tile URL format:
-  // {host}/{path}/256/{z}/{x}/{y}/{color}/{smooth}_{snow}.png
-  const host = rvData.host || 'https://tilecache.rainviewer.com';
-  return `${host}${frame.path}/512/{z}/{x}/{y}/${RV_COLOR}/${RV_SMOOTH}_${RV_SNOW}.png`;
-}
+function showFrame(index) {
 
-function displayFrame(idx) {
-  if (!rvFrames.length) return;
-  const frame = rvFrames[idx];
+  const frame = frames[index];
+
   if (!frame) return;
 
-  if (radarLayer) { map.removeLayer(radarLayer); radarLayer = null; }
+  if (radarLayer) {
+    map.removeLayer(radarLayer);
+  }
 
-  radarLayer = L.tileLayer(frameUrl(frame), {
-    opacity: opacity,
-    tileSize: 512,
-    zoomOffset: -1,
-    zIndex: 5,
-    attribution: '© RainViewer',
-    crossOrigin: true,
-  });
+  radarLayer = L.tileLayer(
 
-  let loaded = false;
-  radarLayer.on('load', () => {
-    if (!loaded) {
-      loaded = true;
-      showLoading(false);
-      const label = frameTimeLabel(frame.time);
-      setStatus('RADAR · ' + label + (idx === rvFrames.length - 1 ? ' · LIVE' : ''));
+    `https://tilecache.rainviewer.com${frame.path}/512/{z}/{x}/{y}/6/1_1.png`,
+
+    {
+      tileSize: 512,
+      opacity: 0.85,
+      zoomOffset: -1
     }
-  });
-  radarLayer.on('tileerror', () => {
-    showLoading(false);
-    setStatus('⚠ TILE ERROR');
-  });
+
+  );
 
   radarLayer.addTo(map);
 
-  // Update frame counter
-  document.getElementById('frameScrubber').value = idx;
-  document.getElementById('frameCounter').textContent =
-    `FRAME ${idx + 1} / ${rvFrames.length} · ${frameTimeLabel(frame.time)}`;
+  const time = new Date(frame.time * 1000);
+
+  document.getElementById('statusBar').innerText =
+    `RADAR LIVE • ${time.toLocaleTimeString()}`;
 }
 
-function frameTimeLabel(unixTs) {
-  const d = new Date(unixTs * 1000);
-  return d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
-}
-
-/* ════════════════════════════════════════════════
-   ANIMATION
-════════════════════════════════════════════════ */
 function toggleAnimation() {
-  animating ? stopAnimation() : startAnimation();
-}
 
-function startAnimation() {
-  if (!rvFrames.length) { loadRainViewerFrames(); return; }
-  animating = true;
-  animFrameIdx = 0;
-  document.getElementById('animateBtn').classList.add('playing');
-  document.getElementById('animIcon').textContent = '⏸';
-  document.getElementById('animLabel').textContent = 'PAUSE';
-  document.getElementById('scrubberWrap').classList.add('visible');
-  document.getElementById('frameCounter').style.display = 'block';
-  updateScrubberLabels();
-  showLoading(false);
-  displayFrame(animFrameIdx);
-  scheduleAnimStep();
-}
-
-function scheduleAnimStep() {
-  clearTimeout(animTimer);
-  animTimer = setTimeout(() => {
-    if (!animating) return;
-    animFrameIdx = (animFrameIdx + 1) % rvFrames.length;
-    displayFrame(animFrameIdx);
-    scheduleAnimStep();
-  }, 600);
-}
-
-function stopAnimation() {
-  animating = false;
-  clearTimeout(animTimer);
-  document.getElementById('animateBtn').classList.remove('playing');
-  document.getElementById('animIcon').textContent = '▶';
-  document.getElementById('animLabel').textContent = 'ANIMATE';
-  document.getElementById('scrubberWrap').classList.remove('visible');
-  document.getElementById('frameCounter').style.display = 'none';
-  // Jump to most recent frame
-  animFrameIdx = rvFrames.length - 1;
-  displayFrame(animFrameIdx);
-}
-
-function updateScrubberLabels() {
-  if (!rvFrames.length) return;
-  document.getElementById('scrubberStart').textContent = frameTimeLabel(rvFrames[0].time);
-  document.getElementById('scrubberEnd').textContent   = 'NOW';
-}
-
-document.getElementById('frameScrubber').addEventListener('input', function() {
-  animFrameIdx = parseInt(this.value);
-  displayFrame(animFrameIdx);
-  // Pause auto-advance while scrubbing, resume after 2s
   if (animating) {
-    clearTimeout(animTimer);
-    clearTimeout(window._scrubResume);
-    window._scrubResume = setTimeout(scheduleAnimStep, 2000);
+
+    clearInterval(animationTimer);
+
+    animating = false;
+
+    document.getElementById('statusBar').innerText =
+      'ANIMATION STOPPED';
+
+    return;
   }
-});
 
-/* ════════════════════════════════════════════════
-   PRODUCT SWITCHING
-   (RainViewer = reflectivity only; we still update
-    the legend and label so UI stays informative)
-════════════════════════════════════════════════ */
-function setProduct(product) {
-  if (currentProduct === product) return;
-  currentProduct = product;
+  animating = true;
 
-  document.querySelectorAll('.product-btn').forEach(b => {
-    b.classList.remove('active');
-    b.setAttribute('aria-pressed', 'false');
-  });
-  const btn = document.getElementById('btn-' + product.toLowerCase());
-  if (btn) { btn.classList.add('active'); btn.setAttribute('aria-pressed', 'true'); }
+  animationTimer = setInterval(() => {
 
-  updateLegend();
+    frameIndex++;
 
-  if (product !== 'REF') {
-    setStatus('⚠ ' + PRODUCT_INFO[product].label + ' — using reflectivity data');
-  } else {
-    setStatus('REFLECTIVITY · LIVE');
-  }
-  // Re-display current frame (same data, legend changes)
-  displayFrame(animFrameIdx);
+    if (frameIndex >= frames.length) {
+      frameIndex = 0;
+    }
+
+    showFrame(frameIndex);
+
+  }, 700);
 }
 
-/* ════════════════════════════════════════════════
-   OPACITY
-════════════════════════════════════════════════ */
-document.getElementById('opacitySlider').addEventListener('input', function() {
-  opacity = parseFloat(this.value);
-  if (radarLayer) radarLayer.setOpacity(opacity);
-});
-
-/* ════════════════════════════════════════════════
-   LEGEND
-════════════════════════════════════════════════ */
-function updateLegend() {
-  const p = PRODUCT_INFO[currentProduct];
-  document.getElementById('legendTitle').textContent = p.unit;
-  document.getElementById('legendBar').className = 'legend-bar ' + p.legendClass;
-  const labels = document.getElementById('legendLabels');
-  if (labels) labels.innerHTML = `<span>${p.legendMin}</span><span>${p.legendMax}</span>`;
+function goHome() {
+  window.location.href = 'index.html';
 }
 
-/* ════════════════════════════════════════════════
-   SITE MARKERS
-════════════════════════════════════════════════ */
-function placeSiteMarkers() {
-  siteMarkers.forEach(m => m.remove());
-  siteMarkers = [];
-  RADAR_SITES.forEach(site => {
-    const isActive = site.id === currentSite.id;
-    const icon = L.divIcon({
-      className: '',
-      html: `<div class="radar-site-marker${isActive ? ' active-site' : ''}"></div>`,
-      iconSize: [10, 10],
-      iconAnchor: [5, 5],
-    });
-    const marker = L.marker([site.lat, site.lon], { icon, title: site.id });
-    marker.on('click', e => { L.DomEvent.stopPropagation(e); showSitePopup(site); });
-    marker.addTo(map);
-    siteMarkers.push(marker);
-  });
-}
+loadRadar();
 
-function showSitePopup(site) {
-  L.popup({ closeButton: false, offset: [0, -4] })
-    .setLatLng([site.lat, site.lon])
-    .setContent(`
-      <span class="radar-popup-id">${site.id}</span>
-      <span class="radar-popup-loc">${site.name}</span>
-      <button class="radar-popup-btn" onclick="selectSite('${site.id}')">USE THIS SITE</button>
-    `)
-    .openOn(map);
-}
-
-function selectSite(siteId) {
-  const site = RADAR_SITES.find(s => s.id === siteId);
-  if (!site) return;
-  currentSite = site;
-  map.closePopup();
-  closeSitePanel();
-  document.getElementById('currentSiteName').textContent = `${site.id} · ${site.name.split(',')[0]}`;
-  placeSiteMarkers();
-  map.flyTo([site.lat, site.lon], Math.max(map.getZoom(), 7), { duration: 1.2 });
-  setStatus('SITE: ' + site.id + ' · ' + site.name);
-  // RainViewer is composite — site selection just pans the map
-  // For true single-site radar, a paid API would be needed
-}
-
-/* ════════════════════════════════════════════════
-   SITE PANEL
-════════════════════════════════════════════════ */
-function toggleSitePanel() { sitePanelOpen ? closeSitePanel() : openSitePanel(); }
-function openSitePanel() {
-  sitePanelOpen = true;
-  renderSiteList('');
-  document.getElementById('sitePanel').classList.add('visible');
-  document.getElementById('radarSiteBtn').setAttribute('aria-expanded', 'true');
-  document.getElementById('siteSearch').value = '';
-  setTimeout(() => document.getElementById('siteSearch').focus(), 200);
-}
-function closeSitePanel() {
-  sitePanelOpen = false;
-  document.getElementById('sitePanel').classList.remove('visible');
-  document.getElementById('radarSiteBtn').setAttribute('aria-expanded', 'false');
-}
-function filterSites(q) { renderSiteList(q); }
-function renderSiteList(query) {
-  const q = query.toLowerCase().trim();
-  const filtered = q
-    ? RADAR_SITES.filter(s => s.id.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
-    : RADAR_SITES;
-  const list = document.getElementById('siteList');
-  const frag = document.createDocumentFragment();
-  filtered.slice(0, 80).forEach(site => {
-    const div = document.createElement('div');
-    div.className = 'site-item' + (site.id === currentSite.id ? ' selected' : '');
-    div.innerHTML = `<span class="site-id">${site.id}</span><span class="site-name">${site.name}</span>`;
-    div.addEventListener('click', () => { closeSitePanel(); selectSite(site.id); });
-    frag.appendChild(div);
-  });
-  list.innerHTML = '';
-  list.appendChild(frag);
-}
-
-/* ════════════════════════════════════════════════
-   LIGHTNING (simulated — see comment for real feed)
-════════════════════════════════════════════════ */
-function toggleLightning() {
-  lightningOn = !lightningOn;
-  const btn = document.getElementById('lightningBtn');
-  btn.classList.toggle('active', lightningOn);
-  btn.setAttribute('aria-pressed', String(lightningOn));
-  lightningOn ? startLightning() : stopLightning();
-}
-function startLightning() {
-  for (let i = 0; i < 12; i++) addSimulatedLightning(true);
-  lightningInterval = setInterval(addSimulatedLightning, 1800 + Math.random() * 1400);
-  setStatus('⚡ LIGHTNING ENABLED · SIMULATED');
-}
-function stopLightning() {
-  clearInterval(lightningInterval);
-  lightningInterval = null;
-  lightningMarkers.forEach(m => m.remove());
-  lightningMarkers = [];
-}
-function addSimulatedLightning(seed = false) {
-  const clusters = [
-    { lat:35+Math.random()*8,  lon:-102+Math.random()*12 },
-    { lat:30+Math.random()*6,  lon:-91+Math.random()*10  },
-    { lat:33+Math.random()*5,  lon:-84+Math.random()*8   },
-    { lat:28+Math.random()*5,  lon:-81+Math.random()*6   },
-    { lat:40+Math.random()*4,  lon:-88+Math.random()*8   },
-    { lat:38+Math.random()*4,  lon:-95+Math.random()*6   },
-  ];
-  const c = clusters[Math.floor(Math.random() * clusters.length)];
-  addLightningStrike(
-    c.lat + (Math.random()-.5)*2,
-    c.lon + (Math.random()-.5)*2,
-    seed ? Date.now() - Math.random()*480000 : Date.now()
-  );
-}
-function addLightningStrike(lat, lon, timestamp) {
-  const ageMin = (Date.now() - timestamp) / 60000;
-  const ageClass = ageMin > 10 ? 'very-old' : ageMin > 5 ? 'old' : '';
-  const icon = L.divIcon({
-    className: '',
-    html: `<div class="lightning-dot ${ageClass}"></div>`,
-    iconSize: [8,8], iconAnchor: [4,4],
-  });
-  const marker = L.marker([lat, lon], { icon, interactive: false });
-  marker.addTo(map);
-  lightningMarkers.push(marker);
-  setTimeout(() => {
-    marker.remove();
-    lightningMarkers = lightningMarkers.filter(m => m !== marker);
-  }, 8000);
-  if (lightningMarkers.length > 80) lightningMarkers.shift()?.remove();
-}
-
-/* ════════════════════════════════════════════════
-   AUTO-REFRESH every 2 minutes
-════════════════════════════════════════════════ */
-let refreshTimer;
-function scheduleRefresh() {
-  clearTimeout(refreshTimer);
-  refreshTimer = setTimeout(() => {
-    if (!animating && !document.hidden) loadRainViewerFrames();
-    scheduleRefresh();
-  }, 120000 + Math.random() * 15000);
-}
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && !animating) {
-    loadRainViewerFrames();
-    scheduleRefresh();
-  }
-});
-
-/* ════════════════════════════════════════════════
-   STATUS / LOADING
-════════════════════════════════════════════════ */
-function setStatus(msg, autohide = true) {
-  const el = document.getElementById('statusBar');
-  el.textContent = msg;
-  el.classList.remove('hidden');
-  clearTimeout(statusTimeout);
-  if (autohide) statusTimeout = setTimeout(() => el.classList.add('hidden'), 4000);
-}
-function showLoading(show) {
-  document.getElementById('loadingOverlay').classList.toggle('visible', show);
-}
-
-/* ════════════════════════════════════════════════
-   MENU
-════════════════════════════════════════════════ */
-function toggleMenu() {
-  const panel = document.getElementById('menuPanel');
-  const btn   = document.getElementById('menuBtn');
-  const open  = panel.classList.contains('open');
-  panel.classList.toggle('open', !open);
-  btn.setAttribute('aria-expanded', String(!open));
-}
-function closeMenu() {
-  document.getElementById('menuPanel').classList.remove('open');
-  document.getElementById('menuBtn').setAttribute('aria-expanded', 'false');
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('#menuPanel') && !e.target.closest('#menuBtn')) closeMenu();
-});
-
-/* ════════════════════════════════════════════════
-   GEOLOCATION
-════════════════════════════════════════════════ */
-function tryGeolocate() {
-  if (!navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(pos => {
-    const { latitude: lat, longitude: lon } = pos.coords;
-    let nearest = RADAR_SITES[0], nearestDist = Infinity;
-    RADAR_SITES.forEach(site => {
-      const d = Math.hypot(site.lat - lat, site.lon - lon);
-      if (d < nearestDist) { nearestDist = d; nearest = site; }
-    });
-    currentSite = nearest;
-    document.getElementById('currentSiteName').textContent =
-      `${nearest.id} · ${nearest.name.split(',')[0]}`;
-    placeSiteMarkers();
-    map.flyTo([lat, lon], 7, { duration: 1.5 });
-    setStatus('📡 NEAREST SITE: ' + nearest.id);
-  }, () => {
-    setStatus('📡 COMPOSITE NATIONAL RADAR');
-  }, { timeout: 6000 });
-}
-
-/* ════════════════════════════════════════════════
-   BOOT
-════════════════════════════════════════════════ */
-document.addEventListener('DOMContentLoaded', () => {
-  initMap();
-  tryGeolocate();
-  scheduleRefresh();
-  renderSiteList('');
-});
 </script>
+
 </body>
 </html>
