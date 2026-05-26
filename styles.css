@@ -73,12 +73,6 @@ body {
   will-change: transform;
 }
 
-/* ── Z-INDEX LAYERS ──
-   0: canvas | 1: content | 50: ticker | 100: header
-   200: suggestions | 9000: popup | 99999: siren
-   NOTE: ticker overflow is position:fixed at z-index 400
-   so it floats above everything including search/cards      */
-
 body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   position: relative;
   z-index: 1;
@@ -300,53 +294,34 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 /* ════════════════════════════════════════════
    BOTTOM LOGO
 ════════════════════════════════════════════ */
-.bottom-logo-wrap{
+.bottom-logo-wrap {
   padding: 26px 0 8px;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
-
-.bottom-logo{
-  width:min(160px,42vw);
-  opacity:0.82;
+.bottom-logo {
+  width: min(160px, 42vw);
+  opacity: 0.82;
   filter:
     drop-shadow(0 0 12px rgba(0,207,255,0.28))
     drop-shadow(0 0 22px rgba(0,120,255,0.12));
-  transition:
-    transform .25s ease,
-    opacity .25s ease,
-    filter .25s ease;
-  pointer-events:none;
+  transition: transform .25s ease, opacity .25s ease, filter .25s ease;
+  pointer-events: none;
 }
-
-.bottom-logo:hover{
-  opacity:1;
-  transform:scale(1.03);
+.bottom-logo:hover {
+  opacity: 1;
+  transform: scale(1.03);
   filter:
     drop-shadow(0 0 16px rgba(0,207,255,0.4))
     drop-shadow(0 0 28px rgba(0,120,255,0.2));
 }
-
-@media (prefers-reduced-motion: reduce){
-  .bottom-logo{
-    transition:none;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .bottom-logo { transition: none; }
 }
 
 /* ════════════════════════════════════════════
-   TICKER SYSTEM — FIX #2, #3, #7, #14
-   
-   Key changes:
-   - REMOVED scroll-snap-type (was causing sticky/snapping)
-   - REMOVED scroll-snap-align on items
-   - Added touch-action: pan-x for smooth horizontal drag
-   - Added overscroll-behavior-x: contain
-   - will-change: scroll-position for GPU compositing
-   - overflow: visible on .ticker-wrap (needed for old edge-fade)
-   - Overflow panel is position:fixed at z-index 400 — floats
-     above ALL content including search/cards
-   - Edge fade gradients for premium feel
+   TICKER SYSTEM
 ════════════════════════════════════════════ */
 .ticker-wrap {
   position: relative;
@@ -354,13 +329,10 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   background: linear-gradient(90deg,#0e0000,#1e0000,#0e0000);
   border-top: 1px solid rgba(255,80,80,0.28);
   border-bottom: 1px solid rgba(255,80,80,0.28);
-  /* overflow: visible here so edge-fade pseudo-elements show */
   overflow: visible;
   z-index: 50;
   margin: 10px 0;
 }
-
-/* Edge fading for premium feel */
 .ticker-wrap::before,
 .ticker-wrap::after {
   content: '';
@@ -383,15 +355,11 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   display: flex;
   align-items: stretch;
   overflow-x: auto;
-  -webkit-overflow-scrolling: touch;   /* iOS momentum scrolling */
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   min-height: 48px;
-  /* FIX: REMOVED scroll-snap-type entirely */
-  /* FIX: overscroll-behavior-x prevents page scroll fighting */
   overscroll-behavior-x: contain;
-  /* FIX: touch-action pan-x — smooth horizontal drag only */
   touch-action: pan-x;
-  /* FIX: GPU compositing hint */
   will-change: scroll-position;
   gap: 0;
   cursor: grab;
@@ -407,9 +375,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   gap: 7px;
   border-right: 1px solid rgba(255,80,80,0.12);
   white-space: nowrap;
-  /* FIX: NO scroll-snap-align */
 }
-
 .ticker-group-label {
   display: flex;
   align-items: center;
@@ -431,7 +397,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   font-size: 10px;
   font-family: var(--font-mono);
 }
-
 .ticker-item {
   display: inline-flex;
   align-items: center;
@@ -443,7 +408,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   border: 1px solid transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  /* touch-action: manipulation on items so tap fires, but parent pan-x wins for scroll */
   touch-action: manipulation;
   transition: filter .15s, opacity .15s;
   max-width: 200px;
@@ -474,26 +438,19 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 .ticker-more:active { opacity: 1; background: rgba(255,255,255,0.12); }
 
-/* ── TICKER OVERFLOW PANEL — FIX #3 ──
-   CRITICAL: position:fixed with high z-index so it floats
-   above ALL stacking contexts — search, cards, transforms, etc.
-   The JS sets top/left dynamically to anchor below the ticker.
-   This avoids ALL clipping from parent overflow or transforms.   */
 #tickerOverflowPortal {
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   background: rgba(5,10,22,0.99);
   border: 1px solid rgba(255,80,80,0.28);
   border-top: none;
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  z-index: 400;     /* above header(100), search(200), popup(9000 off by default) */
+  z-index: 400;
   overflow: hidden;
   max-height: 0;
   transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  /* Start hidden, top will be set by JS */
   top: 0;
   pointer-events: none;
   box-shadow: 0 16px 40px rgba(0,0,0,0.85);
@@ -504,9 +461,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
 }
-.ticker-overflow-inner {
-  padding: 12px 14px 16px;
-}
+.ticker-overflow-inner { padding: 12px 14px 16px; }
 .ticker-overflow-title {
   font-family: var(--font-display);
   font-size: 14px;
@@ -549,7 +504,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   letter-spacing: 1px;
 }
 
-/* Stale data banner */
 #staleBanner {
   display: none;
   background: rgba(100,60,0,0.92);
@@ -564,7 +518,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   z-index: 51;
 }
 
-/* Group color themes */
+/* Ticker group color themes */
 .tg-pds .ticker-group-label       { color: #ff4040; }
 .tg-pds .ticker-item               { background: rgba(180,0,0,0.4); border-color: rgba(255,30,30,0.6); color: #ff9090; }
 .tg-tor-warn .ticker-group-label  { color: #ff5555; }
@@ -652,7 +606,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   max-width: 980px;
   margin: 0 auto;
 }
-
 .location-card {
   background: var(--c-surface);
   border: 1px solid var(--c-border);
@@ -679,7 +632,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   touch-action: manipulation;
 }
 .risk-box:active { filter: brightness(1.08); }
-
 .risk-header {
   display: flex;
   align-items: flex-start;
@@ -808,7 +760,6 @@ h2 {
    ALERT SECTIONS
 ════════════════════════════════════════════ */
 .alerts-container { text-align: left; }
-
 .alert-section-header {
   font-family: var(--font-display);
   font-size: 11px;
@@ -819,7 +770,6 @@ h2 {
   border-bottom: 1px solid rgba(255,255,255,0.07);
   margin-bottom: 6px;
 }
-
 .alert-card {
   margin-top: 8px;
   padding: 14px 16px;
@@ -832,7 +782,6 @@ h2 {
   position: relative;
 }
 .alert-card:active { filter: brightness(1.08); }
-
 .alert-card-header {
   display: flex;
   align-items: flex-start;
@@ -884,7 +833,6 @@ h2 {
   line-height: 1.65;
   border: 1px solid rgba(255,255,255,0.08);
 }
-
 .area-link {
   display: inline-block;
   cursor: pointer;
@@ -941,8 +889,6 @@ footer {
    FOCUS & ACCESSIBILITY
 ════════════════════════════════════════════ */
 :focus-visible { outline: 2px solid var(--c-cyan); outline-offset: 3px; }
-
-/* ARIA live region for screen readers */
 .sr-only {
   position: absolute;
   width: 1px; height: 1px;
