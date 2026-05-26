@@ -17,13 +17,11 @@ const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)
 const COMPASS_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
 
 /* ────────────────────────────────────────────────
-   FIX #1: CENTRALIZED ALERT PRIORITY SYSTEM
-   Single source of truth. Lower number = higher priority.
-   Used by: sorting, risk box, popup, siren, spatial card,
-   background mode, ticker, nearby warning calc.
+   CENTRALIZED ALERT PRIORITY SYSTEM
+   Lower number = higher priority.
 ──────────────────────────────────────────────── */
 const ALERT_PRIORITY_MAP = new Map([
-  ['Particularly Dangerous Situation', 1],  // PDS Tornado Warning
+  ['Particularly Dangerous Situation', 1],
   ['Tornado Emergency',                2],
   ['Tornado Warning',                  3],
   ['Flash Flood Emergency',            4],
@@ -39,27 +37,18 @@ const ALERT_PRIORITY_MAP = new Map([
   ['Winter Weather Advisory',         12],
 ]);
 
-/**
- * Returns the priority score for an alert event string.
- * Lower = more severe/higher priority.
- * Uses deterministic, ordered matching — longest match wins to avoid
- * "Severe Thunderstorm Warning" matching "Warning" before "Tornado Warning".
- */
 function alertPriorityScore(eventStr) {
   if (!eventStr) return 99;
-  // Sort keys longest-first so more specific strings match first
   for (const [key, score] of ALERT_PRIORITY_MAP) {
     if (eventStr.includes(key)) return score;
   }
   return 99;
 }
 
-/** True if eventStr is a tornado-level threat (priority ≤ 3) */
 function isTornadoLevel(eventStr) {
   return alertPriorityScore(eventStr) <= 3;
 }
 
-/** True if eventStr is a tornado emergency or PDS (priority ≤ 2) */
 function isExtremeLevel(eventStr) {
   return alertPriorityScore(eventStr) <= 2;
 }
@@ -89,23 +78,11 @@ const TICKER_GROUPS = [
 ];
 
 /* ────────────────────────────────────────────────
-   FIX #4: EFFICIENT TICKER API — filtered event types only
+   BUG FIX: TICKER API — Use status=actual only, no event filter
+   The multi-event filter param was malformed causing 0 results.
+   We fetch all active alerts and filter client-side instead.
 ──────────────────────────────────────────────── */
-const TICKER_EVENT_TYPES = [
-  'Tornado Warning',
-  'Tornado Watch',
-  'Severe Thunderstorm Warning',
-  'Severe Thunderstorm Watch',
-  'Flash Flood Warning',
-  'Flash Flood Watch',
-  'Flash Flood Emergency',
-  'Blizzard Warning',
-  'Winter Storm Warning',
-  'Ice Storm Warning',
-];
-// Build NWS API event filter param
-const TICKER_EVENT_PARAM = TICKER_EVENT_TYPES.map(e => encodeURIComponent(e)).join('&event=');
-const TICKER_API_URL = `https://api.weather.gov/alerts/active?status=actual&message_type=alert&event=${TICKER_EVENT_PARAM}`;
+const TICKER_API_URL = `https://api.weather.gov/alerts/active?status=actual&message_type=alert`;
 
 /* ════════════════════════════════════════════════
    STATE
@@ -122,14 +99,13 @@ let forceStormType = '';
 let lastSuccessfulRefresh = null;
 
 /* ────────────────────────────────────────────────
-   FIX #6: BOUNDED CACHES — prevent unbounded growth
+   BOUNDED CACHES
 ──────────────────────────────────────────────── */
 const MAX_SHOWN_ALERTS = 200;
 const MAX_SEARCH_CACHE = 50;
-// Use arrays instead of raw Sets/Maps so we can evict oldest entries
 let shownAlertsArr = [];
 const shownAlertsSet = new Set();
-const searchCache = new Map();  // bounded below in search handler
+const searchCache = new Map();
 
 function addShownAlert(uid) {
   if (shownAlertsSet.has(uid)) return;
@@ -144,7 +120,6 @@ function hasShownAlert(uid) { return shownAlertsSet.has(uid); }
 
 function addSearchCache(key, val) {
   if (searchCache.size >= MAX_SEARCH_CACHE) {
-    // Delete oldest entry
     const firstKey = searchCache.keys().next().value;
     searchCache.delete(firstKey);
   }
@@ -152,21 +127,16 @@ function addSearchCache(key, val) {
 }
 
 /* ════════════════════════════════════════════════
-   FIX #5: SAFE FETCH UTILITY
-   - AbortController support
-   - Retries with exponential backoff + jitter
-   - Timeout handling
-   - Stale request cancellation via controller map
+   SAFE FETCH UTILITY
 ════════════════════════════════════════════════ */
 const activeFetchControllers = new Map();
 
 async function safeFetch(url, {
   timeout   = 10000,
   retries   = 2,
-  key       = null,   // if provided, cancels any prior fetch with same key
+  key       = null,
   baseDelay = 800,
 } = {}) {
-  // Cancel previous request with same key (stale request prevention)
   if (key && activeFetchControllers.has(key)) {
     try { activeFetchControllers.get(key).abort(); } catch(_) {}
   }
@@ -187,10 +157,9 @@ async function safeFetch(url, {
       clearTimeout(timeoutId);
       if (key) activeFetchControllers.delete(key);
 
-      if (err.name === 'AbortError') throw err; // don't retry aborts
+      if (err.name === 'AbortError') throw err;
 
       if (attempt < retries) {
-        // Exponential backoff with jitter
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 400;
         await new Promise(r => setTimeout(r, delay));
         continue;
@@ -201,27 +170,27 @@ async function safeFetch(url, {
 }
 
 /* ════════════════════════════════════════════════
-   FIX #12: STALE DATA DETECTION
+   STALE DATA DETECTION
 ════════════════════════════════════════════════ */
-const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
+const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 
 function markRefreshSuccess() {
   lastSuccessfulRefresh = Date.now();
-  document.getElementById('staleBanner').style.display = 'none';
+  const b = document.getElementById('staleBanner');
+  if (b) b.style.display = 'none';
 }
 
 function checkStaleData() {
   if (!lastSuccessfulRefresh) return;
   const age = Date.now() - lastSuccessfulRefresh;
   if (age > STALE_THRESHOLD_MS) {
-    document.getElementById('staleBanner').style.display = 'block';
+    const b = document.getElementById('staleBanner');
+    if (b) b.style.display = 'block';
   }
 }
 
 /* ════════════════════════════════════════════════
-   FIX #9: NORMALIZED COUNTY MATCHING
-   Removes "County", "Parish", "Borough", trims, lowercases.
-   Handles abbreviations and extra whitespace.
+   NORMALIZED COUNTY MATCHING
 ════════════════════════════════════════════════ */
 function normalizeCountyName(name) {
   return (name || '')
@@ -235,7 +204,6 @@ function countyMatchesArea(userCty, areaDesc) {
   if (!userCty || !areaDesc) return false;
   const normalUser = normalizeCountyName(userCty);
   if (!normalUser) return false;
-  // Split area desc on semicolons and commas, normalize each piece
   const areaParts = areaDesc.split(/[;,]/).map(normalizeCountyName);
   return areaParts.some(part => part.includes(normalUser) || normalUser.includes(part));
 }
@@ -325,31 +293,21 @@ function alertCentroidDistance(alert) {
   return haversineDistance(appLat, appLon, c.lat, c.lon);
 }
 
-/**
- * FIX #1: Central sort — deterministic, tornado-prioritized.
- * Primary: priority score (tornado always beats SVR).
- * Secondary: distance (but tornado within 200mi beats SVR at 0mi for popup/siren logic
- *   — handled separately; for display order we just sort by score then distance).
- */
 function sortAlerts(features) {
   return [...features].sort((a, b) => {
     const pa = alertPriorityScore(a.properties?.event || '');
     const pb = alertPriorityScore(b.properties?.event || '');
     if (pa !== pb) return pa - pb;
-    // Same priority: closer = first
     return alertCentroidDistance(a) - alertCentroidDistance(b);
   });
 }
 
 /* ────────────────────────────────────────────────
-   FIX #8: ROBUST ALERT DEDUPLICATION
-   Primary key: NWS alert @id (stable across updates).
-   Fallback: event + areaDesc + sent timestamp.
+   ROBUST ALERT DEDUPLICATION
 ──────────────────────────────────────────────── */
 function alertStableId(feature) {
-  const id   = feature.id || feature.properties?.id;
+  const id = feature.id || feature.properties?.id;
   if (id) return id;
-  // Fallback
   const ev   = feature.properties?.event    || '';
   const area = feature.properties?.areaDesc || '';
   const sent = feature.properties?.sent     || '';
@@ -441,7 +399,7 @@ function toggleMenu() {
 document.addEventListener('click', e => {
   if (!e.target.closest('#menuPanel') && !e.target.closest('#menuBtn')) {
     const panel = document.getElementById('menuPanel');
-    if (panel.classList.contains('open')) {
+    if (panel && panel.classList.contains('open')) {
       panel.classList.remove('open');
       document.getElementById('menuBtn').setAttribute('aria-expanded','false');
     }
@@ -454,6 +412,7 @@ function setRiskDisplay(risk, label, why) {
   const box = document.getElementById('riskBox');
   const txt = document.getElementById('riskText');
   const whyEl = document.getElementById('riskWhy');
+  if (!box || !txt || !whyEl) return;
   const wasOpen = box.classList.contains('open');
   const classMap = { low:'risk-low', medium:'risk-medium', high:'risk-high' };
   const defaultLabel = { low:'LOW', medium:'ELEVATED', high:'HIGH' };
@@ -469,16 +428,17 @@ function setRiskDisplay(risk, label, why) {
 }
 
 /* ════════════════════════════════════════════════
-   FIX #11: ARIA LIVE ANNOUNCEMENT
+   ARIA LIVE ANNOUNCEMENT
 ════════════════════════════════════════════════ */
 function announceAlert(message) {
   const el = document.getElementById('ariaLive');
+  if (!el) return;
   el.textContent = '';
   requestAnimationFrame(() => { el.textContent = message; });
 }
 
 /* ════════════════════════════════════════════════
-   POPUP SYSTEM — FIX #1: uses centralized priority
+   POPUP SYSTEM
 ════════════════════════════════════════════════ */
 const POPUP_CONFIG = [
   {
@@ -533,7 +493,6 @@ const POPUP_CONFIG = [
 ];
 
 function getPopupConfig(ev) {
-  // Matches in priority order — PDS before Tornado Warning before SVR, etc.
   return POPUP_CONFIG.find(c => c.match(ev)) || null;
 }
 
@@ -541,6 +500,7 @@ function showPopup(ev, movement) {
   const cfg = getPopupConfig(ev);
   if (!cfg) return;
   const badge = document.getElementById('popupBadge');
+  if (!badge) return;
   badge.textContent    = cfg.badge;
   badge.style.background = cfg.badgeBg;
   badge.style.color    = cfg.badgeTx;
@@ -557,19 +517,23 @@ function showPopup(ev, movement) {
     movEl.style.display = 'none';
   }
   document.getElementById('popup').style.display = 'block';
-  // FIX #11: focus trap — move focus into popup
-  requestAnimationFrame(() => document.getElementById('popupClose').focus());
-  // FIX #11: announce to screen readers
+  requestAnimationFrame(() => {
+    const closeBtn = document.getElementById('popupClose');
+    if (closeBtn) closeBtn.focus();
+  });
   announceAlert(cfg.title);
 }
 
-document.getElementById('popupClose').addEventListener('click', () => {
-  document.getElementById('popup').style.display = 'none';
-});
-// FIX #11: Escape key closes popup
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('popup').style.display !== 'none') {
+const popupCloseBtn = document.getElementById('popupClose');
+if (popupCloseBtn) {
+  popupCloseBtn.addEventListener('click', () => {
     document.getElementById('popup').style.display = 'none';
+  });
+}
+document.addEventListener('keydown', e => {
+  const popup = document.getElementById('popup');
+  if (e.key === 'Escape' && popup && popup.style.display !== 'none') {
+    popup.style.display = 'none';
   }
 });
 
@@ -586,7 +550,8 @@ document.addEventListener('click', () => {
 function startSiren() {
   if (sirenActive) return;
   sirenActive = true;
-  document.getElementById('sirenBanner').style.display = 'block';
+  const banner = document.getElementById('sirenBanner');
+  if (banner) banner.style.display = 'block';
   try {
     sirenCtx = new (window.AudioContext || window.webkitAudioContext)();
     playSirenLoop();
@@ -636,7 +601,8 @@ function playSirenLoop() {
 
 function stopSiren() {
   sirenActive = false;
-  document.getElementById('sirenBanner').style.display = 'none';
+  const banner = document.getElementById('sirenBanner');
+  if (banner) banner.style.display = 'none';
   clearTimeout(sirenTimeout);
   sirenNodes.forEach(n => { try { n.disconnect(); } catch(_) {} });
   sirenNodes = [];
@@ -644,14 +610,13 @@ function stopSiren() {
 }
 
 /* ════════════════════════════════════════════════
-   FIX #7: TICKER — Drag without accidental taps
-   Tracks pointer move distance so a swipe doesn't
-   fire a click handler on items or overflow button.
+   TICKER — Drag without accidental taps
 ════════════════════════════════════════════════ */
 (function initTickerDragGuard() {
   const scroll = document.getElementById('tickerScroll');
+  if (!scroll) return;
   let pointerStartX = 0, pointerStartY = 0, didDrag = false;
-  const DRAG_THRESHOLD = 6; // px — below this = tap, above = drag
+  const DRAG_THRESHOLD = 6;
 
   scroll.addEventListener('pointerdown', e => {
     pointerStartX = e.clientX;
@@ -665,23 +630,23 @@ function stopSiren() {
     if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) didDrag = true;
   }, { passive: true });
 
-  // Intercept clicks on ticker children — cancel if it was a drag
   scroll.addEventListener('click', e => {
     if (didDrag) {
       e.stopImmediatePropagation();
       e.preventDefault();
       didDrag = false;
     }
-  }, true); // capture phase
+  }, true);
 })();
 
 /* ════════════════════════════════════════════════
-   ANIMATED BACKGROUND — FIX #10: throttled, optimized
+   ANIMATED BACKGROUND — Realistic Tornado
 ════════════════════════════════════════════════ */
 (function initBackground() {
-  if (prefersReducedMotion) return; // FIX #11: skip canvas for reduced motion
+  if (prefersReducedMotion) return;
 
   const canvas = document.getElementById('bgCanvas');
+  if (!canvas) return;
   const ctx    = canvas.getContext('2d', { alpha: false });
 
   let W, H;
@@ -691,9 +656,16 @@ function stopSiren() {
   let nightProgress = 0.5;
   let clouds = [], drops = [], snowflakes = [], fogParticles = [], stars = null;
   let bolts = [], boltTimer = 0;
-  let tornadoAngle = 0;
+
+  /* ── REALISTIC TORNADO STATE ── */
+  let tornadoAge = 0;
+  let tornadoRotation = 0;
+  let tornadoWobble = 0;
+  let tornadoDebris = [];
+  let tornadoRopePhase = false;
+  let tornadoGroundDust = [];
+
   let lastFrameTime = 0;
-  // FIX #10: adaptive target FPS — low perf = 24fps, saves battery
   const targetFPS  = perfLevel === 'low' ? 24 : perfLevel === 'mid' ? 40 : 60;
   const frameTarget = 1000 / targetFPS;
 
@@ -704,7 +676,6 @@ function stopSiren() {
     fog:   perfLevel === 'low' ? 6 : 10,
   };
 
-  // FIX #10: debounced resize to prevent layout thrashing
   let resizeTimer;
   function resize() {
     clearTimeout(resizeTimer);
@@ -718,10 +689,10 @@ function stopSiren() {
       W = window.innerWidth;
       H = window.innerHeight;
       stars = null;
+      initTornadoDebris();
     }, 150);
   }
   window.addEventListener('resize', resize, { passive: true });
-  // Initial sizing without debounce
   const dpr0 = pixelRatio;
   canvas.width  = window.innerWidth  * dpr0;
   canvas.height = window.innerHeight * dpr0;
@@ -731,6 +702,300 @@ function stopSiren() {
   W = window.innerWidth;
   H = window.innerHeight;
 
+  /* ── TORNADO INITIALIZATION ── */
+  function initTornadoDebris() {
+    tornadoDebris = [];
+    tornadoGroundDust = [];
+    const debrisCount = perfLevel === 'low' ? 40 : perfLevel === 'mid' ? 80 : 140;
+    for (let i = 0; i < debrisCount; i++) {
+      const t = Math.random();
+      const orbitRadius = Math.max(8, t < 0.5 ? t * t * 2 * 120 + 8 : (1 - t) * 80 + 18);
+      tornadoDebris.push({
+        t,                  // 0=top, 1=ground
+        angle: Math.random() * Math.PI * 2,
+        orbitRadius,
+        angularSpeed: (1.8 + Math.random() * 2.2) * (Math.random() > 0.5 ? 1 : -1),
+        vertSpeed: 0.0008 + Math.random() * 0.002,
+        size: 1 + Math.random() * (t > 0.7 ? 5 : 2.5),
+        type: Math.random() > 0.6 ? 'plank' : Math.random() > 0.5 ? 'chunk' : 'dust',
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.15,
+        opacity: 0.3 + Math.random() * 0.65,
+        color: `hsl(${25 + Math.random()*20},${30+Math.random()*20}%,${20+Math.random()*20}%)`,
+      });
+    }
+    // Ground dust puffs
+    const dustCount = perfLevel === 'low' ? 12 : 24;
+    for (let i = 0; i < dustCount; i++) {
+      tornadoGroundDust.push({
+        angle: Math.random() * Math.PI * 2,
+        radius: 20 + Math.random() * 140,
+        angularSpeed: (0.4 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1),
+        opacity: 0.1 + Math.random() * 0.3,
+        size: 18 + Math.random() * 60,
+        yOffset: Math.random() * 40,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  /* ── TORNADO PROFILE — realistic tapered funnel ── */
+  function getTornadoProfile(yFrac, age) {
+    // yFrac: 0=cloud base, 1=ground
+    // Returns width in pixels at that height
+    const wobbleAmt = Math.sin(tornadoWobble + yFrac * 3) * 8;
+    if (tornadoRopePhase) {
+      // Rope tornado: very narrow, sinuous
+      const rope = 6 + Math.sin(yFrac * Math.PI * 4 + tornadoAge * 0.05) * 10;
+      return Math.max(3, rope + wobbleAmt * 0.3);
+    }
+    // Classic wedge/cone
+    const top = 5;
+    const mid = yFrac < 0.5
+      ? top + yFrac * 2 * 90
+      : 90 + (yFrac - 0.5) * 2 * 60;
+    return Math.max(3, mid + wobbleAmt);
+  }
+
+  function getTornadoX(yFrac) {
+    // Slight lean/tilt as tornado moves
+    const lean = Math.sin(tornadoAge * 0.008) * 30;
+    const wobX  = Math.sin(tornadoWobble * 0.7 + yFrac * 2) * 14 * yFrac;
+    return W / 2 + lean + wobX;
+  }
+
+  /* ── DRAW REALISTIC TORNADO ── */
+  function drawTornado() {
+    tornadoAge += 1;
+    tornadoRotation += 0.028;
+    tornadoWobble += 0.015;
+
+    // Occasionally trigger rope phase
+    if (tornadoAge % 800 < 120) {
+      tornadoRopePhase = true;
+    } else {
+      tornadoRopePhase = false;
+    }
+
+    const groundY = H * 0.88;
+    const cloudY  = H * 0.05;
+    const steps   = perfLevel === 'low' ? 24 : 48;
+
+    ctx.save();
+
+    // ── 1. Green-tinted sky glow (pressure drop effect) ──
+    const skyGlow = ctx.createRadialGradient(W/2, cloudY, 0, W/2, H * 0.4, W * 0.55);
+    skyGlow.addColorStop(0, 'rgba(30,60,10,0.18)');
+    skyGlow.addColorStop(0.5, 'rgba(10,30,5,0.1)');
+    skyGlow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = skyGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── 2. Main funnel body (multi-layer for depth) ──
+    // Draw from bottom to top for correct layering
+    for (let layer = 0; layer < 3; layer++) {
+      ctx.beginPath();
+      const alphaBase = [0.12, 0.22, 0.35][layer];
+      const widthMult = [1.4, 1.15, 0.9][layer];
+      const colorL = ['rgba(55,40,20,', 'rgba(70,50,22,', 'rgba(88,65,28,'][layer];
+
+      // Build funnel path downward
+      let firstX = null, firstW = null;
+      const points = [];
+      for (let i = 0; i <= steps; i++) {
+        const yFrac = i / steps;
+        const cy = cloudY + yFrac * (groundY - cloudY);
+        const cx = getTornadoX(yFrac);
+        const hw = getTornadoProfile(yFrac, tornadoAge) * widthMult;
+        points.push({ cx, cy, hw });
+      }
+
+      // Left edge (top to bottom)
+      ctx.moveTo(points[0].cx - points[0].hw, points[0].cy);
+      for (let i = 1; i < points.length; i++) {
+        const p = points[i], pp = points[i-1];
+        const cpx = (pp.cx + p.cx) / 2 - (pp.hw + p.hw) / 2;
+        const cpy = (pp.cy + p.cy) / 2;
+        ctx.quadraticCurveTo(pp.cx - pp.hw, pp.cy, cpx, cpy);
+      }
+      ctx.lineTo(points[points.length-1].cx - points[points.length-1].hw, points[points.length-1].cy);
+
+      // Right edge (bottom to top)
+      for (let i = points.length - 1; i >= 0; i--) {
+        const p = points[i];
+        const pi = Math.max(0, i - 1);
+        const pp = points[pi];
+        const cpx = (pp.cx + p.cx) / 2 + (pp.hw + p.hw) / 2;
+        const cpy = (pp.cy + p.cy) / 2;
+        if (i === points.length - 1) {
+          ctx.lineTo(p.cx + p.hw, p.cy);
+        } else {
+          ctx.quadraticCurveTo(p.cx + p.hw, p.cy, cpx, cpy);
+        }
+      }
+      ctx.closePath();
+
+      const grad = ctx.createLinearGradient(0, cloudY, 0, groundY);
+      grad.addColorStop(0, `${colorL}${alphaBase * 0.5})`);
+      grad.addColorStop(0.4, `${colorL}${alphaBase})`);
+      grad.addColorStop(0.8, `${colorL}${alphaBase * 1.3})`);
+      grad.addColorStop(1, `${colorL}${alphaBase * 0.6})`);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+
+    // ── 3. Interior rotation bands ──
+    const bandCount = perfLevel === 'low' ? 8 : 16;
+    for (let b = 0; b < bandCount; b++) {
+      const yFrac = b / bandCount;
+      const cy = cloudY + yFrac * (groundY - cloudY);
+      const cx = getTornadoX(yFrac);
+      const hw = getTornadoProfile(yFrac, tornadoAge);
+      if (hw < 4) continue;
+      const bandAngle = tornadoRotation * (3 - yFrac * 1.5) + b * 0.4;
+      const bandX = cx + Math.cos(bandAngle) * hw * 0.5;
+      const grad = ctx.createRadialGradient(bandX, cy, 0, cx, cy, hw);
+      grad.addColorStop(0, 'rgba(120,95,45,0.0)');
+      grad.addColorStop(0.5, 'rgba(80,58,20,0.14)');
+      grad.addColorStop(0.85, 'rgba(55,38,12,0.22)');
+      grad.addColorStop(1, 'rgba(30,18,4,0.0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, hw, hw * 0.22, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // ── 4. Suction vortices (2-3 sub-vortices rotating inside) ──
+    const vortexCount = 2;
+    for (let v = 0; v < vortexCount; v++) {
+      const vAngle = tornadoRotation * 2.5 + v * (Math.PI * 2 / vortexCount);
+      for (let s = 0; s <= steps; s++) {
+        const yFrac = s / steps;
+        const cy = cloudY + yFrac * (groundY - cloudY);
+        const cx = getTornadoX(yFrac);
+        const hw = getTornadoProfile(yFrac, tornadoAge);
+        if (hw < 6) continue;
+        const vr = hw * (0.55 + 0.2 * Math.sin(yFrac * Math.PI));
+        const vx = cx + Math.cos(vAngle + yFrac * 2) * vr;
+        const vy = cy;
+        const vSize = Math.max(2, hw * 0.18);
+        const vGrad = ctx.createRadialGradient(vx, vy, 0, vx, vy, vSize * 2.5);
+        vGrad.addColorStop(0, 'rgba(160,125,60,0.35)');
+        vGrad.addColorStop(0.4, 'rgba(100,75,28,0.18)');
+        vGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vGrad;
+        ctx.beginPath();
+        ctx.arc(vx, vy, vSize * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ── 5. Ground contact — dust swirl & condensation funnel tip ──
+    const groundX = getTornadoX(1);
+    const groundW = getTornadoProfile(1, tornadoAge);
+
+    // Ground condensation disc
+    const discGrad = ctx.createRadialGradient(groundX, groundY, 0, groundX, groundY, groundW * 2.5);
+    discGrad.addColorStop(0, 'rgba(100,75,30,0.55)');
+    discGrad.addColorStop(0.4, 'rgba(70,52,18,0.35)');
+    discGrad.addColorStop(0.75, 'rgba(40,28,8,0.18)');
+    discGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = discGrad;
+    ctx.beginPath();
+    ctx.ellipse(groundX, groundY, groundW * 2.5, groundW * 0.6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Ground dust ring
+    tornadoGroundDust.forEach(d => {
+      d.angle += d.angularSpeed * 0.012;
+      d.phase += 0.02;
+      const dx = groundX + Math.cos(d.angle) * d.radius;
+      const dy = groundY - d.yOffset + Math.sin(d.phase) * 8;
+      const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, d.size);
+      dg.addColorStop(0, `rgba(110,82,35,${d.opacity})`);
+      dg.addColorStop(0.5, `rgba(80,58,20,${d.opacity * 0.5})`);
+      dg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = dg;
+      ctx.beginPath();
+      ctx.ellipse(dx, dy, d.size, d.size * 0.45, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    // ── 6. Flying debris ──
+    tornadoDebris.forEach(d => {
+      d.angle += d.angularSpeed * 0.018 * (1 + d.t);
+      d.t += d.vertSpeed;
+      if (d.t > 1) d.t = 0.02;
+      d.rotation += d.rotSpeed;
+
+      const yFrac = d.t;
+      const cy = cloudY + yFrac * (groundY - cloudY);
+      const cx = getTornadoX(yFrac);
+      const hw = getTornadoProfile(yFrac, tornadoAge);
+      const orbitR = Math.min(d.orbitRadius, hw * 0.95);
+
+      const dx = cx + Math.cos(d.angle + tornadoRotation * d.angularSpeed * 0.5) * orbitR;
+      const dy = cy + Math.sin(d.angle) * orbitR * 0.18;
+
+      ctx.save();
+      ctx.translate(dx, dy);
+      ctx.rotate(d.rotation);
+      ctx.globalAlpha = d.opacity * Math.min(1, d.t * 6) * Math.min(1, (1 - d.t) * 6);
+      ctx.fillStyle = d.color;
+
+      if (d.type === 'plank') {
+        ctx.fillRect(-d.size * 2.5, -d.size * 0.4, d.size * 5, d.size * 0.8);
+      } else if (d.type === 'chunk') {
+        ctx.beginPath();
+        ctx.arc(0, 0, d.size, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // dust particle
+        const dg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, d.size * 1.5);
+        dg2.addColorStop(0, d.color);
+        dg2.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = dg2;
+        ctx.beginPath();
+        ctx.arc(0, 0, d.size * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    });
+
+    // ── 7. Cloud base (mesocyclone attachment) ──
+    const cloudBaseX = W / 2;
+    const cloudBaseGrad = ctx.createRadialGradient(cloudBaseX, cloudY, 0, cloudBaseX, cloudY, W * 0.35);
+    cloudBaseGrad.addColorStop(0, 'rgba(20,12,4,0.7)');
+    cloudBaseGrad.addColorStop(0.3, 'rgba(30,20,8,0.45)');
+    cloudBaseGrad.addColorStop(0.6, 'rgba(15,10,4,0.22)');
+    cloudBaseGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = cloudBaseGrad;
+    ctx.beginPath();
+    ctx.ellipse(cloudBaseX, cloudY, W * 0.35, H * 0.12, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Rotating wall cloud
+    const wallAngleBase = tornadoRotation * 0.6;
+    for (let w = 0; w < 6; w++) {
+      const wa = wallAngleBase + w * (Math.PI / 3);
+      const wr = W * (0.12 + Math.random() * 0.0);
+      const wx = cloudBaseX + Math.cos(wa) * wr;
+      const wy = cloudY + H * 0.04 + Math.sin(wa) * H * 0.02;
+      const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, 55 + w * 8);
+      wg.addColorStop(0, 'rgba(40,30,12,0.4)');
+      wg.addColorStop(0.6, 'rgba(25,18,6,0.2)');
+      wg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = wg;
+      ctx.beginPath();
+      ctx.ellipse(wx, wy, 55 + w * 8, 30, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
+  /* ─── REST OF CLOUD/RAIN/SNOW/FOG (unchanged) ─── */
   function buildCloud(x, y, scale, dark) {
     const lobes = [];
     const bodyCount = 3 + Math.floor(Math.random() * 3);
@@ -760,9 +1025,9 @@ function stopSiren() {
   function drawCloud(cloud) {
     const { x, y, lobes, dark } = cloud;
     let topColor, midColor, shadowColor;
-    if (dark)         { topColor='rgba(70,76,95,1)';    midColor='rgba(44,49,64,1)';   shadowColor='rgba(20,22,32,1)'; }
+    if (dark)          { topColor='rgba(70,76,95,1)';    midColor='rgba(44,49,64,1)';   shadowColor='rgba(20,22,32,1)'; }
     else if (isDaytime){ topColor='rgba(255,255,255,1)'; midColor='rgba(228,236,248,1)'; shadowColor='rgba(168,185,210,1)'; }
-    else              { topColor='rgba(46,56,84,1)';    midColor='rgba(32,40,62,1)';   shadowColor='rgba(16,20,36,1)'; }
+    else               { topColor='rgba(46,56,84,1)';    midColor='rgba(32,40,62,1)';   shadowColor='rgba(16,20,36,1)'; }
     ctx.save();
     ctx.fillStyle = shadowColor;
     lobes.forEach(l => { ctx.beginPath(); ctx.ellipse(x+l.ox+4, y+l.oy+5, l.rx*0.94, l.ry*0.94, 0, 0, Math.PI*2); ctx.fill(); });
@@ -823,7 +1088,6 @@ function stopSiren() {
     const x=W*0.15+Math.random()*W*0.7;
     const segments=buildBoltPath(x,0,x+(Math.random()-0.5)*160,H*(0.35+Math.random()*0.44),7);
     bolts.push({segments,life:1.0,decay:0.042+Math.random()*0.038,bright:0.68+Math.random()*0.3,branches:generateBranches(segments)});
-    // FIX #10: cap bolt count to prevent GPU overload
     if (bolts.length > 4) bolts.splice(0, bolts.length - 4);
   }
   function drawBoltPath(segs,alpha,lineWidth,color) {
@@ -837,32 +1101,6 @@ function stopSiren() {
     ctx.lineWidth=Math.max(0.35,lineWidth*0.3); ctx.strokeStyle=`rgba(255,255,255,${alpha*0.75})`;
     ctx.shadowBlur=5; ctx.shadowColor='white'; ctx.stroke();
     ctx.shadowBlur=0;
-  }
-
-  function drawTornado() {
-    const cx = W/2;
-    tornadoAngle += 0.032;
-    for (let i=0;i<22;i++) {
-      const t=i/22;
-      const y=H*0.06+t*H*0.72;
-      const radius=Math.max(6, t<0.5 ? t*t*2*110+6 : (t-0.5)*(t-0.5)*2*(-50)+50+t*70);
-      const grd=ctx.createRadialGradient(cx,y,0,cx,y,radius);
-      grd.addColorStop(0,`rgba(75,35,15,${0.06+t*0.09})`);
-      grd.addColorStop(0.5,`rgba(38,18,7,${0.04+t*0.07})`);
-      grd.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=grd; ctx.beginPath(); ctx.arc(cx,y,radius,0,Math.PI*2); ctx.fill();
-    }
-    const debrisCount = perfLevel==='low' ? 16 : 32;
-    for (let d=0;d<debrisCount;d++) {
-      const t=d/debrisCount;
-      const y=H*0.08+t*H*0.65;
-      const r=Math.max(5,t<0.5?t*t*2*95+5:(t-0.5)*(t-0.5)*2*(-45)+45+t*62);
-      const ang=(d/debrisCount)*Math.PI*2+tornadoAngle*(3-t*1.8);
-      const dx=Math.cos(ang)*r*0.8;
-      const dy=Math.sin(ang)*r*0.18;
-      ctx.fillStyle=`rgba(90,52,16,${0.25+t*0.36})`;
-      ctx.beginPath(); ctx.arc(cx+dx,y+dy,2+t*3,0,Math.PI*2); ctx.fill();
-    }
   }
 
   function drawSun(progress) {
@@ -901,7 +1139,7 @@ function stopSiren() {
 
   function getSkyColors() {
     switch(bgMode) {
-      case 'tornado': return ['#150900','#090400'];
+      case 'tornado': return ['#0a0500','#060300'];
       case 'storm':   return isDaytime?['#141000','#070900']:['#070000','#000408'];
       case 'rain':    return isDaytime?['#26303c','#364050']:['#060b16','#0a1420'];
       case 'snow':    return isDaytime?['#c2d2e2','#dce8f4']:['#08101a','#161e2c'];
@@ -1013,7 +1251,6 @@ function stopSiren() {
       b.life-=b.decay;
     });
 
-    // FIX #10: skip scanlines on low perf
     if(perfLevel==='high'){
       ctx.fillStyle='rgba(0,0,0,0.014)';
       for(let y=0;y<H;y+=5) ctx.fillRect(0,y,W,2);
@@ -1027,7 +1264,14 @@ function stopSiren() {
     switch(mode){
       case 'storm':        initClouds(8,true);  initRain(PARTICLE.rain,true);  snowflakes=[]; fogParticles=[]; break;
       case 'rain':         initClouds(6,true);  initRain(Math.round(PARTICLE.rain*0.58),false); snowflakes=[]; fogParticles=[]; break;
-      case 'tornado':      initClouds(9,true);  initRain(PARTICLE.rain,true);  snowflakes=[]; fogParticles=[]; break;
+      case 'tornado':
+        initClouds(10,true);
+        initRain(PARTICLE.rain,true);
+        snowflakes=[]; fogParticles=[];
+        tornadoAge=0; tornadoRotation=0; tornadoWobble=0;
+        tornadoRopePhase=false;
+        initTornadoDebris();
+        break;
       case 'snow':         initClouds(4,false); drops=[]; initSnow(PARTICLE.snow); fogParticles=[]; break;
       case 'fog':          initClouds(3,false); drops=[]; snowflakes=[]; initFog(); break;
       case 'cloudy':       initClouds(7,true);  drops=[]; snowflakes=[]; fogParticles=[]; break;
@@ -1043,7 +1287,6 @@ function stopSiren() {
   };
 })();
 
-// Fallback no-ops if canvas disabled (reduced motion)
 if (!window.setBgMode)  window.setBgMode  = () => {};
 if (!window.setDaytime) window.setDaytime = () => {};
 
@@ -1089,7 +1332,6 @@ function updateDayNight() {
    WEATHER CODE → BG MODE
 ════════════════════════════════════════════════ */
 function weatherCodeToMode(code, cape, li, windSpd, dewF, windDeg, pressure, hasActiveTornadoAlert) {
-  // FIX #1: Tornado alert forces tornado bg regardless of sounding
   if (hasActiveTornadoAlert) return 'tornado';
   const torEnv = computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure);
   if (torEnv === 'high') return 'tornado';
@@ -1108,7 +1350,7 @@ function weatherCodeToMode(code, cape, li, windSpd, dewF, windDeg, pressure, has
 ════════════════════════════════════════════════ */
 function alertCssClass(ev) {
   if (ev.includes('Particularly Dangerous Situation')) return 'alert-pds';
-  if (ev.includes('Tornado Emergency'))                return 'alert-pds';   // same high-urgency style
+  if (ev.includes('Tornado Emergency'))                return 'alert-pds';
   if (ev.includes('Tornado Warning'))                  return 'alert-tor-warn';
   if (ev.includes('Tornado Watch'))                    return 'alert-tor-watch';
   if (ev.includes('Severe Thunderstorm Warning'))      return 'alert-svr-warn';
@@ -1144,8 +1386,8 @@ function loadAll() {
 }
 
 function updateFooter() {
-  document.getElementById('footerTime').textContent =
-    `Data: NWS · Open-Meteo · Updated ${new Date().toLocaleTimeString()}`;
+  const el = document.getElementById('footerTime');
+  if (el) el.textContent = `Data: NWS · Open-Meteo · Updated ${new Date().toLocaleTimeString()}`;
 }
 
 /* ════════════════════════════════════════════════
@@ -1161,12 +1403,14 @@ async function loadLocation() {
     const countyRes  = await safeFetch(props.county, { key:'county', timeout:6000 });
     const countyData = await countyRes.json();
     userCounty = countyData.properties?.name || '';
-    document.getElementById('locationCard').innerHTML =
+    const el = document.getElementById('locationCard');
+    if (el) el.innerHTML =
       `<b>${userCounty || 'Unknown'} County</b><span>${city}${city&&state?', ':''}${state}</span>`;
   } catch(e) {
     if (e.name === 'AbortError') return;
     console.warn('Location fetch failed:', e);
-    document.getElementById('locationCard').textContent = 'Location unavailable';
+    const el = document.getElementById('locationCard');
+    if (el) el.textContent = 'Location unavailable';
   }
 }
 
@@ -1206,37 +1450,40 @@ async function loadWeather() {
     const li   = d.hourly.lifted_index?.[hourIdx] ?? 5;
 
     const tc = tempClass(tempF);
-    document.getElementById('temp').innerHTML     = `<span class="${tc}">${tempF}°F</span>`;
-    document.getElementById('tempSub').textContent = feelsF !== tempF ? `Feels ${feelsF}°F` : '';
-    document.getElementById('feels').textContent   = `${feelsF}°F`;
-    document.getElementById('pressure').textContent = `${pressHpa} mb`;
+    const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    const setHTML = (id, val) => { const el = document.getElementById(id); if (el) el.innerHTML = val; };
+
+    setHTML('temp', `<span class="${tc}">${tempF}°F</span>`);
+    setEl('tempSub', feelsF !== tempF ? `Feels ${feelsF}°F` : '');
+    setEl('feels', `${feelsF}°F`);
+    setEl('pressure', `${pressHpa} mb`);
 
     const hl = humLabel(hum);
-    document.getElementById('humidity').textContent     = hum+'%';
-    document.getElementById('humSub').textContent       = hl.feel;
-    document.getElementById('moistureLevel').textContent = hl.level;
-    document.getElementById('humidityFeel').textContent  = hl.feel;
+    setEl('humidity', hum+'%');
+    setEl('humSub', hl.feel);
+    setEl('moistureLevel', hl.level);
+    setEl('humidityFeel', hl.feel);
 
-    document.getElementById('dew').innerHTML     = `<span class="${tc}">${dewF}°F</span>`;
-    document.getElementById('dewSub').textContent = dewLabel(dewF).replace(/^[🟢🟠🔴🟡]\s/,'');
-    document.getElementById('stormFuel').textContent = dewLabel(dewF);
-    document.getElementById('wind').textContent    = windSpd+' mph';
-    document.getElementById('windSub').textContent  = degToCompass(windDeg);
-    document.getElementById('windDir').textContent  = `${degToCompass(windDeg)} (${windDeg}°)`;
-    document.getElementById('gusts').textContent    = windG+' mph';
+    setHTML('dew', `<span class="${tc}">${dewF}°F</span>`);
+    setEl('dewSub', dewLabel(dewF).replace(/^[🟢🟠🔴🟡]\s/,''));
+    setEl('stormFuel', dewLabel(dewF));
+    setEl('wind', windSpd+' mph');
+    setEl('windSub', degToCompass(windDeg));
+    setEl('windDir', `${degToCompass(windDeg)} (${windDeg}°)`);
+    setEl('gusts', windG+' mph');
 
     const cl = capeLabel(cape);
-    document.getElementById('cape').innerHTML = `<span style="color:${cl.color}">${Math.round(cape)} J/kg — ${cl.txt}</span>`;
-    document.getElementById('instability').textContent = liLabel(li);
-    document.getElementById('sndMoisture').textContent = dewLabel(dewF);
-    document.getElementById('sndLift').textContent     = li<=0?`⬆ Active lift (LI ${li.toFixed(1)})`:` ⬇ Capping (LI +${li.toFixed(1)})`;
-    document.getElementById('sndWind').textContent     = windEnergyLabel(windSpd);
+    setHTML('cape', `<span style="color:${cl.color}">${Math.round(cape)} J/kg — ${cl.txt}</span>`);
+    setEl('instability', liLabel(li));
+    setEl('sndMoisture', dewLabel(dewF));
+    setEl('sndLift', li<=0?`⬆ Active lift (LI ${li.toFixed(1)})`:` ⬇ Capping (LI +${li.toFixed(1)})`);
+    setEl('sndWind', windEnergyLabel(windSpd));
 
     const torEnv = computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressHpa);
-    document.getElementById('sndShear').textContent =
+    setEl('sndShear',
       torEnv==='high'     ? '🔴 Strong backing winds — favorable rotation' :
       torEnv==='moderate' ? '🟠 Some backing — moderate shear' :
-                            '🟢 Limited organized shear';
+                            '🟢 Limited organized shear');
 
     let torRiskTxt, sevRiskTxt;
     if      (li<=-6&&cape>2000)  { torRiskTxt='🔴 High'; sevRiskTxt='🔴 High'; }
@@ -1246,8 +1493,8 @@ async function loadWeather() {
     else if (li<=-2&&cape>200)   { torRiskTxt='🟡 Marginal'; sevRiskTxt='🟡 Low'; }
     else if (li<=0)              { torRiskTxt='🟢 Low'; sevRiskTxt='🟡 Marginal'; }
     else                         { torRiskTxt='🟢 Minimal'; sevRiskTxt='🟢 Minimal'; }
-    document.getElementById('torRisk').textContent = torRiskTxt;
-    document.getElementById('sevRisk').textContent = sevRiskTxt;
+    setEl('torRisk', torRiskTxt);
+    setEl('sevRisk', sevRiskTxt);
 
     let capeExplain;
     if      (cape>2500) capeExplain='⚠ Extreme instability: explosive storm development possible.';
@@ -1255,10 +1502,9 @@ async function loadWeather() {
     else if (cape>500)  capeExplain='Moderate instability: storms possible if triggered.';
     else if (cape>100)  capeExplain='Weak instability: only isolated storms.';
     else                 capeExplain='Very little instability: storm development unlikely.';
-    document.getElementById('capeWhy').textContent =
-      `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph\n${capeExplain}`;
+    setEl('capeWhy',
+      `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph\n${capeExplain}`);
 
-    // FIX #1: Background respects active tornado alert (set by loadAlerts)
     const hasActiveTornadoAlert = forceStormBg && forceStormType === 'tornado';
     const mode = weatherCodeToMode(wcode, cape, li, windSpd, dewF, windDeg, pressHpa, hasActiveTornadoAlert);
     if (mode !== lastBgMode) { window.setBgMode(mode); lastBgMode = mode; }
@@ -1277,14 +1523,15 @@ async function loadWeather() {
   } catch(e) {
     if (e.name === 'AbortError') return;
     console.error('Weather error:', e);
-    document.getElementById('temp').textContent = 'N/A';
+    const el = document.getElementById('temp');
+    if (el) el.textContent = 'N/A';
   } finally {
     weatherFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   ALERTS — FIX #1 priority system fully applied
+   ALERTS
 ════════════════════════════════════════════════ */
 let alertsFetchInProgress = false;
 async function loadAlerts() {
@@ -1297,17 +1544,11 @@ async function loadAlerts() {
     );
     const data = await res.json();
 
-    // FIX #8: deduplicate by stable NWS ID before sorting
     const deduped = deduplicateAlerts(data.features || []);
-
-    // FIX #1: single centralized sort — tornado always before SVR
     activeAlertFeatures = sortAlerts(deduped);
 
-    markRefreshSuccess(); // FIX #12
+    markRefreshSuccess();
 
-    // FIX #1: Determine highest-priority alert for bg/siren/popup
-    // A tornado warning anywhere in the result set forces tornado bg,
-    // EVEN if an SVR warning is geographically closer.
     const hasTornadoWarn = activeAlertFeatures.some(a => isTornadoLevel(a.properties?.event || ''));
     if (hasTornadoWarn) {
       forceStormBg = true; forceStormType = 'tornado';
@@ -1320,16 +1561,12 @@ async function loadAlerts() {
     let needsSiren  = false;
     let popupShown  = false;
 
-    // FIX #1: Spatial awareness uses the highest-priority warning,
-    // not just the geographically nearest one.
-    // A tornado warning 80mi away should show before an SVR at 10mi.
     let spatialAlert = null;
     for (const a of activeAlertFeatures) {
       const score = alertPriorityScore(a.properties?.event || '');
-      if (score <= 6) { spatialAlert = a; break; } // first = highest priority
+      if (score <= 6) { spatialAlert = a; break; }
     }
 
-    // Organize by section
     let lastSectionLabel = '';
     let html = '';
 
@@ -1343,7 +1580,6 @@ async function loadAlerts() {
       const cls      = alertCssClass(ev);
       const movement = parseMovement(desc);
 
-      // Risk escalation — tornado always escalates to high before SVR
       if (score <= 6 && alertRisk !== 'high') {
         alertRisk = 'high'; alertRiskLabel = 'HIGH';
         alertRiskWhy =
@@ -1358,13 +1594,9 @@ async function loadAlerts() {
         alertRiskWhy = 'Advisory or statement in effect.';
       }
 
-      // FIX #9: normalized county matching for siren
-      // FIX #1: tornado warning ONLY triggers siren (not SVR)
       const inMyCounty = countyMatchesArea(userCounty, areaDesc);
       if (inMyCounty && isTornadoLevel(ev)) needsSiren = true;
 
-      // FIX #1: Popup — show highest priority only, first match wins
-      // (activeAlertFeatures is already sorted priority-first)
       const uid = alertStableId(a);
       if (!popupShown && !hasShownAlert(uid) && getPopupConfig(ev)) {
         addShownAlert(uid);
@@ -1372,14 +1604,12 @@ async function loadAlerts() {
         popupShown = true;
       }
 
-      // Section header — only print when section changes
       const sLabel = alertSectionLabel(score);
       if (sLabel !== lastSectionLabel) {
         html += `<div class="alert-section-header">${sLabel}</div>`;
         lastSectionLabel = sLabel;
       }
 
-      // Area links
       const areas = areaDesc.split(';').slice(0,3).map(s=>s.trim()).filter(Boolean);
       const areaLinks = areas.map(area =>
         `<span class="area-link" onclick="jumpToLocation('${area.replace(/'/g,"\\'")}')">📍 ${area}</span>`
@@ -1409,36 +1639,33 @@ async function loadAlerts() {
     }
 
     const alertsEl = document.getElementById('alertsContainer');
-    // FIX #6: use textContent/innerHTML carefully — no repeated DOM traversal
-    alertsEl.innerHTML = html ||
-      '<div style="color:#2a7a5a;padding:16px 0;font-size:14px;text-align:left">✓ No active alerts for this location</div>';
-
-    // FIX #1: Spatial awareness — highest-priority warning, not closest
-    const spatialCard = document.getElementById('spatialCard');
-    if (spatialAlert) {
-      const dist = alertCentroidDistance(spatialAlert);
-      const mov  = parseMovement(spatialAlert.properties?.description || '');
-      document.getElementById('spNearestAlert').textContent =
-        spatialAlert.properties?.event || '';
-      document.getElementById('spDirection').textContent =
-        dist < 9999 ? `~${Math.round(dist)} miles away` : 'Unknown';
-      document.getElementById('spMovement').textContent =
-        mov ? `${mov.dir} at ${mov.spd} mph` : 'Not reported';
-      spatialCard.classList.add('visible');
-    } else {
-      spatialCard.classList.remove('visible');
+    if (alertsEl) {
+      alertsEl.innerHTML = html ||
+        '<div style="color:#2a7a5a;padding:16px 0;font-size:14px;text-align:left">✓ No active alerts for this location</div>';
     }
 
-    // FIX #1: Siren — tornado county match only
+    const spatialCard = document.getElementById('spatialCard');
+    if (spatialCard) {
+      if (spatialAlert) {
+        const dist = alertCentroidDistance(spatialAlert);
+        const mov  = parseMovement(spatialAlert.properties?.description || '');
+        const setEl = (id, v) => { const e = document.getElementById(id); if(e) e.textContent = v; };
+        setEl('spNearestAlert', spatialAlert.properties?.event || '');
+        setEl('spDirection', dist < 9999 ? `~${Math.round(dist)} miles away` : 'Unknown');
+        setEl('spMovement', mov ? `${mov.dir} at ${mov.spd} mph` : 'Not reported');
+        spatialCard.classList.add('visible');
+      } else {
+        spatialCard.classList.remove('visible');
+      }
+    }
+
     if (needsSiren && !sirenActive)   startSiren();
     else if (!needsSiren && sirenActive) stopSiren();
 
-    // Update risk from alerts (tornado always wins)
     if (activeAlertFeatures.length > 0 && riskOrder[alertRisk] >= riskOrder[lastRisk]) {
       setRiskDisplay(alertRisk, alertRiskLabel, alertRiskWhy);
     }
 
-    // FIX #11: announce highest-priority alert to screen readers
     if (activeAlertFeatures.length > 0) {
       const topEv = activeAlertFeatures[0]?.properties?.event || '';
       if (topEv) announceAlert(`Active alert: ${topEv}`);
@@ -1447,27 +1674,25 @@ async function loadAlerts() {
   } catch(e) {
     if (e.name === 'AbortError') return;
     console.error('Alerts error:', e);
-    document.getElementById('alertsContainer').textContent = 'Failed to load alerts.';
-    checkStaleData(); // FIX #12: show stale banner on failure
+    const el = document.getElementById('alertsContainer');
+    if (el) el.textContent = 'Failed to load alerts.';
+    checkStaleData();
   } finally {
     alertsFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   TICKER — FIX #2, #3, #4, #7, #8
+   TICKER — BUG FIX: fetch all active alerts,
+   filter client-side, handle CORS properly
 ════════════════════════════════════════════════ */
 const tickerOverflowByGroup = {};
 let currentOverflowGroup    = null;
 
-/**
- * FIX #3: Overflow panel is a fixed-position portal (#tickerOverflowPortal)
- * appended to <body>. Its top is set dynamically to the bottom of the ticker.
- * This escapes ALL parent stacking contexts, overflow clips, and transforms.
- */
 function positionOverflowPortal() {
   const wrap   = document.getElementById('tickerWrap');
   const portal = document.getElementById('tickerOverflowPortal');
+  if (!wrap || !portal) return;
   const rect   = wrap.getBoundingClientRect();
   portal.style.top = `${rect.bottom}px`;
 }
@@ -1476,6 +1701,7 @@ function openTickerOverflow(groupKey, event) {
   event.stopPropagation();
   const portal  = document.getElementById('tickerOverflowPortal');
   const innerEl = document.getElementById('tickerOverflowInner');
+  if (!portal || !innerEl) return;
   const items   = tickerOverflowByGroup[groupKey];
 
   if (currentOverflowGroup === groupKey && portal.classList.contains('open')) {
@@ -1496,14 +1722,14 @@ function openTickerOverflow(groupKey, event) {
     </div>`;
   }).join('');
 
-  // FIX #6: direct innerHTML set, no DOM churn loop
   innerEl.innerHTML = `<div class="ticker-overflow-title">${groupDef?.label||''} — All Alerts (${items.length})</div>${list}`;
   currentOverflowGroup = groupKey;
   portal.classList.add('open');
 }
 
 function closeTickerOverflow() {
-  document.getElementById('tickerOverflowPortal').classList.remove('open');
+  const portal = document.getElementById('tickerOverflowPortal');
+  if (portal) portal.classList.remove('open');
   currentOverflowGroup = null;
 }
 
@@ -1512,25 +1738,63 @@ document.addEventListener('click', e => {
     closeTickerOverflow();
   }
 });
-// Also reposition portal on scroll/resize
 window.addEventListener('scroll',  positionOverflowPortal, { passive: true });
 window.addEventListener('resize',  positionOverflowPortal, { passive: true });
+
+/* ────────────────────────────────────────────────
+   BUG FIX: Ticker events filter to only relevant types
+   The TICKER_EVENT_PARAM approach caused malformed URLs.
+   We now fetch all active alerts and filter in JS.
+──────────────────────────────────────────────── */
+const TICKER_RELEVANT_EVENTS = new Set([
+  'Tornado Warning',
+  'Tornado Watch',
+  'Severe Thunderstorm Warning',
+  'Severe Thunderstorm Watch',
+  'Flash Flood Warning',
+  'Flash Flood Watch',
+  'Flash Flood Emergency',
+  'Blizzard Warning',
+  'Winter Storm Warning',
+  'Ice Storm Warning',
+  'Winter Storm Watch',
+  'Winter Weather Advisory',
+  'Particularly Dangerous Situation',
+  'Tornado Emergency',
+]);
+
+function isTickerRelevant(ev) {
+  if (!ev) return false;
+  for (const t of TICKER_RELEVANT_EVENTS) {
+    if (ev.includes(t)) return true;
+  }
+  return false;
+}
 
 let tickerFetchInProgress = false;
 async function loadTicker() {
   if (tickerFetchInProgress) return;
   tickerFetchInProgress = true;
+
+  const scrollEl = document.getElementById('tickerScroll');
+  if (!scrollEl) { tickerFetchInProgress = false; return; }
+
   try {
-    // FIX #4: filtered API request — only the event types we need
-    const res  = await safeFetch(TICKER_API_URL, { key:'ticker', timeout:12000, retries:1 });
+    /* BUG FIX: Use simple URL with no complex event filter param */
+    const res  = await safeFetch(TICKER_API_URL, { key:'ticker', timeout:15000, retries:2 });
     const data = await res.json();
 
-    // FIX #1: sort uses centralized priority — tornado before SVR always
-    // FIX #8: deduplicate by stable NWS ID
-    const deduped = deduplicateAlerts(data.features || []);
+    if (!data || !data.features) {
+      scrollEl.innerHTML = '<div class="ticker-none">✓ No major severe weather alerts nationwide</div>';
+      return;
+    }
+
+    /* Filter to only severe weather event types we care about */
+    const relevant = (data.features || []).filter(a => isTickerRelevant(a.properties?.event || ''));
+
+    const deduped  = deduplicateAlerts(relevant);
     const features = sortAlerts(deduped);
 
-    const scrollEl = document.getElementById('tickerScroll');
     if (features.length === 0) {
       scrollEl.innerHTML = '<div class="ticker-none">✓ No major severe weather alerts nationwide</div>';
       return;
@@ -1569,10 +1833,8 @@ async function loadTicker() {
       groupsHTML += `</div>`;
     });
 
-    // FIX #6: single innerHTML set, no repeated DOM manipulation
     scrollEl.innerHTML = groupsHTML || '<div class="ticker-none">✓ No major alerts</div>';
 
-    // Keyboard support for overflow buttons
     scrollEl.querySelectorAll('.ticker-more').forEach(el => {
       el.addEventListener('keydown', e => {
         if (e.key==='Enter'||e.key===' ') { e.preventDefault(); el.click(); }
@@ -1582,48 +1844,49 @@ async function loadTicker() {
   } catch(e) {
     if (e.name === 'AbortError') return;
     console.error('Ticker error:', e);
+    if (scrollEl) scrollEl.innerHTML = '<div class="ticker-none" style="color:#ff6060">⚠ Ticker unavailable</div>';
   } finally {
     tickerFetchInProgress = false;
   }
 }
 
 /* ════════════════════════════════════════════════
-   SEARCH — FIX #5, #6: safeFetch + bounded cache
+   SEARCH
 ════════════════════════════════════════════════ */
 let searchDebounce;
-const searchInput  = document.getElementById('searchInput');
+const searchInput   = document.getElementById('searchInput');
 const suggestionsEl = document.getElementById('searchSuggestions');
 
-searchInput.addEventListener('input', () => {
-  clearTimeout(searchDebounce);
-  const q = searchInput.value.trim();
-  if (q.length < 2) {
-    suggestionsEl.innerHTML = '';
-    suggestionsEl.style.display = 'none';
-    return;
-  }
-  searchDebounce = setTimeout(async () => {
-    // FIX #6: bounded cache hit
-    if (searchCache.has(q)) { renderSuggestions(searchCache.get(q)); return; }
-    try {
-      const res  = await safeFetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=20&addressdetails=1`,
-        { key:'search', timeout:6000 }
-      );
-      const data = await res.json();
-      addSearchCache(q, data); // FIX #6: bounded add
-      renderSuggestions(data);
-    } catch(e) {
-      if (e.name !== 'AbortError') console.warn('Search error:', e);
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    const q = searchInput.value.trim();
+    if (q.length < 2) {
+      if (suggestionsEl) { suggestionsEl.innerHTML = ''; suggestionsEl.style.display = 'none'; }
+      return;
     }
-  }, 280);
-});
+    searchDebounce = setTimeout(async () => {
+      if (searchCache.has(q)) { renderSuggestions(searchCache.get(q)); return; }
+      try {
+        const res  = await safeFetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&countrycodes=us&limit=20&addressdetails=1`,
+          { key:'search', timeout:6000 }
+        );
+        const data = await res.json();
+        addSearchCache(q, data);
+        renderSuggestions(data);
+      } catch(e) {
+        if (e.name !== 'AbortError') console.warn('Search error:', e);
+      }
+    }, 280);
+  });
+}
 
 function renderSuggestions(data) {
+  if (!suggestionsEl) return;
   suggestionsEl.innerHTML = '';
   if (!data || data.length === 0) { suggestionsEl.style.display='none'; return; }
   suggestionsEl.style.display = 'block';
-  // FIX #6: build fragment to avoid repeated reflows
   const frag = document.createDocumentFragment();
   data.slice(0,8).forEach(p => {
     if (!p.lat || !p.lon) return;
@@ -1634,7 +1897,7 @@ function renderSuggestions(data) {
     const pick = () => {
       appLat = parseFloat(p.lat);
       appLon = parseFloat(p.lon);
-      searchInput.value = p.display_name;
+      if (searchInput) searchInput.value = p.display_name;
       suggestionsEl.innerHTML = '';
       suggestionsEl.style.display = 'none';
       loadAll();
@@ -1647,18 +1910,15 @@ function renderSuggestions(data) {
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('.search-wrap')) {
+  if (!e.target.closest('.search-wrap') && suggestionsEl) {
     suggestionsEl.innerHTML = '';
     suggestionsEl.style.display = 'none';
   }
 });
 
 /* ════════════════════════════════════════════════
-   REFRESH INTERVALS — FIX #5: jittered polling,
-   no overlapping requests (guard flags per loader)
-   FIX #12: stale check each cycle
+   REFRESH INTERVALS — jittered polling
 ════════════════════════════════════════════════ */
-// Jitter helper — prevents thundering herd if multiple tabs open
 function jitteredInterval(fn, baseMs, jitterMs) {
   const tick = () => {
     fn();
