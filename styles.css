@@ -62,7 +62,7 @@ body {
   overscroll-behavior: none;
 }
 
-/* ── CANVAS ── */
+/* ── CANVAS — fixed so it never scrolls ── */
 #bgCanvas {
   position: fixed;
   inset: 0;
@@ -321,7 +321,9 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 
 /* ════════════════════════════════════════════
-   TICKER SYSTEM
+   TICKER SYSTEM — z-index FIXED
+   Ticker wrap and portal must sit ABOVE all page
+   content. We use a very high z-index stack here.
 ════════════════════════════════════════════ */
 .ticker-wrap {
   position: relative;
@@ -329,9 +331,13 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   background: linear-gradient(90deg,#0e0000,#1e0000,#0e0000);
   border-top: 1px solid rgba(255,80,80,0.28);
   border-bottom: 1px solid rgba(255,80,80,0.28);
+  /* overflow:visible so the dropdown can escape */
   overflow: visible;
-  z-index: 50;
+  /* Must be above all cards, alerts, sections */
+  z-index: 500;
   margin: 10px 0;
+  /* Create its own stacking context at a high level */
+  isolation: isolate;
 }
 .ticker-wrap::before,
 .ticker-wrap::after {
@@ -363,6 +369,8 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   will-change: scroll-position;
   gap: 0;
   cursor: grab;
+  /* Clip only horizontally, not vertically */
+  overflow-y: visible;
 }
 .ticker-scroll:active { cursor: grabbing; }
 .ticker-scroll::-webkit-scrollbar { display: none; }
@@ -438,30 +446,43 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 .ticker-more:active { opacity: 1; background: rgba(255,255,255,0.12); }
 
+/* ── TICKER OVERFLOW PORTAL ──
+   Fixed-position portal rendered at body root.
+   Must have a z-index higher than EVERYTHING including
+   the header (z:100), menu (z:101), alerts, cards, etc.
+   We use 9500 — below only the popup (9000 won't work,
+   use 8500 for portal so popup still wins).
+   Actually popup is 9000, siren is 99999.
+   Portal should be: above all page content (>500),
+   above header (>100), below popup (< 9000).
+   Use z-index: 8000.
+── */
 #tickerOverflowPortal {
   position: fixed;
-  left: 0; right: 0;
+  left: 0;
+  right: 0;
+  /* top is set dynamically by JS */
   background: rgba(5,10,22,0.99);
-  border: 1px solid rgba(255,80,80,0.28);
-  border-top: none;
+  border: 1px solid rgba(255,80,80,0.35);
+  border-top: 2px solid rgba(255,80,80,0.5);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  z-index: 400;
+  /* HIGH z-index — above all page content, below popup/siren */
+  z-index: 8000;
   overflow: hidden;
   max-height: 0;
   transition: max-height 0.32s cubic-bezier(0.4,0,0.2,1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  top: 0;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   pointer-events: none;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.85);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 0 1px rgba(255,80,80,0.1);
 }
 #tickerOverflowPortal.open {
-  max-height: 320px;
+  max-height: 340px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   pointer-events: auto;
 }
-.ticker-overflow-inner { padding: 12px 14px 16px; }
+.ticker-overflow-inner { padding: 14px 16px 18px; }
 .ticker-overflow-title {
   font-family: var(--font-display);
   font-size: 14px;
