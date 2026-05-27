@@ -18,7 +18,6 @@ const COMPASS_DIRS = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','
 
 /* ────────────────────────────────────────────────
    CENTRALIZED ALERT PRIORITY SYSTEM
-   Lower number = higher priority.
 ──────────────────────────────────────────────── */
 const ALERT_PRIORITY_MAP = new Map([
   ['Particularly Dangerous Situation', 1],
@@ -54,7 +53,7 @@ function isExtremeLevel(eventStr) {
 }
 
 /* ────────────────────────────────────────────────
-   TICKER GROUPS — ordered by priority
+   TICKER GROUPS
 ──────────────────────────────────────────────── */
 const TICKER_GROUPS = [
   { key:'pds',      label:'Particularly Dangerous Situation', cls:'tg-pds',
@@ -77,11 +76,6 @@ const TICKER_GROUPS = [
     match: () => true },
 ];
 
-/* ────────────────────────────────────────────────
-   BUG FIX: TICKER API — Use status=actual only, no event filter
-   The multi-event filter param was malformed causing 0 results.
-   We fetch all active alerts and filter client-side instead.
-──────────────────────────────────────────────── */
 const TICKER_API_URL = `https://api.weather.gov/alerts/active`;
 
 /* ════════════════════════════════════════════════
@@ -97,6 +91,27 @@ let activeAlertFeatures = [];
 let forceStormBg = false;
 let forceStormType = '';
 let lastSuccessfulRefresh = null;
+
+/* ────────────────────────────────────────────────
+   PERSISTENT POPUP / ALERT DISMISSAL
+   Tracks which alert UIDs the user has explicitly
+   dismissed with the close button. These will NOT
+   re-appear even after data refreshes.
+──────────────────────────────────────────────── */
+const MAX_DISMISSED = 100;
+let dismissedArr = [];
+const dismissedSet = new Set();
+
+function addDismissed(uid) {
+  if (dismissedSet.has(uid)) return;
+  if (dismissedArr.length >= MAX_DISMISSED) {
+    const oldest = dismissedArr.shift();
+    dismissedSet.delete(oldest);
+  }
+  dismissedArr.push(uid);
+  dismissedSet.add(uid);
+}
+function isDismissed(uid) { return dismissedSet.has(uid); }
 
 /* ────────────────────────────────────────────────
    BOUNDED CACHES
@@ -149,11 +164,9 @@ async function safeFetch(url, {
 
     try {
       const res = await fetch(url, {
-  signal: controller.signal,
-  headers: {
-    "Accept": "application/geo+json"
-  }
-});
+        signal: controller.signal,
+        headers: { "Accept": "application/geo+json" }
+      });
       clearTimeout(timeoutId);
       if (key) activeFetchControllers.delete(key);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -161,9 +174,7 @@ async function safeFetch(url, {
     } catch (err) {
       clearTimeout(timeoutId);
       if (key) activeFetchControllers.delete(key);
-
       if (err.name === 'AbortError') throw err;
-
       if (attempt < retries) {
         const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 400;
         await new Promise(r => setTimeout(r, delay));
@@ -443,7 +454,7 @@ function announceAlert(message) {
 }
 
 /* ════════════════════════════════════════════════
-   POPUP SYSTEM
+   POPUP SYSTEM — with persistent dismissal
 ════════════════════════════════════════════════ */
 const POPUP_CONFIG = [
   {
@@ -501,11 +512,17 @@ function getPopupConfig(ev) {
   return POPUP_CONFIG.find(c => c.match(ev)) || null;
 }
 
-function showPopup(ev, movement) {
+/* Current popup alert UID — so close button knows what to dismiss */
+let currentPopupUid = null;
+
+function showPopup(ev, movement, uid) {
   const cfg = getPopupConfig(ev);
   if (!cfg) return;
   const badge = document.getElementById('popupBadge');
   if (!badge) return;
+
+  currentPopupUid = uid || null;
+
   badge.textContent    = cfg.badge;
   badge.style.background = cfg.badgeBg;
   badge.style.color    = cfg.badgeTx;
@@ -529,16 +546,25 @@ function showPopup(ev, movement) {
   announceAlert(cfg.title);
 }
 
+function closePopup() {
+  // Mark this alert UID as dismissed so it never re-appears
+  if (currentPopupUid) {
+    addDismissed(currentPopupUid);
+    // Also add to shownAlerts so the card stays collapsed by default
+    addShownAlert(currentPopupUid);
+  }
+  document.getElementById('popup').style.display = 'none';
+  currentPopupUid = null;
+}
+
 const popupCloseBtn = document.getElementById('popupClose');
 if (popupCloseBtn) {
-  popupCloseBtn.addEventListener('click', () => {
-    document.getElementById('popup').style.display = 'none';
-  });
+  popupCloseBtn.addEventListener('click', closePopup);
 }
 document.addEventListener('keydown', e => {
   const popup = document.getElementById('popup');
   if (e.key === 'Escape' && popup && popup.style.display !== 'none') {
-    popup.style.display = 'none';
+    closePopup();
   }
 });
 
@@ -645,7 +671,9 @@ function stopSiren() {
 })();
 
 /* ════════════════════════════════════════════════
-   ANIMATED BACKGROUND — Realistic Tornado
+   ANIMATED BACKGROUND — fixed position, realistic tornado
+   The canvas is position:fixed in CSS so it never
+   moves with scroll. We only need to handle resize.
 ════════════════════════════════════════════════ */
 (function initBackground() {
   if (prefersReducedMotion) return;
@@ -669,6 +697,7 @@ function stopSiren() {
   let tornadoDebris = [];
   let tornadoRopePhase = false;
   let tornadoGroundDust = [];
+  let tornadoIntensity = 0; // 0→1 ramp-in for smooth appearance
 
   let lastFrameTime = 0;
   const targetFPS  = perfLevel === 'low' ? 24 : perfLevel === 'mid' ? 40 : 60;
@@ -681,326 +710,359 @@ function stopSiren() {
     fog:   perfLevel === 'low' ? 6 : 10,
   };
 
+  /* ── RESIZE — canvas is fixed, just match viewport ── */
   let resizeTimer;
   function resize() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       const dpr = pixelRatio;
-      canvas.width  = window.innerWidth  * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width  = window.innerWidth  + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctx.scale(dpr, dpr);
       W = window.innerWidth;
       H = window.innerHeight;
+      canvas.width  = W * dpr;
+      canvas.height = H * dpr;
+      canvas.style.width  = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.scale(dpr, dpr);
       stars = null;
       initTornadoDebris();
     }, 150);
   }
   window.addEventListener('resize', resize, { passive: true });
+
+  // Initial size
   const dpr0 = pixelRatio;
-  canvas.width  = window.innerWidth  * dpr0;
-  canvas.height = window.innerHeight * dpr0;
-  canvas.style.width  = window.innerWidth  + 'px';
-  canvas.style.height = window.innerHeight + 'px';
-  ctx.scale(dpr0, dpr0);
   W = window.innerWidth;
   H = window.innerHeight;
+  canvas.width  = W * dpr0;
+  canvas.height = H * dpr0;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr0, dpr0);
 
-  /* ── TORNADO INITIALIZATION ── */
+  /* ════════════════════════════════════════════
+     REALISTIC TORNADO
+  ════════════════════════════════════════════ */
   function initTornadoDebris() {
     tornadoDebris = [];
     tornadoGroundDust = [];
-    const debrisCount = perfLevel === 'low' ? 40 : perfLevel === 'mid' ? 80 : 140;
+    tornadoIntensity = 0;
+
+    const debrisCount = perfLevel === 'low' ? 50 : perfLevel === 'mid' ? 100 : 180;
     for (let i = 0; i < debrisCount; i++) {
       const t = Math.random();
-      const orbitRadius = Math.max(8, t < 0.5 ? t * t * 2 * 120 + 8 : (1 - t) * 80 + 18);
+      const orbitRadius = Math.max(8, t < 0.5
+        ? t * t * 2 * 130 + 8
+        : (1 - t) * 90 + 18);
       tornadoDebris.push({
-        t,                  // 0=top, 1=ground
+        t,
         angle: Math.random() * Math.PI * 2,
         orbitRadius,
-        angularSpeed: (1.8 + Math.random() * 2.2) * (Math.random() > 0.5 ? 1 : -1),
-        vertSpeed: 0.0008 + Math.random() * 0.002,
-        size: 1 + Math.random() * (t > 0.7 ? 5 : 2.5),
-        type: Math.random() > 0.6 ? 'plank' : Math.random() > 0.5 ? 'chunk' : 'dust',
+        angularSpeed: (1.8 + Math.random() * 2.8) * (Math.random() > 0.5 ? 1 : -1),
+        vertSpeed: 0.0006 + Math.random() * 0.0018,
+        size: 1 + Math.random() * (t > 0.7 ? 6 : 3),
+        type: Math.random() > 0.55 ? 'plank' : Math.random() > 0.5 ? 'chunk' : 'dust',
         rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 0.15,
-        opacity: 0.3 + Math.random() * 0.65,
-        color: `hsl(${25 + Math.random()*20},${30+Math.random()*20}%,${20+Math.random()*20}%)`,
+        rotSpeed: (Math.random() - 0.5) * 0.18,
+        opacity: 0.35 + Math.random() * 0.6,
+        color: `hsl(${22 + Math.random()*25},${28+Math.random()*22}%,${18+Math.random()*22}%)`,
       });
     }
-    // Ground dust puffs
-    const dustCount = perfLevel === 'low' ? 12 : 24;
+
+    // Ground dust vortex
+    const dustCount = perfLevel === 'low' ? 16 : 30;
     for (let i = 0; i < dustCount; i++) {
       tornadoGroundDust.push({
         angle: Math.random() * Math.PI * 2,
-        radius: 20 + Math.random() * 140,
-        angularSpeed: (0.4 + Math.random() * 0.8) * (Math.random() > 0.5 ? 1 : -1),
-        opacity: 0.1 + Math.random() * 0.3,
-        size: 18 + Math.random() * 60,
-        yOffset: Math.random() * 40,
+        radius: 15 + Math.random() * 160,
+        angularSpeed: (0.5 + Math.random() * 1.0) * (Math.random() > 0.5 ? 1 : -1),
+        opacity: 0.08 + Math.random() * 0.28,
+        size: 20 + Math.random() * 70,
+        yOffset: Math.random() * 50,
         phase: Math.random() * Math.PI * 2,
       });
     }
   }
 
-  /* ── TORNADO PROFILE — realistic tapered funnel ── */
-  function getTornadoProfile(yFrac, age) {
-    // yFrac: 0=cloud base, 1=ground
-    // Returns width in pixels at that height
-    const wobbleAmt = Math.sin(tornadoWobble + yFrac * 3) * 8;
+  /* Funnel profile: width in px at yFrac (0=cloud top, 1=ground) */
+  function getTornadoProfile(yFrac) {
+    const wobbleAmt = Math.sin(tornadoWobble + yFrac * 3.5) * 10;
     if (tornadoRopePhase) {
-      // Rope tornado: very narrow, sinuous
-      const rope = 6 + Math.sin(yFrac * Math.PI * 4 + tornadoAge * 0.05) * 10;
-      return Math.max(3, rope + wobbleAmt * 0.3);
+      const rope = 5 + Math.sin(yFrac * Math.PI * 5 + tornadoAge * 0.06) * 12;
+      return Math.max(2, rope + wobbleAmt * 0.25);
     }
-    // Classic wedge/cone
-    const top = 5;
-    const mid = yFrac < 0.5
-      ? top + yFrac * 2 * 90
-      : 90 + (yFrac - 0.5) * 2 * 60;
-    return Math.max(3, mid + wobbleAmt);
+    // Realistic EF3+ wedge tornado profile
+    // Narrow at top, widest at 70% down, tapers to contact point
+    let w;
+    if (yFrac < 0.15) {
+      w = yFrac / 0.15 * 18; // initial narrow stem from cloud
+    } else if (yFrac < 0.70) {
+      w = 18 + ((yFrac - 0.15) / 0.55) * 110; // widening cone
+    } else {
+      w = 128 + ((yFrac - 0.70) / 0.30) * 30; // slight widening at base
+    }
+    return Math.max(2, w + wobbleAmt);
   }
 
+  /* Horizontal position with realistic tilt/lean */
   function getTornadoX(yFrac) {
-    // Slight lean/tilt as tornado moves
-    const lean = Math.sin(tornadoAge * 0.008) * 30;
-    const wobX  = Math.sin(tornadoWobble * 0.7 + yFrac * 2) * 14 * yFrac;
+    const lean = Math.sin(tornadoAge * 0.006) * 40 * yFrac;  // tilts as it moves
+    const wobX  = Math.sin(tornadoWobble * 0.5 + yFrac * 2.2) * 18 * yFrac;
     return W / 2 + lean + wobX;
   }
 
-  /* ── DRAW REALISTIC TORNADO ── */
+  /* Multi-layer funnel rendering */
+  function buildFunnelPath(points, widthMult) {
+    const path = new Path2D();
+    const n = points.length;
+    // Left edge top→bottom
+    path.moveTo(points[0].cx - points[0].hw * widthMult, points[0].cy);
+    for (let i = 1; i < n; i++) {
+      const p = points[i], pp = points[i - 1];
+      const cpx = (pp.cx + p.cx) / 2 - (pp.hw + p.hw) / 2 * widthMult;
+      const cpy = (pp.cy + p.cy) / 2;
+      path.quadraticCurveTo(pp.cx - pp.hw * widthMult, pp.cy, cpx, cpy);
+    }
+    path.lineTo(points[n-1].cx - points[n-1].hw * widthMult, points[n-1].cy);
+    // Right edge bottom→top
+    for (let i = n - 1; i >= 0; i--) {
+      const p = points[i];
+      const pi = Math.max(0, i - 1);
+      const pp = points[pi];
+      const cpx = (pp.cx + p.cx) / 2 + (pp.hw + p.hw) / 2 * widthMult;
+      const cpy = (pp.cy + p.cy) / 2;
+      if (i === n - 1) {
+        path.lineTo(p.cx + p.hw * widthMult, p.cy);
+      } else {
+        path.quadraticCurveTo(p.cx + p.hw * widthMult, p.cy, cpx, cpy);
+      }
+    }
+    path.closePath();
+    return path;
+  }
+
   function drawTornado() {
     tornadoAge += 1;
-    tornadoRotation += 0.028;
-    tornadoWobble += 0.015;
+    tornadoRotation += 0.032;
+    tornadoWobble += 0.013;
+    // Smooth intensity ramp-in
+    if (tornadoIntensity < 1) tornadoIntensity = Math.min(1, tornadoIntensity + 0.008);
 
-    // Occasionally trigger rope phase
-    if (tornadoAge % 800 < 120) {
-      tornadoRopePhase = true;
-    } else {
-      tornadoRopePhase = false;
-    }
+    // Rope phase cycles
+    tornadoRopePhase = (tornadoAge % 900) < 90;
 
     const groundY = H * 0.88;
-    const cloudY  = H * 0.05;
-    const steps   = perfLevel === 'low' ? 24 : 48;
+    const cloudY  = H * 0.06;
+    const steps   = perfLevel === 'low' ? 28 : 56;
 
     ctx.save();
+    ctx.globalAlpha = tornadoIntensity;
 
-    // ── 1. Green-tinted sky glow (pressure drop effect) ──
-    const skyGlow = ctx.createRadialGradient(W/2, cloudY, 0, W/2, H * 0.4, W * 0.55);
-    skyGlow.addColorStop(0, 'rgba(30,60,10,0.18)');
-    skyGlow.addColorStop(0.5, 'rgba(10,30,5,0.1)');
-    skyGlow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = skyGlow;
+    // ── 1. Greenish pressure-drop sky haze ──
+    const skyHaze = ctx.createRadialGradient(W/2, H * 0.3, 0, W/2, H * 0.5, W * 0.7);
+    skyHaze.addColorStop(0, 'rgba(28,55,8,0.22)');
+    skyHaze.addColorStop(0.5, 'rgba(10,28,4,0.12)');
+    skyHaze.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = skyHaze;
     ctx.fillRect(0, 0, W, H);
 
-    // ── 2. Main funnel body (multi-layer for depth) ──
-    // Draw from bottom to top for correct layering
-    for (let layer = 0; layer < 3; layer++) {
-      ctx.beginPath();
-      const alphaBase = [0.12, 0.22, 0.35][layer];
-      const widthMult = [1.4, 1.15, 0.9][layer];
-      const colorL = ['rgba(55,40,20,', 'rgba(70,50,22,', 'rgba(88,65,28,'][layer];
-
-      // Build funnel path downward
-      let firstX = null, firstW = null;
-      const points = [];
-      for (let i = 0; i <= steps; i++) {
-        const yFrac = i / steps;
-        const cy = cloudY + yFrac * (groundY - cloudY);
-        const cx = getTornadoX(yFrac);
-        const hw = getTornadoProfile(yFrac, tornadoAge) * widthMult;
-        points.push({ cx, cy, hw });
-      }
-
-      // Left edge (top to bottom)
-      ctx.moveTo(points[0].cx - points[0].hw, points[0].cy);
-      for (let i = 1; i < points.length; i++) {
-        const p = points[i], pp = points[i-1];
-        const cpx = (pp.cx + p.cx) / 2 - (pp.hw + p.hw) / 2;
-        const cpy = (pp.cy + p.cy) / 2;
-        ctx.quadraticCurveTo(pp.cx - pp.hw, pp.cy, cpx, cpy);
-      }
-      ctx.lineTo(points[points.length-1].cx - points[points.length-1].hw, points[points.length-1].cy);
-
-      // Right edge (bottom to top)
-      for (let i = points.length - 1; i >= 0; i--) {
-        const p = points[i];
-        const pi = Math.max(0, i - 1);
-        const pp = points[pi];
-        const cpx = (pp.cx + p.cx) / 2 + (pp.hw + p.hw) / 2;
-        const cpy = (pp.cy + p.cy) / 2;
-        if (i === points.length - 1) {
-          ctx.lineTo(p.cx + p.hw, p.cy);
-        } else {
-          ctx.quadraticCurveTo(p.cx + p.hw, p.cy, cpx, cpy);
-        }
-      }
-      ctx.closePath();
-
-      const grad = ctx.createLinearGradient(0, cloudY, 0, groundY);
-      grad.addColorStop(0, `${colorL}${alphaBase * 0.5})`);
-      grad.addColorStop(0.4, `${colorL}${alphaBase})`);
-      grad.addColorStop(0.8, `${colorL}${alphaBase * 1.3})`);
-      grad.addColorStop(1, `${colorL}${alphaBase * 0.6})`);
-      ctx.fillStyle = grad;
-      ctx.fill();
-    }
-
-    // ── 3. Interior rotation bands ──
-    const bandCount = perfLevel === 'low' ? 8 : 16;
-    for (let b = 0; b < bandCount; b++) {
-      const yFrac = b / bandCount;
+    // ── 2. Build point array ──
+    const points = [];
+    for (let i = 0; i <= steps; i++) {
+      const yFrac = i / steps;
       const cy = cloudY + yFrac * (groundY - cloudY);
       const cx = getTornadoX(yFrac);
-      const hw = getTornadoProfile(yFrac, tornadoAge);
-      if (hw < 4) continue;
-      const bandAngle = tornadoRotation * (3 - yFrac * 1.5) + b * 0.4;
-      const bandX = cx + Math.cos(bandAngle) * hw * 0.5;
-      const grad = ctx.createRadialGradient(bandX, cy, 0, cx, cy, hw);
-      grad.addColorStop(0, 'rgba(120,95,45,0.0)');
-      grad.addColorStop(0.5, 'rgba(80,58,20,0.14)');
-      grad.addColorStop(0.85, 'rgba(55,38,12,0.22)');
-      grad.addColorStop(1, 'rgba(30,18,4,0.0)');
+      const hw = getTornadoProfile(yFrac);
+      points.push({ cx, cy, hw });
+    }
+
+    // ── 3. Draw funnel layers (outer glow → inner core) ──
+    const layers = [
+      { mult: 1.55, alphaTop: 0.04, alphaBot: 0.08, color: '45,30,10' },
+      { mult: 1.25, alphaTop: 0.10, alphaBot: 0.18, color: '58,42,16' },
+      { mult: 1.00, alphaTop: 0.20, alphaBot: 0.38, color: '75,55,22' },
+      { mult: 0.75, alphaTop: 0.28, alphaBot: 0.50, color: '92,68,28' },
+      { mult: 0.50, alphaTop: 0.18, alphaBot: 0.32, color: '55,40,16' },
+    ];
+
+    layers.forEach(l => {
+      const path = buildFunnelPath(points, l.mult);
+      const grad = ctx.createLinearGradient(0, cloudY, 0, groundY);
+      grad.addColorStop(0.0, `rgba(${l.color},${l.alphaTop * 0.4})`);
+      grad.addColorStop(0.25, `rgba(${l.color},${l.alphaTop})`);
+      grad.addColorStop(0.65, `rgba(${l.color},${l.alphaBot})`);
+      grad.addColorStop(0.85, `rgba(${l.color},${l.alphaBot * 1.2})`);
+      grad.addColorStop(1.0, `rgba(${l.color},${l.alphaBot * 0.5})`);
       ctx.fillStyle = grad;
+      ctx.fill(path);
+    });
+
+    // ── 4. Interior rotation banding — makes it look like it's spinning ──
+    const bandCount = perfLevel === 'low' ? 10 : 22;
+    for (let b = 0; b < bandCount; b++) {
+      const yFrac = (b + 0.5) / bandCount;
+      const cy = cloudY + yFrac * (groundY - cloudY);
+      const cx = getTornadoX(yFrac);
+      const hw = getTornadoProfile(yFrac);
+      if (hw < 5) continue;
+
+      // Rotating elliptical highlight band
+      const bandAngle = tornadoRotation * (2.5 - yFrac) + b * 0.55;
+      const highlightX = cx + Math.cos(bandAngle) * hw * 0.45;
+      const highlightY = cy + Math.sin(bandAngle * 0.5) * hw * 0.12;
+
+      const hg = ctx.createRadialGradient(highlightX, highlightY, 0, cx, cy, hw * 0.95);
+      hg.addColorStop(0, 'rgba(140,110,50,0.0)');
+      hg.addColorStop(0.35, 'rgba(95,70,24,0.12)');
+      hg.addColorStop(0.70, 'rgba(62,44,14,0.22)');
+      hg.addColorStop(0.90, 'rgba(35,22,6,0.28)');
+      hg.addColorStop(1, 'rgba(10,6,2,0.0)');
+      ctx.fillStyle = hg;
       ctx.beginPath();
-      ctx.ellipse(cx, cy, hw, hw * 0.22, 0, 0, Math.PI * 2);
+      ctx.ellipse(cx, cy, hw * 0.95, hw * 0.20, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // ── 4. Suction vortices (2-3 sub-vortices rotating inside) ──
-    const vortexCount = 2;
-    for (let v = 0; v < vortexCount; v++) {
-      const vAngle = tornadoRotation * 2.5 + v * (Math.PI * 2 / vortexCount);
-      for (let s = 0; s <= steps; s++) {
+    // ── 5. Sub-vortices (2 inner rotating columns) ──
+    const vCount = 2;
+    for (let v = 0; v < vCount; v++) {
+      const vBaseAngle = tornadoRotation * 3.2 + v * Math.PI;
+      for (let s = 3; s < steps - 2; s += 2) {
         const yFrac = s / steps;
         const cy = cloudY + yFrac * (groundY - cloudY);
         const cx = getTornadoX(yFrac);
-        const hw = getTornadoProfile(yFrac, tornadoAge);
-        if (hw < 6) continue;
-        const vr = hw * (0.55 + 0.2 * Math.sin(yFrac * Math.PI));
-        const vx = cx + Math.cos(vAngle + yFrac * 2) * vr;
+        const hw = getTornadoProfile(yFrac);
+        if (hw < 8) continue;
+        const orbitR = hw * (0.52 + 0.18 * Math.sin(yFrac * Math.PI));
+        const vAngle = vBaseAngle + yFrac * 1.8;
+        const vx = cx + Math.cos(vAngle) * orbitR;
         const vy = cy;
-        const vSize = Math.max(2, hw * 0.18);
-        const vGrad = ctx.createRadialGradient(vx, vy, 0, vx, vy, vSize * 2.5);
-        vGrad.addColorStop(0, 'rgba(160,125,60,0.35)');
-        vGrad.addColorStop(0.4, 'rgba(100,75,28,0.18)');
-        vGrad.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = vGrad;
+        const vs = Math.max(3, hw * 0.22);
+        const vg = ctx.createRadialGradient(vx, vy, 0, vx, vy, vs * 3);
+        vg.addColorStop(0, 'rgba(175,135,65,0.38)');
+        vg.addColorStop(0.35, 'rgba(110,80,28,0.20)');
+        vg.addColorStop(0.7, 'rgba(65,44,14,0.10)');
+        vg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = vg;
         ctx.beginPath();
-        ctx.arc(vx, vy, vSize * 2.5, 0, Math.PI * 2);
+        ctx.arc(vx, vy, vs * 3, 0, Math.PI * 2);
         ctx.fill();
       }
     }
 
-    // ── 5. Ground contact — dust swirl & condensation funnel tip ──
+    // ── 6. Ground contact — condensation disc + massive dust bowl ──
     const groundX = getTornadoX(1);
-    const groundW = getTornadoProfile(1, tornadoAge);
+    const groundW = getTornadoProfile(1);
 
-    // Ground condensation disc
-    const discGrad = ctx.createRadialGradient(groundX, groundY, 0, groundX, groundY, groundW * 2.5);
-    discGrad.addColorStop(0, 'rgba(100,75,30,0.55)');
-    discGrad.addColorStop(0.4, 'rgba(70,52,18,0.35)');
-    discGrad.addColorStop(0.75, 'rgba(40,28,8,0.18)');
+    // Condensation impact disc
+    const discGrad = ctx.createRadialGradient(groundX, groundY, 0, groundX, groundY, groundW * 3.5);
+    discGrad.addColorStop(0, 'rgba(120,90,38,0.7)');
+    discGrad.addColorStop(0.3, 'rgba(90,65,24,0.45)');
+    discGrad.addColorStop(0.6, 'rgba(55,38,12,0.22)');
+    discGrad.addColorStop(0.85, 'rgba(28,18,5,0.10)');
     discGrad.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = discGrad;
     ctx.beginPath();
-    ctx.ellipse(groundX, groundY, groundW * 2.5, groundW * 0.6, 0, 0, Math.PI * 2);
+    ctx.ellipse(groundX, groundY, groundW * 3.5, groundW * 0.7, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Ground dust ring
+    // Rotating dust halo at ground
     tornadoGroundDust.forEach(d => {
-      d.angle += d.angularSpeed * 0.012;
-      d.phase += 0.02;
+      d.angle += d.angularSpeed * 0.014;
+      d.phase += 0.018;
       const dx = groundX + Math.cos(d.angle) * d.radius;
-      const dy = groundY - d.yOffset + Math.sin(d.phase) * 8;
+      const dy = groundY - d.yOffset + Math.sin(d.phase) * 10;
       const dg = ctx.createRadialGradient(dx, dy, 0, dx, dy, d.size);
-      dg.addColorStop(0, `rgba(110,82,35,${d.opacity})`);
-      dg.addColorStop(0.5, `rgba(80,58,20,${d.opacity * 0.5})`);
+      dg.addColorStop(0, `rgba(118,88,35,${d.opacity})`);
+      dg.addColorStop(0.45, `rgba(85,60,20,${d.opacity * 0.55})`);
       dg.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = dg;
       ctx.beginPath();
-      ctx.ellipse(dx, dy, d.size, d.size * 0.45, 0, 0, Math.PI * 2);
+      ctx.ellipse(dx, dy, d.size, d.size * 0.42, 0, 0, Math.PI * 2);
       ctx.fill();
     });
 
-    // ── 6. Flying debris ──
+    // ── 7. Flying debris ──
     tornadoDebris.forEach(d => {
-      d.angle += d.angularSpeed * 0.018 * (1 + d.t);
+      d.angle += d.angularSpeed * 0.020 * (0.8 + d.t * 0.8);
       d.t += d.vertSpeed;
-      if (d.t > 1) d.t = 0.02;
+      if (d.t > 1.02) d.t = 0.02 + Math.random() * 0.05;
       d.rotation += d.rotSpeed;
 
-      const yFrac = d.t;
+      const yFrac = Math.min(1, d.t);
       const cy = cloudY + yFrac * (groundY - cloudY);
       const cx = getTornadoX(yFrac);
-      const hw = getTornadoProfile(yFrac, tornadoAge);
-      const orbitR = Math.min(d.orbitRadius, hw * 0.95);
+      const hw = getTornadoProfile(yFrac);
+      const orbitR = Math.min(d.orbitRadius, hw * 0.92);
 
-      const dx = cx + Math.cos(d.angle + tornadoRotation * d.angularSpeed * 0.5) * orbitR;
-      const dy = cy + Math.sin(d.angle) * orbitR * 0.18;
+      const dx = cx + Math.cos(d.angle + tornadoRotation * d.angularSpeed * 0.4) * orbitR;
+      const dy = cy + Math.sin(d.angle * 0.7) * orbitR * 0.15;
+
+      const fadeIn  = Math.min(1, d.t * 8);
+      const fadeOut = Math.min(1, (1 - d.t) * 8);
 
       ctx.save();
       ctx.translate(dx, dy);
       ctx.rotate(d.rotation);
-      ctx.globalAlpha = d.opacity * Math.min(1, d.t * 6) * Math.min(1, (1 - d.t) * 6);
+      ctx.globalAlpha = d.opacity * fadeIn * fadeOut;
       ctx.fillStyle = d.color;
 
       if (d.type === 'plank') {
-        ctx.fillRect(-d.size * 2.5, -d.size * 0.4, d.size * 5, d.size * 0.8);
+        const pw = d.size * 3.5, ph = d.size * 0.55;
+        ctx.fillRect(-pw/2, -ph/2, pw, ph);
       } else if (d.type === 'chunk') {
         ctx.beginPath();
         ctx.arc(0, 0, d.size, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // dust particle
-        const dg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, d.size * 1.5);
+        // Soft dust puff
+        const dg2 = ctx.createRadialGradient(0, 0, 0, 0, 0, d.size * 2);
         dg2.addColorStop(0, d.color);
+        dg2.addColorStop(0.6, d.color.replace('hsl', 'hsla').replace(')', ',0.4)'));
         dg2.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = dg2;
         ctx.beginPath();
-        ctx.arc(0, 0, d.size * 1.5, 0, Math.PI * 2);
+        ctx.arc(0, 0, d.size * 2, 0, Math.PI * 2);
         ctx.fill();
       }
-
       ctx.restore();
     });
 
-    // ── 7. Cloud base (mesocyclone attachment) ──
+    // ── 8. Mesocyclone cloud base ──
     const cloudBaseX = W / 2;
-    const cloudBaseGrad = ctx.createRadialGradient(cloudBaseX, cloudY, 0, cloudBaseX, cloudY, W * 0.35);
-    cloudBaseGrad.addColorStop(0, 'rgba(20,12,4,0.7)');
-    cloudBaseGrad.addColorStop(0.3, 'rgba(30,20,8,0.45)');
-    cloudBaseGrad.addColorStop(0.6, 'rgba(15,10,4,0.22)');
-    cloudBaseGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = cloudBaseGrad;
+
+    // Dark rotating wall cloud
+    const wallGrad = ctx.createRadialGradient(cloudBaseX, cloudY, 0, cloudBaseX, cloudY, W * 0.40);
+    wallGrad.addColorStop(0, 'rgba(12,6,2,0.80)');
+    wallGrad.addColorStop(0.25, 'rgba(20,12,4,0.55)');
+    wallGrad.addColorStop(0.55, 'rgba(12,7,2,0.30)');
+    wallGrad.addColorStop(0.80, 'rgba(5,3,1,0.12)');
+    wallGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = wallGrad;
     ctx.beginPath();
-    ctx.ellipse(cloudBaseX, cloudY, W * 0.35, H * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(cloudBaseX, cloudY, W * 0.40, H * 0.14, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Rotating wall cloud
-    const wallAngleBase = tornadoRotation * 0.6;
-    for (let w = 0; w < 6; w++) {
-      const wa = wallAngleBase + w * (Math.PI / 3);
-      const wr = W * (0.12 + Math.random() * 0.0);
+    // Rotating lowering/wall cloud lobes
+    const wallCount = perfLevel === 'low' ? 5 : 8;
+    for (let w = 0; w < wallCount; w++) {
+      const wa = tornadoRotation * 0.55 + w * (Math.PI * 2 / wallCount);
+      const wr = W * (0.10 + Math.sin(wa * 2 + tornadoAge * 0.01) * 0.04);
       const wx = cloudBaseX + Math.cos(wa) * wr;
-      const wy = cloudY + H * 0.04 + Math.sin(wa) * H * 0.02;
-      const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, 55 + w * 8);
-      wg.addColorStop(0, 'rgba(40,30,12,0.4)');
-      wg.addColorStop(0.6, 'rgba(25,18,6,0.2)');
+      const wy = cloudY + H * 0.045 + Math.sin(wa * 0.7) * H * 0.025;
+      const wg = ctx.createRadialGradient(wx, wy, 0, wx, wy, 60 + w * 10);
+      wg.addColorStop(0, 'rgba(35,22,8,0.48)');
+      wg.addColorStop(0.55, 'rgba(22,14,4,0.24)');
       wg.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = wg;
       ctx.beginPath();
-      ctx.ellipse(wx, wy, 55 + w * 8, 30, 0, 0, Math.PI * 2);
+      ctx.ellipse(wx, wy, 60 + w * 10, 34, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
     ctx.restore();
   }
 
-  /* ─── REST OF CLOUD/RAIN/SNOW/FOG (unchanged) ─── */
+  /* ─── CLOUD / RAIN / SNOW / FOG helpers (unchanged) ─── */
   function buildCloud(x, y, scale, dark) {
     const lobes = [];
     const bodyCount = 3 + Math.floor(Math.random() * 3);
@@ -1274,7 +1336,7 @@ function stopSiren() {
         initRain(PARTICLE.rain,true);
         snowflakes=[]; fogParticles=[];
         tornadoAge=0; tornadoRotation=0; tornadoWobble=0;
-        tornadoRopePhase=false;
+        tornadoRopePhase=false; tornadoIntensity=0;
         initTornadoDebris();
         break;
       case 'snow':         initClouds(4,false); drops=[]; initSnow(PARTICLE.snow); fogParticles=[]; break;
@@ -1536,7 +1598,7 @@ async function loadWeather() {
 }
 
 /* ════════════════════════════════════════════════
-   ALERTS
+   ALERTS — with persistent dismissal check
 ════════════════════════════════════════════════ */
 let alertsFetchInProgress = false;
 async function loadAlerts() {
@@ -1584,6 +1646,7 @@ async function loadAlerts() {
       const score    = alertPriorityScore(ev);
       const cls      = alertCssClass(ev);
       const movement = parseMovement(desc);
+      const uid      = alertStableId(a);
 
       if (score <= 6 && alertRisk !== 'high') {
         alertRisk = 'high'; alertRiskLabel = 'HIGH';
@@ -1602,10 +1665,13 @@ async function loadAlerts() {
       const inMyCounty = countyMatchesArea(userCounty, areaDesc);
       if (inMyCounty && isTornadoLevel(ev)) needsSiren = true;
 
-      const uid = alertStableId(a);
-      if (!popupShown && !hasShownAlert(uid) && getPopupConfig(ev)) {
+      // Only show popup if:
+      // 1. Not already shown this session (shownAlertsSet)
+      // 2. Not explicitly dismissed by user (dismissedSet)
+      // 3. Has a popup config
+      if (!popupShown && !hasShownAlert(uid) && !isDismissed(uid) && getPopupConfig(ev)) {
         addShownAlert(uid);
-        showPopup(ev, movement);
+        showPopup(ev, movement, uid);
         popupShown = true;
       }
 
@@ -1626,8 +1692,11 @@ async function loadAlerts() {
       const shortDesc = desc.replace(/\*/g,'').replace(/\n\n/g,'<br><br>').replace(/\n/g,' ');
       const shortInst = inst ? `<div class="alert-instruction">${inst.replace(/\n/g,'<br>')}</div>` : '';
 
+      // Dismissed alerts get a subtle visual indicator
+      const dismissedClass = isDismissed(uid) ? ' alert-dismissed' : '';
+
       html += `
-        <div class="alert-card ${cls} card-expandable" onclick="toggleExpand(this)" role="button" tabindex="0" aria-expanded="false">
+        <div class="alert-card ${cls}${dismissedClass} card-expandable" onclick="toggleExpand(this)" role="button" tabindex="0" aria-expanded="false">
           <div class="alert-card-header">
             <div>
               <span class="alert-title">${ev}</span>
@@ -1688,8 +1757,7 @@ async function loadAlerts() {
 }
 
 /* ════════════════════════════════════════════════
-   TICKER — BUG FIX: fetch all active alerts,
-   filter client-side, handle CORS properly
+   TICKER
 ════════════════════════════════════════════════ */
 const tickerOverflowByGroup = {};
 let currentOverflowGroup    = null;
@@ -1699,7 +1767,8 @@ function positionOverflowPortal() {
   const portal = document.getElementById('tickerOverflowPortal');
   if (!wrap || !portal) return;
   const rect   = wrap.getBoundingClientRect();
-  portal.style.top = `${rect.bottom}px`;
+  // Position dropdown just below the ticker bar
+  portal.style.top  = `${rect.bottom}px`;
 }
 
 function openTickerOverflow(groupKey, event) {
@@ -1716,6 +1785,7 @@ function openTickerOverflow(groupKey, event) {
   }
   if (!items || items.length === 0) return;
 
+  // Position before opening
   positionOverflowPortal();
 
   const groupDef = TICKER_GROUPS.find(g => g.key === groupKey);
@@ -1746,11 +1816,6 @@ document.addEventListener('click', e => {
 window.addEventListener('scroll',  positionOverflowPortal, { passive: true });
 window.addEventListener('resize',  positionOverflowPortal, { passive: true });
 
-/* ────────────────────────────────────────────────
-   BUG FIX: Ticker events filter to only relevant types
-   The TICKER_EVENT_PARAM approach caused malformed URLs.
-   We now fetch all active alerts and filter in JS.
-──────────────────────────────────────────────── */
 const TICKER_RELEVANT_EVENTS = new Set([
   'Tornado Warning',
   'Tornado Watch',
@@ -1785,7 +1850,6 @@ async function loadTicker() {
   if (!scrollEl) { tickerFetchInProgress = false; return; }
 
   try {
-    /* BUG FIX: Use simple URL with no complex event filter param */
     const res  = await safeFetch(TICKER_API_URL, { key:'ticker', timeout:15000, retries:2 });
     const data = await res.json();
 
@@ -1794,9 +1858,7 @@ async function loadTicker() {
       return;
     }
 
-    /* Filter to only severe weather event types we care about */
     const relevant = (data.features || []).filter(a => isTickerRelevant(a.properties?.event || ''));
-
     const deduped  = deduplicateAlerts(relevant);
     const features = sortAlerts(deduped);
 
@@ -1805,7 +1867,6 @@ async function loadTicker() {
       return;
     }
 
-    // Bucket into groups
     const buckets = {};
     TICKER_GROUPS.forEach(g => { buckets[g.key] = []; });
     features.forEach(a => {
@@ -1845,6 +1906,9 @@ async function loadTicker() {
         if (e.key==='Enter'||e.key===' ') { e.preventDefault(); el.click(); }
       });
     });
+
+    // Position the portal after rendering (ticker's position may shift)
+    requestAnimationFrame(positionOverflowPortal);
 
   } catch(e) {
     if (e.name === 'AbortError') return;
@@ -1922,7 +1986,7 @@ document.addEventListener('click', e => {
 });
 
 /* ════════════════════════════════════════════════
-   REFRESH INTERVALS — jittered polling
+   REFRESH INTERVALS
 ════════════════════════════════════════════════ */
 function jitteredInterval(fn, baseMs, jitterMs) {
   const tick = () => {
