@@ -1,4 +1,3 @@
-cat > /home/claude/storm-app/styles.css << 'CSSEOF'
 /* ══════════════════════════════════════════════
    DESIGN TOKENS
 ══════════════════════════════════════════════ */
@@ -46,12 +45,17 @@ cat > /home/claude/storm-app/styles.css << 'CSSEOF'
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
   --safe-right:  env(safe-area-inset-right, 0px);
-  --header-h: calc(56px + var(--safe-top));
+  --header-h: calc(60px + var(--safe-top));
 }
 
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
+
+html, body {
+  height: 100%;
+  min-height: 100dvh;
+}
 
 body {
   font-family: var(--font-mono);
@@ -67,8 +71,9 @@ body {
 #bgCanvas {
   position: fixed;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh; /* covers the full screen even when a mobile toolbar collapses/expands */
   z-index: 0;
   pointer-events: none;
   will-change: transform;
@@ -196,38 +201,50 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 
 /* ════════════════════════════════════════════
    FIXED HEADER BAR
+   Rebuilt as a real flex row (menu button + title share
+   one flow) instead of a separately fixed-position button
+   floating over a centered title. That's what caused the
+   hamburger and title to visually collide on narrow phones.
+   The title now truncates with an ellipsis instead of
+   overlapping, and gets a much stronger glow + bigger size
+   so it reads clearly against the animated background.
 ════════════════════════════════════════════ */
 #headerBar {
   position: fixed;
   top: 0; left: 0; right: 0;
   height: var(--header-h);
   padding-top: var(--safe-top);
-  background: rgba(5,10,20,0.92);
+  background: rgba(4,9,19,0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(0,207,255,0.12);
+  border-bottom: 1px solid rgba(0,207,255,0.16);
   display: flex;
   align-items: center;
-  justify-content: center;
   z-index: 100;
-  padding-left: calc(60px + var(--safe-left));
-  padding-right: calc(60px + var(--safe-right));
+  padding-left: calc(66px + var(--safe-left));
+  padding-right: calc(14px + var(--safe-right));
+  gap: 8px;
 }
 #headerTitle {
   font-family: var(--font-display);
-  font-size: 20px;
-  letter-spacing: 3px;
+  font-size: clamp(19px, 5.6vw, 26px);
+  letter-spacing: 2.5px;
   color: var(--c-cyan);
-  text-shadow: 0 0 10px rgba(0,207,255,0.4);
+  text-shadow: 0 0 4px rgba(0,0,0,0.7), 0 0 12px rgba(0,207,255,0.6), 0 0 26px rgba(0,207,255,0.3);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
 }
 
 .menu-btn {
   position: fixed;
   top: var(--safe-top);
   left: var(--safe-left);
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: var(--header-h);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -236,7 +253,8 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   background: none;
   border: none;
   color: var(--c-cyan);
-  font-size: 22px;
+  font-size: 23px;
+  text-shadow: 0 0 10px rgba(0,207,255,0.5);
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   transition: color .15s;
@@ -400,7 +418,8 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   font-size: 11px;
   letter-spacing: 1px;
   text-transform: uppercase;
-  opacity: 0.75;
+  opacity: 0.88;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
   border-right: 1px solid rgba(255,255,255,0.08);
   padding-right: 10px;
   margin-right: 3px;
@@ -443,7 +462,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  opacity: 0.7;
+  opacity: 0.85;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.06);
   transition: opacity .15s, background .15s;
@@ -630,10 +649,10 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   font-size: clamp(17px, 4.5vw, 22px);
   letter-spacing: 1px;
   color: var(--c-blue);
-  text-shadow: 0 0 10px rgba(0,207,255,0.3);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 10px rgba(0,207,255,0.3);
   text-align: left;
 }
-.location-card span { font-size: 14px; opacity: 0.7; display: block; margin-top: 2px; }
+.location-card span { font-size: 14px; opacity: 0.82; display: block; margin-top: 2px; }
 
 .risk-box {
   margin-top: 10px;
@@ -658,6 +677,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   font-size: clamp(18px, 5vw, 24px);
   letter-spacing: 2px;
   line-height: 1.1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.5);
 }
 .risk-chevron {
   font-size: 16px;
@@ -670,7 +690,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 .risk-why {
   font-family: var(--font-mono);
   font-size: 12px;
-  opacity: 0.75;
+  opacity: 0.85;
   margin-top: 5px;
   line-height: 1.55;
 }
@@ -702,7 +722,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   gap: 8px;
 }
 .detail-row:last-child { border-bottom: none; }
-.detail-key { opacity: 0.75; }
+.detail-key { opacity: 0.85; }
 .detail-val { color: #ffe080; text-align: right; flex-shrink: 0; max-width: 55%; }
 .sounding-title {
   display: block;
@@ -720,7 +740,7 @@ h2 {
   font-size: clamp(18px, 4.5vw, 24px);
   letter-spacing: 2px;
   color: var(--c-blue);
-  text-shadow: 0 0 10px rgba(0,207,255,0.22);
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6), 0 0 10px rgba(0,207,255,0.3);
   margin-bottom: 10px;
   text-align: left;
 }
@@ -742,7 +762,7 @@ h2 {
   font-family: var(--font-display);
   font-size: clamp(12px, 3.5vw, 15px);
   letter-spacing: 1px;
-  color: #90bcd0;
+  color: #a8d0e2;
   transition: border-color .2s, box-shadow .2s;
   text-align: left;
   -webkit-tap-highlight-color: transparent;
@@ -754,12 +774,12 @@ h2 {
   font-size: clamp(24px, 7.5vw, 34px);
   margin: 5px 0 2px;
   color: var(--c-text);
-  text-shadow: 0 0 8px rgba(0,207,255,0.35);
+  text-shadow: 0 1px 4px rgba(0,0,0,0.55), 0 0 8px rgba(0,207,255,0.35);
   line-height: 1;
 }
 .card-sub {
   font-size: 11px;
-  opacity: 0.55;
+  opacity: 0.72;
   font-family: var(--font-mono);
   letter-spacing: 0;
   margin-top: 2px;
@@ -780,7 +800,7 @@ h2 {
   font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  opacity: 0.5;
+  opacity: 0.65;
   padding: 14px 0 5px;
   border-bottom: 1px solid rgba(255,255,255,0.07);
   margin-bottom: 6px;
@@ -809,11 +829,12 @@ h2 {
   letter-spacing: 1px;
   display: block;
   line-height: 1.2;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .alert-meta {
   font-family: var(--font-mono);
   font-size: 11px;
-  opacity: 0.65;
+  opacity: 0.8;
   margin-top: 4px;
   display: block;
   line-height: 1.4;
@@ -830,14 +851,14 @@ h2 {
   margin-top: 6px;
   font-family: var(--font-mono);
   font-size: 11px;
-  opacity: 0.75;
+  opacity: 0.85;
   color: #ffd080;
 }
 .alert-detail-text {
   font-size: 12px;
   line-height: 1.7;
   margin-top: 10px;
-  opacity: 0.9;
+  opacity: 0.92;
 }
 .alert-instruction {
   margin-top: 10px;
@@ -875,7 +896,7 @@ h2 {
   border-radius: var(--radius-md);
   font-size: 13px;
   line-height: 1.6;
-  color: #80b8d8;
+  color: #90c4e0;
   text-align: left;
   display: none;
 }
@@ -891,10 +912,13 @@ h2 {
 .spatial-row:last-child { border-bottom: none; }
 .spatial-val { color: #ffe080; font-family: var(--font-mono); font-size: 12px; }
 
+/* Week-snapshot card on Outlooks is always visible (no .visible gate) */
+#olBestDayCard { display: block; }
+
 footer {
   padding: 20px 14px;
   font-size: 11px;
-  color: #1a3858;
+  color: #3a6488;
   font-family: var(--font-mono);
   padding-bottom: max(20px, var(--safe-bottom));
   text-align: center;
@@ -910,7 +934,7 @@ footer {
   padding: 10px 14px;
   font-size: 11px;
   line-height: 1.6;
-  color: #7fa8c2;
+  color: #9dc0d8;
   text-align: left;
 }
 
@@ -934,7 +958,7 @@ footer {
   border-radius: var(--radius-md);
   background: rgba(10,25,50,0.7);
   border: 1px solid rgba(0,207,255,0.15);
-  color: #90bcd0;
+  color: #a8d0e2;
   font-family: var(--font-mono);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -948,7 +972,7 @@ footer {
   box-shadow: 0 0 16px rgba(0,207,255,0.1);
 }
 .ol-day-name { font-family: var(--font-display); font-size: 13px; letter-spacing: 1px; color: var(--c-text); }
-.ol-day-date { font-size: 10px; opacity: 0.6; }
+.ol-day-date { font-size: 10px; opacity: 0.72; }
 .ol-day-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 2px; }
 .ol-none { padding: 14px; font-family: var(--font-display); font-size: 12px; color: #2a7a5a; }
 
@@ -977,7 +1001,14 @@ footer {
 .ol-hazard-tier { font-size: 11px; font-weight: bold; color: var(--tier-color); margin-top: 1px; }
 .ol-gauge { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
 .ol-gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
-.ol-hazard-detail { font-size: 12px; line-height: 1.65; opacity: 0.88; }
+.ol-hazard-quick {
+  margin-top: 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #ffe080;
+  opacity: 0.9;
+}
+.ol-hazard-detail { font-size: 12px; line-height: 1.65; opacity: 0.92; }
 
 .ol-heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .ol-heatmap { display: table; border-collapse: separate; border-spacing: 3px; min-width: 100%; }
@@ -986,7 +1017,7 @@ footer {
   display: table-cell;
   vertical-align: middle;
   font-size: 11px;
-  color: #90bcd0;
+  color: #a8d0e2;
   padding-right: 8px;
   white-space: nowrap;
   min-width: 110px;
@@ -1014,7 +1045,7 @@ footer {
 .ol-heat-cell:active { transform: scale(0.9); }
 .ol-heat-cell.active { outline: 2px solid #fff; outline-offset: -2px; }
 .ol-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
-.ol-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #90bcd0; }
+.ol-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #a8d0e2; }
 .ol-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
 
 /* ════════════════════════════════════════════
