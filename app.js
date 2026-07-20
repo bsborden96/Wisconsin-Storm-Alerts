@@ -321,7 +321,7 @@ async function loadWeather() {
       `&current=temperature_2m,relative_humidity_2m,apparent_temperature,`,
       `dew_point_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,surface_pressure,weather_code`,
       `&hourly=cape,lifted_index`,
-      `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=1&timezone=auto`,
+      `&temperature_unit=fahrenheit&windspeed_unit=mph&forecast_days=2&timezone=auto`,
     ].join('');
     const res = await safeFetch(url, { key:'weather', timeout:10000 });
     const d = await res.json();
@@ -332,9 +332,29 @@ async function loadWeather() {
     const windSpd = Math.round(c.wind_speed_10m), windG = Math.round(c.wind_gusts_10m);
     const windDeg = c.wind_direction_10m, pressHpa = Math.round(c.surface_pressure), wcode = c.weather_code || 0;
 
-    const hourIdx = new Date().getHours();
-    const cape = Math.max(0, d.hourly.cape?.[hourIdx] ?? 0);
-    const li = d.hourly.lifted_index?.[hourIdx] ?? 5;
+    // ── ACCURATE CURRENT-INSTANT CAPE/LI ──
+    // Open-Meteo's `hourly.time` values are naive local-time strings for the
+    // requested location (timezone=auto). Previously this indexed into that
+    // array using the *device's* local hour, which silently pulled the wrong
+    // hour's CAPE/LI whenever the searched location's timezone differed from
+    // the device's timezone. We now locate the two bracketing hourly samples
+    // using the location's actual utc_offset_seconds, then linearly
+    // interpolate between them so the value reflects "right now" instead of
+    // snapping to the top of whichever hour happens to match a Math.round.
+    const hourlyTimes = d.hourly.time || [];
+    const utcOffsetSec = d.utc_offset_seconds || 0;
+    const nowLocalMs = Date.now() + utcOffsetSec * 1000;
+    const idx0 = findClosestHourIndex(hourlyTimes, utcOffsetSec);
+    const t0 = Date.parse(hourlyTimes[idx0] + ':00Z');
+    let idxA, idxB;
+    if (nowLocalMs >= t0) { idxA = idx0; idxB = Math.min(idx0 + 1, hourlyTimes.length - 1); }
+    else { idxA = Math.max(idx0 - 1, 0); idxB = idx0; }
+    const tA = Date.parse(hourlyTimes[idxA] + ':00Z'), tB = Date.parse(hourlyTimes[idxB] + ':00Z');
+    const frac = tB > tA ? Math.min(1, Math.max(0, (nowLocalMs - tA) / (tB - tA))) : 0;
+    const capeA = Math.max(0, d.hourly.cape?.[idxA] ?? 0), capeB = Math.max(0, d.hourly.cape?.[idxB] ?? 0);
+    const liA = d.hourly.lifted_index?.[idxA] ?? 5, liB = d.hourly.lifted_index?.[idxB] ?? 5;
+    const cape = capeA + (capeB - capeA) * frac;
+    const li = liA + (liB - liA) * frac;
 
     const tc = tempClass(tempF);
     const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -380,7 +400,7 @@ async function loadWeather() {
     else if (cape>500)  capeExplain='Moderate instability: storms possible if triggered.';
     else if (cape>100)  capeExplain='Weak instability: only isolated storms.';
     else                  capeExplain='Very little instability: storm development unlikely.';
-    setEl('capeWhy', `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph\n${capeExplain}`);
+    setEl('capeWhy', `CAPE: ${Math.round(cape)} J/kg · LI: ${li.toFixed(1)} · Dew: ${dewF}°F · Wind: ${windSpd} mph (interpolated to current local time)\n${capeExplain}`);
 
     const hasActiveTornadoAlert = forceStormBg && forceStormType === 'tornado';
     const mode = weatherCodeToMode(wcode, cape, li, windSpd, dewF, windDeg, pressHpa, hasActiveTornadoAlert);
@@ -638,10 +658,6 @@ function renderSuggestions(data) {
 document.addEventListener('click', e => { if (!e.target.closest('.search-wrap') && suggestionsEl) { suggestionsEl.innerHTML = ''; suggestionsEl.style.display = 'none'; } });
 
 /* ── REFRESH INTERVALS ── */
-function jitteredInterval(fn, baseMs, jitterMs) {
-  const tick = () => { fn(); const next = baseMs + Math.random() * jitterMs; setTimeout(tick, next); };
-  setTimeout(tick, baseMs + Math.random() * jitterMs);
-}
 jitteredInterval(() => { loadAlerts(); updateFooter(); checkStaleData(); }, 15_000, 3_000);
 jitteredInterval(() => { loadWeather(); }, 300_000, 30_000);
 jitteredInterval(() => { loadTicker(); }, 30_000, 5_000);
