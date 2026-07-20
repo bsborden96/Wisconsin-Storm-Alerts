@@ -1,3 +1,4 @@
+cat > /home/claude/storm-app/styles.css << 'CSSEOF'
 /* ══════════════════════════════════════════════
    DESIGN TOKENS
 ══════════════════════════════════════════════ */
@@ -45,6 +46,7 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
   --safe-right:  env(safe-area-inset-right, 0px);
+  --header-h: calc(56px + var(--safe-top));
 }
 
 /* ── RESET ── */
@@ -62,7 +64,6 @@ body {
   overscroll-behavior: none;
 }
 
-/* ── CANVAS — fixed so it never scrolls ── */
 #bgCanvas {
   position: fixed;
   inset: 0;
@@ -71,6 +72,10 @@ body {
   z-index: 0;
   pointer-events: none;
   will-change: transform;
+  /* Forces its own compositor layer so mobile Safari's dynamic toolbar
+     resize doesn't cause a visible jump/redraw on this element. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
@@ -96,6 +101,8 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   padding: max(10px, var(--safe-top)) 16px 10px;
   animation: sirenFlash 0.7s ease-in-out infinite;
   -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 @keyframes sirenFlash { 0%,100%{opacity:1}50%{opacity:.72} }
 
@@ -193,7 +200,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 #headerBar {
   position: fixed;
   top: 0; left: 0; right: 0;
-  height: calc(56px + var(--safe-top));
+  height: var(--header-h);
   padding-top: var(--safe-top);
   background: rgba(5,10,20,0.92);
   backdrop-filter: blur(16px);
@@ -278,7 +285,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 .menu-panel a .menu-icon-char { font-size: 16px; width: 20px; text-align: center; }
 
 #mainContent {
-  padding-top: calc(56px + var(--safe-top));
+  padding-top: var(--header-h);
   position: relative;
   z-index: 1;
 }
@@ -321,22 +328,24 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 
 /* ════════════════════════════════════════════
-   TICKER SYSTEM — z-index FIXED
-   Ticker wrap and portal must sit ABOVE all page
-   content. We use a very high z-index stack here.
+   TICKER SYSTEM
+   NOTE: this is the reddish bar right under the logo.
+   It used to sit in normal document flow, so it scrolled
+   up out of view with everything else — that's the "red
+   bar that moves up when I scroll" behavior. It's now
+   sticky, pinned just below the header, so it stays
+   visible the whole time you're scrolling the page.
 ════════════════════════════════════════════ */
 .ticker-wrap {
-  position: relative;
+  position: sticky;
+  top: var(--header-h);
   width: 100%;
   background: linear-gradient(90deg,#0e0000,#1e0000,#0e0000);
   border-top: 1px solid rgba(255,80,80,0.28);
   border-bottom: 1px solid rgba(255,80,80,0.28);
-  /* overflow:visible so the dropdown can escape */
   overflow: visible;
-  /* Must be above all cards, alerts, sections */
-  z-index: 500;
-  margin: 10px 0;
-  /* Create its own stacking context at a high level */
+  z-index: 90;
+  margin: 0 0 10px;
   isolation: isolate;
 }
 .ticker-wrap::before,
@@ -369,7 +378,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   will-change: scroll-position;
   gap: 0;
   cursor: grab;
-  /* Clip only horizontally, not vertically */
   overflow-y: visible;
 }
 .ticker-scroll:active { cursor: grabbing; }
@@ -446,27 +454,14 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 }
 .ticker-more:active { opacity: 1; background: rgba(255,255,255,0.12); }
 
-/* ── TICKER OVERFLOW PORTAL ──
-   Fixed-position portal rendered at body root.
-   Must have a z-index higher than EVERYTHING including
-   the header (z:100), menu (z:101), alerts, cards, etc.
-   We use 9500 — below only the popup (9000 won't work,
-   use 8500 for portal so popup still wins).
-   Actually popup is 9000, siren is 99999.
-   Portal should be: above all page content (>500),
-   above header (>100), below popup (< 9000).
-   Use z-index: 8000.
-── */
 #tickerOverflowPortal {
   position: fixed;
   left: 0;
   right: 0;
-  /* top is set dynamically by JS */
   background: rgba(5,10,22,0.99);
   border: 1px solid rgba(255,80,80,0.35);
   border-top: 2px solid rgba(255,80,80,0.5);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
-  /* HIGH z-index — above all page content, below popup/siren */
   z-index: 8000;
   overflow: hidden;
   max-height: 0;
@@ -539,7 +534,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   z-index: 51;
 }
 
-/* Ticker group color themes */
 .tg-pds .ticker-group-label       { color: #ff4040; }
 .tg-pds .ticker-item               { background: rgba(180,0,0,0.4); border-color: rgba(255,30,30,0.6); color: #ff9090; }
 .tg-tor-warn .ticker-group-label  { color: #ff5555; }
@@ -568,7 +562,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   max-width: 500px;
   padding: 0 14px;
   position: relative;
-  z-index: 200;
+  z-index: 80;
 }
 .search-input {
   width: 100%;
@@ -599,7 +593,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   max-height: 240px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
-  z-index: 201;
+  z-index: 81;
   text-align: left;
   box-shadow: 0 12px 40px rgba(0,0,0,0.8);
   backdrop-filter: blur(16px);
@@ -907,6 +901,123 @@ footer {
 }
 
 /* ════════════════════════════════════════════
+   OUTLOOKS PAGE
+════════════════════════════════════════════ */
+.ol-disclaimer {
+  background: rgba(0,20,45,0.65);
+  border: 1px solid rgba(0,207,255,0.14);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: #7fa8c2;
+  text-align: left;
+}
+
+.ol-day-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+.ol-day-scroll::-webkit-scrollbar { display: none; }
+.ol-day-chip {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 74px;
+  padding: 12px 10px 10px;
+  border-radius: var(--radius-md);
+  background: rgba(10,25,50,0.7);
+  border: 1px solid rgba(0,207,255,0.15);
+  color: #90bcd0;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color .2s, background .2s, transform .15s;
+}
+.ol-day-chip:active { transform: scale(0.96); }
+.ol-day-chip.active {
+  border-color: var(--chip-color, var(--c-cyan));
+  background: rgba(0,207,255,0.08);
+  box-shadow: 0 0 16px rgba(0,207,255,0.1);
+}
+.ol-day-name { font-family: var(--font-display); font-size: 13px; letter-spacing: 1px; color: var(--c-text); }
+.ol-day-date { font-size: 10px; opacity: 0.6; }
+.ol-day-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 2px; }
+.ol-none { padding: 14px; font-family: var(--font-display); font-size: 12px; color: #2a7a5a; }
+
+.ol-hazard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+@media (min-width: 600px) { .ol-hazard-grid { grid-template-columns: repeat(4, 1fr); } }
+.ol-hazard-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: border-color .2s, box-shadow .2s;
+}
+.ol-hazard-card:active { border-color: var(--tier-color); box-shadow: 0 0 16px rgba(0,207,255,0.1); }
+.ol-hazard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.ol-hazard-icon { font-size: 22px; line-height: 1; }
+.ol-hazard-titles { display: flex; flex-direction: column; }
+.ol-hazard-name { font-family: var(--font-display); font-size: 14px; letter-spacing: 1px; color: var(--c-text); }
+.ol-hazard-tier { font-size: 11px; font-weight: bold; color: var(--tier-color); margin-top: 1px; }
+.ol-gauge { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
+.ol-gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+.ol-hazard-detail { font-size: 12px; line-height: 1.65; opacity: 0.88; }
+
+.ol-heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.ol-heatmap { display: table; border-collapse: separate; border-spacing: 3px; min-width: 100%; }
+.ol-heat-row { display: table-row; }
+.ol-heat-label {
+  display: table-cell;
+  vertical-align: middle;
+  font-size: 11px;
+  color: #90bcd0;
+  padding-right: 8px;
+  white-space: nowrap;
+  min-width: 110px;
+}
+.ol-heat-header .ol-heat-cell-head {
+  display: table-cell;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--c-muted);
+  text-align: center;
+  padding-bottom: 4px;
+  cursor: pointer;
+  width: 40px;
+}
+.ol-heat-header .ol-heat-cell-head.active { color: var(--c-cyan); }
+.ol-heat-cell {
+  display: table-cell;
+  width: 40px;
+  height: 26px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: transform .12s, outline .12s;
+}
+.ol-heat-cell:active { transform: scale(0.9); }
+.ol-heat-cell.active { outline: 2px solid #fff; outline-offset: -2px; }
+.ol-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+.ol-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #90bcd0; }
+.ol-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* ════════════════════════════════════════════
    FOCUS & ACCESSIBILITY
 ════════════════════════════════════════════ */
 :focus-visible { outline: 2px solid var(--c-cyan); outline-offset: 3px; }
@@ -932,3 +1043,5 @@ footer {
 }
 
 .section + .section { padding-top: 16px; }
+CSSEOF
+echo "written: $(wc -l < /home/claude/storm-app/styles.css) lines"
