@@ -16,6 +16,35 @@ const perfLevel = (() => {
 const pixelRatio = Math.min(window.devicePixelRatio || 1, perfLevel === 'low' ? 1 : 2);
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* ── Shared refresh scheduler (jittered so multiple timers don't all fire
+   on the same tick) — used by both the Home ticker/alert loop and the
+   Outlooks auto-refresh loop. ── */
+function jitteredInterval(fn, baseMs, jitterMs) {
+  const tick = () => { fn(); const next = baseMs + Math.random() * jitterMs; setTimeout(tick, next); };
+  setTimeout(tick, baseMs + Math.random() * jitterMs);
+}
+
+/* ── Find the hourly-forecast index closest to "right now" in the
+   forecast's OWN timezone (not the device's). Open-Meteo's `hourly.time`
+   entries are naive local-time strings like "2026-07-20T14:00" for the
+   requested location when timezone=auto is used. To compare them against
+   "now" without any timezone mixups, both sides are converted using the
+   same trick: parse/format as if they were UTC, using the location's
+   utc_offset_seconds to shift "now" into that same local frame. This keeps
+   current-conditions math (e.g. CAPE) correct even when the viewed
+   location is in a different timezone than the device. ── */
+function findClosestHourIndex(hourlyTimes, utcOffsetSeconds) {
+  if (!hourlyTimes || hourlyTimes.length === 0) return 0;
+  const nowLocalMs = Date.now() + (utcOffsetSeconds || 0) * 1000;
+  let bestIdx = 0, bestDiff = Infinity;
+  for (let i = 0; i < hourlyTimes.length; i++) {
+    const tMs = Date.parse(hourlyTimes[i] + ':00Z');
+    const diff = Math.abs(tMs - nowLocalMs);
+    if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+  }
+  return bestIdx;
+}
+
 /* ── Alert priority ── */
 const ALERT_PRIORITY_MAP = new Map([
   ['Particularly Dangerous Situation', 1],
