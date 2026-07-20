@@ -37,9 +37,18 @@
     </div>
   </div>
 
+  <!-- Quick "which day should I worry about" summary across the whole week -->
+  <div class="section">
+    <div id="olBestDayCard" class="spatial-card" role="status">
+      <div style="font-family:var(--font-display);font-size:14px;letter-spacing:1.5px;color:var(--c-blue);margin-bottom:8px">7-DAY SNAPSHOT</div>
+      <div class="spatial-row"><span>Highest-Risk Day</span><span class="spatial-val" id="olWorstDay">--</span></div>
+      <div class="spatial-row"><span>Calmest Day</span><span class="spatial-val" id="olBestDay">--</span></div>
+    </div>
+  </div>
+
   <!-- Day selector -->
   <div class="section">
-    <div class="ol-day-scroll" id="olDayScroll" role="tablist" aria-label="Select forecast day">
+    <div class="ol-day-scroll" id="olDayScroll" role="tablist" aria-label="Select forecast day, use left and right arrow keys to move between days">
       <div class="ol-none">Loading forecast…</div>
     </div>
   </div>
