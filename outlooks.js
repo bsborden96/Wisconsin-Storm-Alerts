@@ -32,6 +32,20 @@ function toggleExpand(el) {
 }
 document.addEventListener('keydown', e => { if ((e.key==='Enter'||e.key===' ') && e.target.matches('.card-expandable')) { e.preventDefault(); toggleExpand(e.target); } });
 
+// Left/right arrow keys step through forecast days when focus is anywhere
+// in the day selector — makes flipping through the week a lot faster than
+// hunting for each tiny chip with a thumb.
+document.addEventListener('keydown', e => {
+  if (!olDays.length) return;
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const scroller = document.getElementById('olDayScroll');
+  if (!scroller || !scroller.contains(document.activeElement)) return;
+  e.preventDefault();
+  const dir = e.key === 'ArrowRight' ? 1 : -1;
+  const next = Math.max(0, Math.min(olDays.length - 1, olSelectedIdx + dir));
+  if (next !== olSelectedIdx) { selectDay(next); const chip = scroller.children[next]; if (chip) chip.focus(); }
+});
+
 async function safeFetch(url, { timeout = 10000 } = {}) {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeout);
@@ -203,6 +217,25 @@ function renderAll() {
   renderOverall();
   renderHazardCards();
   renderHeatmap();
+  renderWeekSnapshot();
+}
+
+// Quick "which day should I actually worry about" summary at the top of the page
+function renderWeekSnapshot() {
+  const worstEl = document.getElementById('olWorstDay'), bestEl = document.getElementById('olBestDay');
+  if (!worstEl || !bestEl || olDays.length === 0) return;
+  let worstIdx = 0, bestIdx = 0;
+  olDays.forEach((d, i) => {
+    if (overallTierForDay(d) > overallTierForDay(olDays[worstIdx])) worstIdx = i;
+    if (overallTierForDay(d) < overallTierForDay(olDays[bestIdx])) bestIdx = i;
+  });
+  const worstDay = olDays[worstIdx], bestDay = olDays[bestIdx];
+  const worstTier = tierAt(overallTierForDay(worstDay));
+  const bestTier = tierAt(overallTierForDay(bestDay));
+  worstEl.textContent = `${dayLabel(worstDay.date, worstIdx)} — ${worstTier.label}`;
+  worstEl.style.color = worstTier.color;
+  bestEl.textContent = `${dayLabel(bestDay.date, bestIdx)} — ${bestTier.label}`;
+  bestEl.style.color = bestTier.color;
 }
 
 function renderDaySelector() {
@@ -278,6 +311,18 @@ function hazardRationale(key, day) {
   return '';
 }
 
+// Compact always-visible number for each hazard so you don't have to expand
+// every card just to see the raw figure behind the tier label.
+function hazardQuickFact(key, day) {
+  switch(key) {
+    case 'tornado': return `LI ${day.minLi.toFixed(1)} · ${Math.round(day.maxCape)} J/kg`;
+    case 'wind':     return `Gusts ${Math.round(day.maxWindGust)} mph`;
+    case 'hail':     return `${Math.round(day.maxCape)} J/kg · ${Math.round(day.precipProb)}% precip`;
+    case 'snow':     return `${day.snowfall.toFixed(1)}" modeled`;
+  }
+  return '';
+}
+
 function renderHazardCards() {
   const day = olDays[olSelectedIdx];
   const grid = document.getElementById('olHazardGrid');
@@ -296,6 +341,7 @@ function renderHazardCards() {
           </div>
         </div>
         <div class="ol-gauge"><div class="ol-gauge-fill" style="width:${pct}%;background:${tier.color}"></div></div>
+        <div class="ol-hazard-quick">${hazardQuickFact(h.key, day)}</div>
         <div class="expand-details">
           <div class="ol-hazard-detail">${hazardRationale(h.key, day)}</div>
         </div>
@@ -321,3 +367,16 @@ function renderHeatmap() {
 }
 
 setTimeout(markFooter, 500);
+
+/* ── AUTO-REFRESH ── */
+// The outlooks page used to only load once on page open. It now quietly
+// refreshes in the background like the Home tab does, so a tab left open
+// (or reopened later in the day) doesn't show a stale forecast.
+jitteredInterval(async () => {
+  const prevSelected = olSelectedIdx;
+  await loadForecast();
+  olSelectedIdx = Math.min(prevSelected, Math.max(0, olDays.length - 1));
+  renderAll();
+  window.setBgMode(modeForDay(olDays[olSelectedIdx]));
+}, 10 * 60_000, 60_000);
+jitteredInterval(() => { updateDayNight(); }, 600_000, 60_000);
