@@ -15,15 +15,12 @@
 
 <canvas id="bgCanvas" aria-hidden="true"></canvas>
 
-<!-- ARIA live region for alert announcements -->
 <div id="ariaLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
-<!-- Siren Banner -->
 <div id="sirenBanner" role="alert" aria-live="assertive" onclick="stopSiren()">
   🚨 TORNADO WARNING IN YOUR COUNTY — TAP TO SILENCE
 </div>
 
-<!-- Alert Popup -->
 <div id="popup" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
   <button class="popup-close" id="popupClose" aria-label="Close alert">✕</button>
   <div class="popup-badge" id="popupBadge"></div>
@@ -33,41 +30,35 @@
   <div class="popup-movement" id="popupMovement" style="display:none"></div>
 </div>
 
-<!-- Stale data banner -->
 <div id="staleBanner" aria-live="polite">⚠ ALERT DATA MAY BE STALE — CHECK NWS DIRECTLY</div>
 
-<!-- Fixed Header Bar -->
 <div id="headerBar" aria-label="Navigation header">
   <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-expanded="false" aria-controls="menuPanel" aria-label="Open navigation menu">☰</button>
   <div id="headerTitle">US STORM ALERTS</div>
 </div>
 <nav id="menuPanel" class="menu-panel" role="menu" aria-label="Main navigation">
   <a href="index.html" role="menuitem"><span class="menu-icon-char">🏠</span>Home</a>
-  <a href="./radar.html" role="menuitem">
-  <span class="menu-icon-char">📡</span>Radar
-</a>
+  <a href="./outlooks.html" role="menuitem"><span class="menu-icon-char">🧭</span>Outlooks</a>
 </nav>
 
-<!-- Ticker overflow portal — rendered at body level to escape all stacking contexts -->
 <div id="tickerOverflowPortal" role="list" aria-label="Additional alerts">
   <div class="ticker-overflow-inner" id="tickerOverflowInner"></div>
 </div>
 
-<!-- Main Content -->
 <main id="mainContent">
 
   <div class="logo-wrap">
     <img src="logo.PNG" class="logo" alt="Storm Alerts">
   </div>
 
-  <!-- Ticker -->
+  <!-- Ticker is sticky now — it stays pinned under the header while you scroll
+       instead of drifting up out of the flow like the rest of the page. -->
   <div class="ticker-wrap" id="tickerWrap" aria-label="Live severe weather alerts">
     <div id="tickerScroll" class="ticker-scroll" role="marquee" aria-label="Scrolling weather alerts">
       <div class="ticker-none">Checking for alerts…</div>
     </div>
   </div>
 
-  <!-- Search -->
   <div class="search-wrap" role="search">
     <input
       id="searchInput"
@@ -86,7 +77,6 @@
     <div id="searchSuggestions" class="search-suggestions" role="listbox" aria-label="City suggestions"></div>
   </div>
 
-  <!-- Location + Risk -->
   <div class="section">
     <div id="locationCard" class="location-card" aria-live="polite">Locating…</div>
 
@@ -114,7 +104,6 @@
     </div>
   </div>
 
-  <!-- Spatial Awareness Card -->
   <div class="section">
     <div id="spatialCard" class="spatial-card">
       <div style="font-family:var(--font-display);font-size:14px;letter-spacing:1.5px;color:var(--c-blue);margin-bottom:8px">STORM PROXIMITY</div>
@@ -124,7 +113,6 @@
     </div>
   </div>
 
-  <!-- Current Conditions -->
   <div class="section">
     <h2>Current Conditions</h2>
     <div class="weather-grid">
@@ -171,13 +159,11 @@
     </div>
   </div>
 
-  <!-- Active Alerts -->
   <div class="section">
     <h2>Active Alerts</h2>
     <div id="alertsContainer" class="alerts-container" aria-live="polite">Loading…</div>
   </div>
 
-  <!-- Bottom Logo -->
   <div class="bottom-logo-wrap">
     <img src="bottom-logo.PNG" alt="Storm Alerts Footer Logo" class="bottom-logo">
   </div>
@@ -188,6 +174,8 @@
 
 </main>
 
+<script src="shared.js"></script>
+<script src="bg-canvas.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
