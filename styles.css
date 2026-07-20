@@ -1043,5 +1043,3 @@ footer {
 }
 
 .section + .section { padding-top: 16px; }
-CSSEOF
-echo "written: $(wc -l < /home/claude/storm-app/styles.css) lines"
