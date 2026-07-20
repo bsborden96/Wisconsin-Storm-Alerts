@@ -42,7 +42,17 @@
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
       const dpr = pixelRatio;
-      W = window.innerWidth; H = window.innerHeight;
+      // Prefer visualViewport dimensions when available — on mobile Safari/
+      // Chrome the dynamic address-bar/toolbar can change the visible
+      // viewport without always firing a plain window 'resize' event, which
+      // used to leave the canvas sized to a stale, shorter viewport (i.e.
+      // the animated background stopped covering the full page after the
+      // toolbar collapsed). visualViewport stays in sync with what's
+      // actually on screen.
+      const vv = window.visualViewport;
+      W = Math.ceil(vv ? vv.width : window.innerWidth);
+      H = Math.ceil(vv ? vv.height : window.innerHeight);
+      H = Math.max(H, window.innerHeight, document.documentElement.clientHeight || 0);
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
       ctx.setTransform(1,0,0,1,0,0);
@@ -52,6 +62,11 @@
     }, 150);
   }
   window.addEventListener('resize', resize, { passive: true });
+  window.addEventListener('orientationchange', resize, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', resize, { passive: true });
+    window.visualViewport.addEventListener('scroll', resize, { passive: true });
+  }
 
   const dpr0 = pixelRatio;
   W = window.innerWidth; H = window.innerHeight;
