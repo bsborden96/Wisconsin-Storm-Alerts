@@ -201,13 +201,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 
 /* ════════════════════════════════════════════
    FIXED HEADER BAR
-   Rebuilt as a real flex row (menu button + title share
-   one flow) instead of a separately fixed-position button
-   floating over a centered title. That's what caused the
-   hamburger and title to visually collide on narrow phones.
-   The title now truncates with an ellipsis instead of
-   overlapping, and gets a much stronger glow + bigger size
-   so it reads clearly against the animated background.
 ════════════════════════════════════════════ */
 #headerBar {
   position: fixed;
@@ -239,12 +232,23 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   text-align: left;
 }
 
+/* .menu-btn used to be positioned with height:var(--header-h) (which itself
+   bakes in --safe-top), while ALSO being offset top:var(--safe-top). Under
+   border-box that made the button's own box taller than the header by an
+   extra --safe-top and pushed its center down, so the hamburger icon sat
+   visibly lower than the header title on any device with a safe-area inset
+   (notched phones) — the "touch target is vertically offset" bug. The
+   button's box now matches the header's actual 60px content band exactly
+   (offset by --safe-top, height 60px, not --header-h), so the icon and the
+   title line up on the same vertical center with no dead zone above it. */
 .menu-btn {
   position: fixed;
   top: var(--safe-top);
   left: var(--safe-left);
   width: 60px;
-  height: var(--header-h);
+  height: 60px;
+  min-width: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -290,6 +294,7 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
+  min-height: 44px;
   color: #a0d8ef;
   text-decoration: none;
   font-family: var(--font-display);
@@ -347,12 +352,6 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 
 /* ════════════════════════════════════════════
    TICKER SYSTEM
-   NOTE: this is the reddish bar right under the logo.
-   It used to sit in normal document flow, so it scrolled
-   up out of view with everything else — that's the "red
-   bar that moves up when I scroll" behavior. It's now
-   sticky, pinned just below the header, so it stays
-   visible the whole time you're scrolling the page.
 ════════════════════════════════════════════ */
 .ticker-wrap {
   position: sticky;
@@ -583,9 +582,10 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   position: relative;
   z-index: 80;
 }
+.search-input-row { position: relative; display: flex; align-items: center; }
 .search-input {
   width: 100%;
-  padding: 13px 16px;
+  padding: 13px 44px 13px 16px;
   font-size: 16px;
   border-radius: var(--radius-md);
   border: 1px solid rgba(0,207,255,0.28);
@@ -602,6 +602,47 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
   border-color: rgba(0,207,255,0.55);
   box-shadow: 0 0 16px rgba(0,207,255,0.12);
 }
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.08);
+  color: var(--c-muted);
+  font-size: 14px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.search-clear-btn.visible { display: flex; }
+.search-clear-btn:active { background: rgba(255,255,255,0.16); color: var(--c-text); }
+.search-loading {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--c-cyan);
+  text-align: left;
+  padding-left: 4px;
+  display: none;
+}
+.search-loading.visible { display: block; }
+.search-not-found {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #ff9070;
+  text-align: left;
+  padding: 10px 14px;
+  background: rgba(60,20,0,0.5);
+  border: 1px solid rgba(255,120,60,0.25);
+  border-radius: var(--radius-sm);
+  display: none;
+}
+.search-not-found.visible { display: block; }
 .search-suggestions {
   position: absolute;
   top: calc(100% + 3px);
@@ -927,15 +968,130 @@ footer {
 /* ════════════════════════════════════════════
    OUTLOOKS PAGE
 ════════════════════════════════════════════ */
-.ol-disclaimer {
-  background: rgba(0,20,45,0.65);
+
+/* Compact expandable disclaimer row (spec §2) */
+.ol-disclaimer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(0,20,45,0.55);
   border: 1px solid rgba(0,207,255,0.14);
   border-radius: var(--radius-md);
-  padding: 10px 14px;
-  font-size: 11px;
-  line-height: 1.6;
+  padding: 11px 14px;
+  font-size: 12px;
   color: #9dc0d8;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ol-disclaimer-row .ol-disc-chevron { transition: transform .3s ease; opacity: .6; flex-shrink: 0; }
+.ol-disclaimer-row.open .ol-disc-chevron { transform: rotate(180deg); }
+.ol-disclaimer-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 11.5px;
+  line-height: 1.65;
+  color: #8fb4cc;
   text-align: left;
+  transition: max-height .35s ease, opacity .3s ease;
+}
+.ol-disclaimer-row.open + .ol-disclaimer-body { max-height: 300px; opacity: 1; margin-top: 8px; }
+
+/* Forecast Confidence / Model Agreement mini-cards */
+.ol-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+.ol-meta-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: left;
+}
+.ol-meta-label {
+  font-family: var(--font-display);
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--c-blue);
+  opacity: 0.85;
+  margin-bottom: 4px;
+}
+.ol-meta-value {
+  font-family: var(--font-display);
+  font-size: 17px;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.ol-meta-why { font-size: 11px; line-height: 1.5; opacity: 0.85; }
+.ol-conf-high, .ol-agree-excellent   { color: var(--c-green); }
+.ol-conf-moderate, .ol-agree-good    { color: #ffe066; }
+.ol-conf-low, .ol-agree-mixed        { color: var(--c-orange); }
+.ol-agree-poor                       { color: var(--c-red); }
+.ol-agree-unknown                    { color: var(--c-muted); }
+
+/* Storm chaser mode toggle */
+.ol-mode-toggle {
+  display: flex;
+  background: rgba(0,15,35,0.7);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+  gap: 4px;
+}
+.ol-mode-btn {
+  flex: 1;
+  padding: 10px 8px;
+  min-height: 44px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--c-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: background .2s, color .2s;
+}
+.ol-mode-btn.active {
+  background: rgba(0,207,255,0.14);
+  color: var(--c-cyan);
+  box-shadow: 0 0 12px rgba(0,207,255,0.15);
+}
+
+/* Why the forecast changed */
+.ol-change-card {
+  background: rgba(0,20,45,0.7);
+  border: 1px solid rgba(0,207,255,0.2);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: left;
+  display: none;
+}
+.ol-change-card.visible { display: block; }
+.ol-change-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 1.5px;
+  color: var(--c-cyan);
+  margin-bottom: 8px;
+}
+.ol-change-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 6px; }
+.ol-change-pill { padding: 2px 9px; border-radius: 20px; font-family: var(--font-display); font-size: 11px; letter-spacing: 0.5px; }
+.ol-change-arrow { opacity: 0.6; }
+.ol-change-why { font-size: 12px; line-height: 1.6; opacity: 0.9; margin-top: 4px; }
+.ol-change-tech {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--c-blue);
+  cursor: pointer;
+  text-decoration: underline dotted;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ol-day-scroll {
@@ -954,6 +1110,7 @@ footer {
   align-items: center;
   gap: 4px;
   min-width: 74px;
+  min-height: 44px;
   padding: 12px 10px 10px;
   border-radius: var(--radius-md);
   background: rgba(10,25,50,0.7);
@@ -963,18 +1120,56 @@ footer {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: border-color .2s, background .2s, transform .15s;
+  transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
 }
 .ol-day-chip:active { transform: scale(0.96); }
+/* Selected-day highlight deliberately uses electric blue/cyan (never yellow,
+   which is reserved for the "Slight" tier on the SPC-style scale) so it
+   never gets visually confused with a hazard-severity color. */
 .ol-day-chip.active {
-  border-color: var(--chip-color, var(--c-cyan));
-  background: rgba(0,207,255,0.08);
-  box-shadow: 0 0 16px rgba(0,207,255,0.1);
+  border-color: var(--c-cyan);
+  background: rgba(0,207,255,0.1);
+  box-shadow: 0 0 16px rgba(0,207,255,0.25), inset 0 0 0 1px rgba(0,207,255,0.4);
 }
 .ol-day-name { font-family: var(--font-display); font-size: 13px; letter-spacing: 1px; color: var(--c-text); }
+.ol-day-chip.active .ol-day-name { color: #fff; text-shadow: 0 0 8px rgba(0,207,255,0.6); }
 .ol-day-date { font-size: 10px; opacity: 0.72; }
 .ol-day-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 2px; }
 .ol-none { padding: 14px; font-family: var(--font-display); font-size: 12px; color: #2a7a5a; }
+
+/* Expected timeline */
+.ol-timeline { display: flex; overflow-x: auto; gap: 6px; margin-top: 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ol-timeline::-webkit-scrollbar { display: none; }
+.ol-timeline-cell {
+  flex-shrink: 0;
+  min-width: 92px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+}
+.ol-timeline-time { font-size: 10px; opacity: 0.65; font-family: var(--font-mono); }
+.ol-timeline-status { font-family: var(--font-display); font-size: 12px; letter-spacing: 0.5px; margin-top: 3px; }
+.ol-timeline-status.tl-quiet { color: var(--c-green); }
+.ol-timeline-status.tl-build { color: #ffe066; }
+.ol-timeline-status.tl-peak { color: var(--c-red); }
+.ol-timeline-status.tl-weaken { color: var(--c-orange); }
+.ol-timeline-note { font-size: 10.5px; opacity: 0.6; margin-top: 6px; }
+
+/* Historical context */
+.ol-historical-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-align: left;
+  display: none;
+}
+.ol-historical-card.visible { display: block; }
+.ol-hist-title { font-family: var(--font-display); font-size: 13px; letter-spacing: 1.5px; color: var(--c-blue); margin-bottom: 8px; }
+.ol-hist-line { font-size: 12.5px; line-height: 1.7; opacity: 0.92; margin-bottom: 4px; }
+.ol-hist-line:last-child { margin-bottom: 0; }
 
 .ol-hazard-grid {
   display: grid;
@@ -988,12 +1183,9 @@ footer {
   border-radius: var(--radius-md);
   padding: 14px;
   text-align: left;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
   transition: border-color .2s, box-shadow .2s;
 }
-.ol-hazard-card:active { border-color: var(--tier-color); box-shadow: 0 0 16px rgba(0,207,255,0.1); }
+.ol-hazard-card:has(.ol-subsection.open) { border-color: var(--tier-color); }
 .ol-hazard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
 .ol-hazard-icon { font-size: 22px; line-height: 1; }
 .ol-hazard-titles { display: flex; flex-direction: column; }
@@ -1001,14 +1193,54 @@ footer {
 .ol-hazard-tier { font-size: 11px; font-weight: bold; color: var(--tier-color); margin-top: 1px; }
 .ol-gauge { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.08); overflow: hidden; }
 .ol-gauge-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
-.ol-hazard-quick {
-  margin-top: 8px;
-  font-size: 11px;
-  font-family: var(--font-mono);
-  color: #ffe080;
-  opacity: 0.9;
+.ol-hazard-plain {
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.6;
+  opacity: 0.92;
 }
-.ol-hazard-detail { font-size: 12px; line-height: 1.65; opacity: 0.92; }
+
+/* Independent expand/collapse subsections inside each hazard card
+   (Why This Risk? / Technical Details / What Should I Do?) — reuses the
+   same max-height transition idiom as .expand-details but each one opens
+   on its own, and Storm Chaser Mode force-opens them at render time via
+   an extra 'open' class instead of relying on click state. */
+.ol-subsection {
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin-top: 9px;
+}
+.ol-subsection-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 0 8px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  letter-spacing: 1px;
+  color: var(--c-blue);
+}
+.ol-subsection-chevron { font-size: 11px; opacity: 0.6; transition: transform .3s ease; flex-shrink: 0; }
+.ol-subsection.open .ol-subsection-chevron { transform: rotate(180deg); }
+.ol-subsection-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-size: 12px;
+  line-height: 1.7;
+  transition: max-height .35s ease, opacity .3s ease;
+}
+.ol-subsection.open .ol-subsection-body { max-height: 700px; opacity: 0.95; padding-bottom: 9px; }
+.ol-subsection-body ul { padding-left: 18px; margin-top: 2px; }
+.ol-subsection-body li { margin-bottom: 4px; }
+.ol-tech-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 11.5px; }
+.ol-tech-row:last-child { border-bottom: none; }
+.ol-tech-key { opacity: 0.75; }
+.ol-tech-val { color: #ffe080; }
+.ol-tech-caveat { margin-top: 8px; font-size: 10.5px; opacity: 0.55; line-height: 1.5; }
 
 .ol-heatmap-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .ol-heatmap { display: table; border-collapse: separate; border-spacing: 3px; min-width: 100%; }
@@ -1033,7 +1265,7 @@ footer {
   cursor: pointer;
   width: 40px;
 }
-.ol-heat-header .ol-heat-cell-head.active { color: var(--c-cyan); }
+.ol-heat-header .ol-heat-cell-head.active { color: var(--c-cyan); text-shadow: 0 0 6px rgba(0,207,255,0.6); }
 .ol-heat-cell {
   display: table-cell;
   width: 40px;
@@ -1043,10 +1275,26 @@ footer {
   transition: transform .12s, outline .12s;
 }
 .ol-heat-cell:active { transform: scale(0.9); }
-.ol-heat-cell.active { outline: 2px solid #fff; outline-offset: -2px; }
+/* Uses cyan outline (not a tier color) so the "which day is selected"
+   affordance stays visually distinct from the hazard-severity colors. */
+.ol-heat-cell.active { outline: 2px solid var(--c-cyan); outline-offset: -2px; box-shadow: 0 0 10px rgba(0,207,255,0.5); }
 .ol-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
 .ol-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #a8d0e2; }
 .ol-legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+/* Forecast data card */
+.ol-data-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-align: left;
+}
+.ol-data-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 12.5px; }
+.ol-data-row:last-child { border-bottom: none; }
+.ol-data-key { opacity: 0.8; }
+.ol-data-val { color: var(--c-blue); font-family: var(--font-mono); }
+.ol-data-note { margin-top: 8px; font-size: 10.5px; opacity: 0.55; line-height: 1.5; }
 
 /* ════════════════════════════════════════════
    FOCUS & ACCESSIBILITY
