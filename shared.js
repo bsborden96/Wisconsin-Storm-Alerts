@@ -197,14 +197,24 @@ function alertSectionLabel(score) {
 }
 
 /* ── Hazard environment math (used for both live sounding + multi-day outlooks) ── */
-function computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure) {
+
+// Shared shear/helicity-proxy ingredients — pulled out so both the live
+// sounding math (computeTornadoEnvironment) and the Outlooks technical-
+// details panel (STP/SCP/SRH proxies) derive rotation potential from
+// exactly the same numbers instead of two slightly different formulas.
+function computeShearIngredients(windSpd, windDeg) {
   const isBackingWind = windDeg >= 150 && windDeg <= 260;
   const shearScore = (isBackingWind ? 1 : 0) + (windSpd >= 15 ? 1 : 0) + (windSpd >= 25 ? 1 : 0);
+  const srh_proxy = isBackingWind ? windSpd * 1.8 : windSpd * 0.7;
+  return { shearScore, srh_proxy, isBackingWind };
+}
+
+function computeTornadoEnvironment(li, cape, dewF, windSpd, windDeg, pressure) {
+  const { shearScore, srh_proxy } = computeShearIngredients(windSpd, windDeg);
   const moistureOk    = dewF >= 55;
   const liftOk        = li <= -3;
   const instabilityOk = cape >= 500;
   const deepInstability = cape >= 1500 && li <= -5;
-  const srh_proxy = isBackingWind ? windSpd * 1.8 : windSpd * 0.7;
 
   if (deepInstability && moistureOk && shearScore >= 2 && srh_proxy >= 30) return 'high';
   if (liftOk && instabilityOk && moistureOk && shearScore >= 1) return 'moderate';
@@ -259,4 +269,198 @@ function snowTier(snowfallIn, minTempF) {
   if (snowfallIn >= 1.5) return 2;
   if (snowfallIn >= 0.3 || (minTempF <= 20 && snowfallIn > 0)) return 1;
   return 0;
+}
+
+/* ════════════════════════════════════════════════
+   OUTLOOKS-ONLY HELPERS
+   Everything below this line is only used by the Outlooks
+   page (outlooks.js). Kept in shared.js so it follows the
+   same "one source of truth" pattern as the hazard tiers
+   above, but none of it is touched by the Home tab.
+════════════════════════════════════════════════ */
+
+/* ── Estimated sounding fields ──
+   Open-Meteo's free forecast endpoint doesn't expose a full vertical
+   profile, so LCL/PWAT/STP/SCP here are approximations built from surface
+   fields (temp/dewpoint/wind) using well-known rule-of-thumb formulas —
+   NOT the official SPC calculations. They're presented in the Outlooks
+   "Technical Details" panel with that caveat so enthusiasts get a useful
+   ballpark without the app claiming precision it doesn't have. ── */
+function estimateLCLmeters(tempF, dewF) {
+  const tC = (tempF - 32) * 5/9, tdC = (dewF - 32) * 5/9;
+  return Math.max(0, Math.round(125 * (tC - tdC)));
+}
+function estimatePWATin(dewF) {
+  // Rough surface-dewpoint-based estimate (Lawrence 2005 style rule of thumb).
+  const est = 0.027 * dewF - 0.35;
+  return Math.max(0.1, Math.round(est * 100) / 100);
+}
+function estimateSTP(cape, li, dewF, windSpd, windDeg) {
+  const { shearScore, srh_proxy } = computeShearIngredients(windSpd, windDeg);
+  const lclM = estimateLCLmeters((li <= -2 ? 75 : 70), dewF); // rough sfc temp assumption when not passed directly
+  const capeTerm  = Math.min(2, cape / 1500);
+  const srhTerm   = Math.min(2, srh_proxy / 150);
+  const shearTerm = Math.min(1.5, shearScore / 2);
+  const lclTerm   = lclM < 1000 ? 1 : lclM < 1500 ? 0.6 : 0.2;
+  return Math.round(capeTerm * srhTerm * shearTerm * lclTerm * 10) / 10;
+}
+function estimateSCP(cape, windSpd, windDeg) {
+  const { shearScore, srh_proxy } = computeShearIngredients(windSpd, windDeg);
+  const capeTerm  = Math.min(2, cape / 1000);
+  const srhTerm   = Math.min(2, srh_proxy / 100);
+  const shearTerm = Math.min(2, shearScore / 2);
+  return Math.round(capeTerm * srhTerm * shearTerm * 10) / 10;
+}
+
+/* ── Forecast history (localStorage) ──
+   Powers three related features honestly from the SAME real signal
+   (how this location's outlook has changed across recent page loads),
+   rather than fabricating multi-model comparisons the app has no access
+   to:
+     • Model Agreement   — has the risk category held steady across recent updates?
+     • Why It Changed    — what specifically shifted since the last update?
+   Forecast Confidence is a separate, independent signal (see below) based
+   on hour-to-hour stability WITHIN today's model run, not run-to-run history. ── */
+const OUTLOOK_HISTORY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+function outlookHistoryKey(lat, lon) {
+  return `outlookHistory:${lat.toFixed(2)},${lon.toFixed(2)}`;
+}
+function loadOutlookHistory(lat, lon) {
+  try {
+    const raw = localStorage.getItem(outlookHistoryKey(lat, lon));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed?.fetchedAt || Date.now() - Date.parse(parsed.fetchedAt) > OUTLOOK_HISTORY_MAX_AGE_MS) return null;
+    return parsed;
+  } catch(_) { return null; }
+}
+function saveOutlookHistory(lat, lon, days) {
+  try {
+    const snapshot = {
+      fetchedAt: new Date().toISOString(),
+      days: days.map(d => ({
+        dateStr: d.date.toISOString().slice(0,10),
+        tiers: d.tiers,
+        maxCape: d.maxCape, minLi: d.minLi, maxWindGust: d.maxWindGust, snowfall: d.snowfall,
+      })),
+    };
+    localStorage.setItem(outlookHistoryKey(lat, lon), JSON.stringify(snapshot));
+  } catch(_) {}
+}
+function findHistoryDay(history, dateStr) {
+  if (!history) return null;
+  return history.days.find(d => d.dateStr === dateStr) || null;
+}
+
+function overallTier(tiers) { return Math.max(tiers.tornado, tiers.wind, tiers.hail, tiers.snow); }
+
+function computeModelAgreement(prevDay, currDay) {
+  if (!prevDay) return { level:'unknown', label:'Not Enough History', why:'This location doesn\u2019t have a recent forecast on record yet — check back after the next update to see how stable the outlook is.' };
+  const diff = Math.abs(overallTier(prevDay.tiers) - overallTier(currDay.tiers));
+  if (diff === 0) return { level:'excellent', label:'Excellent Agreement', why:'The risk category for this day has held steady since the last update.' };
+  if (diff === 1) return { level:'good', label:'Good Agreement', why:'The outlook has shifted slightly since the last update, but the overall picture is similar.' };
+  if (diff === 2) return { level:'mixed', label:'Mixed Solutions', why:'The outlook has changed noticeably since the last update — treat the details as less settled.' };
+  return { level:'poor', label:'Poor Agreement', why:'The outlook has swung a lot since the last update. Confidence in the specifics is low right now.' };
+}
+
+function computeForecastChange(prevDay, currDay) {
+  if (!prevDay) return null;
+  const prevTierIdx = overallTier(prevDay.tiers), currTierIdx = overallTier(currDay.tiers);
+  if (prevTierIdx === currTierIdx) return null;
+  const capeDelta = currDay.maxCape - prevDay.maxCape;
+  const liDelta = currDay.minLi - prevDay.minLi;
+  const gustDelta = currDay.maxWindGust - prevDay.maxWindGust;
+  let reason;
+  if (capeDelta > 400 && liDelta < -0.5) reason = 'More instability and moisture moved into the forecast, increasing severe potential.';
+  else if (capeDelta < -400) reason = 'Instability dropped compared to the last update, lowering severe potential.';
+  else if (liDelta > 0.75) reason = 'Lift weakened compared to the last update, which lowered the risk.';
+  else if (liDelta < -0.75) reason = 'Lift strengthened compared to the last update, which raised the risk.';
+  else if (gustDelta > 10) reason = 'Peak wind gusts increased from the previous forecast.';
+  else if (gustDelta < -10) reason = 'Peak wind gusts decreased from the previous forecast.';
+  else if (Math.abs(currDay.snowfall - prevDay.snowfall) >= 1) reason = currDay.snowfall > prevDay.snowfall ? 'Modeled snowfall totals increased from the previous forecast.' : 'Modeled snowfall totals decreased from the previous forecast.';
+  else reason = 'The overall model picture shifted since the last update.';
+  return { prevTierIdx, currTierIdx, reason };
+}
+
+/* ── Forecast Confidence ──
+   Independent of the history above: measures how much CAPE/LI swing
+   hour-to-hour WITHIN today's convective window. A jumpy hourly profile
+   means the timing/strength of storms is genuinely less certain even if
+   the forecast hasn't changed run-to-run. ── */
+function computeForecastConfidence(hourlyCape, hourlyLi) {
+  if (!hourlyCape || hourlyCape.length < 2) return { level:'moderate', label:'Moderate', why:'Not enough hourly model data to judge stability — treating this as a moderate-confidence forecast.' };
+  const capeRange = Math.max(...hourlyCape) - Math.min(...hourlyCape);
+  const liRange = Math.max(...hourlyLi) - Math.min(...hourlyLi);
+  if (capeRange < 400 && liRange < 2) return { level:'high', label:'High', why:'Most forecast hours agree on today\u2019s atmosphere, so the forecast is unlikely to change much.' };
+  if (capeRange < 1200 && liRange < 4) return { level:'moderate', label:'Moderate', why:'The model shows some hour-to-hour disagreement, so storms could end up somewhat stronger or weaker than expected.' };
+  return { level:'low', label:'Low', why:'The model swings a lot within the day — small atmospheric changes could significantly change today\u2019s forecast.' };
+}
+
+/* ── Plain-language hazard descriptions (spec §3) ── */
+const HAZARD_PLAIN_LANGUAGE = {
+  tornado: 'Isolated tornadoes are possible if strong thunderstorms develop.',
+  wind:    'Some storms could produce damaging winds capable of knocking down trees and power lines.',
+  hail:    'The strongest storms may produce hail large enough to damage vehicles.',
+  snow:    'Snow may reduce visibility and make roads slippery.',
+};
+
+/* ── "What Should I Do?" action lists (spec §14), only shown for hazards
+   with tier > 0 for the selected day. ── */
+const HAZARD_ACTIONS = {
+  tornado: ['Know where you\u2019ll shelter — lowest floor, interior room, away from windows.', 'Enable weather alerts on your phone.', 'Be ready to act quickly if a warning is issued.'],
+  wind:    ['Secure loose outdoor items like furniture and trash cans.', 'Charge phones and other electronics in case of a power outage.', 'Park vehicles away from large trees if possible.'],
+  hail:    ['Move vehicles under cover if you can.', 'Bring pets indoors.', 'Stay away from windows and skylights during storms.'],
+  snow:    ['Slow down and leave extra distance while traveling.', 'Carry emergency supplies (blanket, water, phone charger) if driving.', 'Watch for icy patches on bridges and overpasses.'],
+};
+
+/* ── "Why This Risk?" dynamic generator (spec §13) ──
+   Picks the most relevant plain-English explanation from the combination
+   of ingredients rather than a single canned sentence per tier. ── */
+function whyThisRisk(day) {
+  const { cape, li, maxDew, maxWindGust, maxWindSpd } = { cape: day.maxCape, li: day.minLi, maxDew: day.maxDew, maxWindGust: day.maxWindGust, maxWindSpd: day.maxWindSpd };
+  const strongCape = cape >= 1500, weakCape = cape < 500;
+  const strongShear = maxWindSpd >= 25, weakShear = maxWindSpd < 12;
+  const dry = maxDew < 50;
+  const weakLift = li > 0;
+
+  if (dry) return 'Dry air is limiting storm development, even with other ingredients present.';
+  if (weakLift && cape < 1000) return 'There is little lift available to trigger thunderstorms today.';
+  if (strongCape && weakShear) return 'The atmosphere has plenty of energy, but storms are unlikely to stay organized without stronger winds aloft.';
+  if (weakCape && strongShear) return 'Winds favor organized storms, but limited energy reduces severe potential.';
+  if (strongCape && strongShear) return 'Both instability and wind patterns support organized severe thunderstorms.';
+  if (cape >= 800 && maxWindGust >= 45) return 'Enough instability and wind energy are present for isolated strong-to-severe storms.';
+  return 'A mix of modest instability and typical wind patterns keeps today\u2019s severe potential limited.';
+}
+
+/* ── Expected Timeline (spec §18) ──
+   Buckets the day's hourly profile into rough time-of-day windows and
+   labels each relative to the day's peak instability, instead of a
+   hardcoded schedule. ── */
+const TIMELINE_BUCKETS = [
+  { key:'overnight', label:'12 AM – 6 AM', startH:0,  endH:6  },
+  { key:'morning',    label:'6 AM – 9 AM',  startH:6,  endH:9  },
+  { key:'midday',     label:'9 AM – 12 PM', startH:9,  endH:12 },
+  { key:'afternoon',  label:'12 PM – 4 PM', startH:12, endH:16 },
+  { key:'evening',    label:'4 PM – 8 PM',  startH:16, endH:20 },
+  { key:'night',      label:'8 PM – 12 AM', startH:20, endH:24 },
+];
+function computeTimeline(hourlyCapeByHour) {
+  // hourlyCapeByHour: array of 24 CAPE values (local hours 0-23) for the selected day.
+  if (!hourlyCapeByHour || hourlyCapeByHour.length < 24) return null;
+  const bucketVals = TIMELINE_BUCKETS.map(b => {
+    const slice = hourlyCapeByHour.slice(b.startH, b.endH);
+    const avg = slice.reduce((s,v) => s+v, 0) / (slice.length || 1);
+    return { ...b, avgCape: avg };
+  });
+  const peak = Math.max(...bucketVals.map(b => b.avgCape), 1);
+  return bucketVals.map(b => {
+    const frac = b.avgCape / peak;
+    let status;
+    if (peak < 300) status = 'Quiet';
+    else if (frac >= 0.85) status = 'Highest Risk';
+    else if (frac >= 0.5) status = b.startH < 13 ? 'Storm Development' : 'Storms Weaken';
+    else status = 'Quiet';
+    return { label: b.label, status };
+  });
 }
