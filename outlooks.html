@@ -27,17 +27,52 @@
 
 <main id="mainContent">
 
-  <div class="section" style="padding-top:18px">
+  <!-- Predictive location search — same experience as Home -->
+  <div class="search-wrap" role="search">
+    <div class="search-input-row">
+      <input
+        id="olSearchInput"
+        class="search-input"
+        type="search"
+        inputmode="search"
+        placeholder="🔍 Search US city or county…"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        aria-label="Search for a US city"
+        aria-autocomplete="list"
+        aria-controls="olSearchSuggestions"
+      >
+      <button type="button" class="search-clear-btn" id="olSearchClear" aria-label="Clear search" onclick="clearOlSearch()">✕</button>
+    </div>
+    <div class="search-loading" id="olSearchLoading">Searching…</div>
+    <div class="search-not-found" id="olSearchNotFound">No matching location found. Try a different city or spelling.</div>
+    <div id="olSearchSuggestions" class="search-suggestions" role="listbox" aria-label="City suggestions"></div>
+  </div>
+
+  <!-- 1. Location -->
+  <div class="section" style="padding-top:4px">
     <div id="olLocationCard" class="location-card" aria-live="polite">Locating…</div>
   </div>
 
+  <!-- 2. Forecast Confidence (+ Model Agreement alongside it) -->
   <div class="section">
-    <div class="ol-disclaimer">
-      Model-derived outlook, not an official SPC or NWS product. Built from Open‑Meteo forecast soundings (CAPE, lifted index, wind, precipitation, snowfall). Hail is a coarse instability/precip proxy — no direct hail-size model input exists here. Always follow official NWS guidance for real warnings.
+    <div class="ol-meta-grid">
+      <div class="ol-meta-card">
+        <div class="ol-meta-label">FORECAST CONFIDENCE</div>
+        <div class="ol-meta-value" id="olConfValue">--</div>
+        <div class="ol-meta-why" id="olConfWhy">Loading…</div>
+      </div>
+      <div class="ol-meta-card">
+        <div class="ol-meta-label">MODEL AGREEMENT</div>
+        <div class="ol-meta-value" id="olAgreeValue">--</div>
+        <div class="ol-meta-why" id="olAgreeWhy">Loading…</div>
+      </div>
     </div>
   </div>
 
-  <!-- Quick "which day should I worry about" summary across the whole week -->
+  <!-- 3. Highest Risk Day / Calmest Day -->
   <div class="section">
     <div id="olBestDayCard" class="spatial-card" role="status">
       <div style="font-family:var(--font-display);font-size:14px;letter-spacing:1.5px;color:var(--c-blue);margin-bottom:8px">7-DAY SNAPSHOT</div>
@@ -46,14 +81,47 @@
     </div>
   </div>
 
-  <!-- Day selector -->
+  <!-- 4. Expandable disclaimer -->
+  <div class="section">
+    <div class="ol-disclaimer-row" id="olDisclaimerRow" onclick="toggleDisclaimer()" role="button" tabindex="0" aria-expanded="false">
+      <span>ⓘ Model-derived forecast</span>
+      <span class="ol-disc-chevron">▼</span>
+    </div>
+    <div class="ol-disclaimer-body" id="olDisclaimerBody">
+      This is a model-derived outlook, not an official SPC or NWS product. Built from Open‑Meteo forecast soundings (CAPE, lifted index, wind, precipitation, snowfall). Hail risk and several technical fields (LCL, PWAT, STP, SCP) are coarse surface-based proxies — not the official SPC calculations, since a full vertical profile isn't available from this data source. Always follow official NWS guidance for real warnings.
+    </div>
+  </div>
+
+  <!-- Storm Chaser Mode toggle -->
+  <div class="section">
+    <div class="ol-mode-toggle" role="tablist" aria-label="Detail level">
+      <button class="ol-mode-btn" id="olModeSimple" role="tab" onclick="setOutlookMode('simple')">Simple Forecast</button>
+      <button class="ol-mode-btn" id="olModeChaser" role="tab" onclick="setOutlookMode('chaser')">Storm Chaser Mode</button>
+    </div>
+  </div>
+
+  <!-- 5. Day selector -->
   <div class="section">
     <div class="ol-day-scroll" id="olDayScroll" role="tablist" aria-label="Select forecast day, use left and right arrow keys to move between days">
       <div class="ol-none">Loading forecast…</div>
     </div>
   </div>
 
-  <!-- Overall risk for selected day -->
+  <!-- Why the forecast changed (conditional) -->
+  <div class="section">
+    <div class="ol-change-card" id="olChangeCard">
+      <div class="ol-change-title">📡 Why The Forecast Changed</div>
+      <div class="ol-change-row">
+        <span class="ol-change-pill" id="olChangePrev">--</span>
+        <span class="ol-change-arrow">→</span>
+        <span class="ol-change-pill" id="olChangeCurr">--</span>
+        <span style="opacity:.6;font-size:11px" id="olChangeTime"></span>
+      </div>
+      <div class="ol-change-why" id="olChangeWhy"></div>
+    </div>
+  </div>
+
+  <!-- 6. Day Outlook -->
   <div class="section">
     <div id="olOverallBox" class="risk-box risk-low" role="status">
       <div class="risk-header">
@@ -62,21 +130,43 @@
           <div class="risk-why" id="olOverallWhy">Loading…</div>
         </div>
       </div>
+      <div id="olPrimaryThreat" class="risk-why" style="margin-top:8px;font-weight:bold"></div>
+      <div class="ol-timeline" id="olTimeline"></div>
+      <div class="ol-timeline-note">Expected timing is model-derived and can shift — treat exact hours as approximate, especially on Low-confidence days.</div>
     </div>
   </div>
 
-  <!-- Hazard cards -->
+  <!-- Historical Context -->
+  <div class="section">
+    <div class="ol-historical-card" id="olHistoricalCard">
+      <div class="ol-hist-title">📊 Historical Context</div>
+      <div class="ol-hist-line" id="olHistTemp">--</div>
+      <div class="ol-hist-line" id="olHistPrecip">--</div>
+    </div>
+  </div>
+
+  <!-- 7. Hazard Breakdown -->
   <div class="section">
     <h2>Hazard Breakdown</h2>
     <div class="ol-hazard-grid" id="olHazardGrid"></div>
   </div>
 
-  <!-- 7-day heatmap -->
+  <!-- 8. Hazard Timeline -->
   <div class="section">
     <h2>7-Day Hazard Timeline</h2>
     <div class="ol-heatmap-wrap">
       <div class="ol-heatmap" id="olHeatmap"></div>
       <div class="ol-legend" id="olLegend"></div>
+    </div>
+  </div>
+
+  <!-- 9. Forecast Data -->
+  <div class="section">
+    <div class="ol-data-card">
+      <div class="ol-data-row"><span class="ol-data-key">Updated</span><span class="ol-data-val" id="olDataUpdated">--</span></div>
+      <div class="ol-data-row"><span class="ol-data-key">Last Model Run (approx.)</span><span class="ol-data-val" id="olDataLastRun">--</span></div>
+      <div class="ol-data-row"><span class="ol-data-key">Next Update (approx.)</span><span class="ol-data-val" id="olDataNextRun">--</span></div>
+      <div class="ol-data-note">Estimated from typical global-model update cadence (every ~6 hours). Open-Meteo automatically blends multiple weather models, so this is an approximation rather than a single official run time.</div>
     </div>
   </div>
 
