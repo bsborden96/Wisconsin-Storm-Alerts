@@ -166,7 +166,31 @@ function createBroadcastPlan({ alerts, tempF, windSpd, dewF }) {
 
   return plan;
 }
+function addCurrentConditions(segs, { tempF, feelsF, windSpd, windDeg, windG }) {
 
+  if (tempF !== null) {
+
+    let tempLine = `Right now it's ${tempF} degrees`;
+
+    if (feelsF !== null && feelsF !== tempF) {
+      tempLine += `, feeling like ${feelsF}`;
+    }
+
+    tempLine += ".";
+
+    if (windSpd >= 15) {
+      tempLine += ` Winds are out of the ${degToCompass(windDeg)} at ${windSpd} miles per hour${windG > windSpd + 5 ? `, gusting to ${windG}` : ""}.`;
+    }
+
+    segs.push(tempLine);
+
+  } else {
+
+    segs.push("I'm having trouble reaching live current conditions right now — bear with me.");
+
+  }
+
+}
 function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts }) {
   const segs = [];
 
