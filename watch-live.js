@@ -151,7 +151,7 @@ function createBroadcastPlan({ alerts, tempF, windSpd, dewF }) {
   plan.lead = "wind";
 }
 
-  if (tempF >= 85 && dewF >= 65) {
+  if (tempF >= 90 && dewF >= 72) {
   plan.priority = "heat";
   plan.intro = "heat";
   plan.lead = "heat";
