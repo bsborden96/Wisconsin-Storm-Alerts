@@ -249,9 +249,14 @@ function speakSegment(i) {
     announce(liveSegments[i]);
   };
   utter.onend = () => {
-    document.getElementById('liveAvatar')?.classList.remove('speaking');
-    if (!liveMuted) speakSegment(i + 1);
-  };
+  console.log("Segment ended:", i);
+
+  document.getElementById('liveAvatar')?.classList.remove('speaking');
+
+  if (!liveMuted) {
+    speakSegment(i + 1);
+  }
+};
   utter.onerror = () => { document.getElementById('liveAvatar')?.classList.remove('speaking'); };
   speechSynthesis.speak(utter);
 }
