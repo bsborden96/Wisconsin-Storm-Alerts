@@ -16,6 +16,11 @@
 <canvas id="bgCanvas" aria-hidden="true"></canvas>
 <div id="ariaLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
 
+<!-- Breaking weather banner: hidden by default, shown/hidden by watch-live.js
+     during Breaking Weather Mode. Styling is injected by watch-live.js so this
+     page doesn't need styles.css changes to support it. -->
+<div id="liveBreakingBanner" class="live-breaking-banner" role="alert" hidden>⚠ STORMVECTOR BREAKING WEATHER ⚠</div>
+
 <div id="headerBar" aria-label="Navigation header">
   <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-expanded="false" aria-controls="menuPanel" aria-label="Open navigation menu">☰</button>
   <div id="headerTitle">WATCH LIVE</div>
@@ -60,6 +65,8 @@
       </div>
     </div>
   </div>
+
+
 
   <div class="section">
     <div class="live-conditions-row" id="liveConditionsRow"></div>
