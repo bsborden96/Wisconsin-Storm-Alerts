@@ -230,9 +230,14 @@ function speakSegment(i) {
   setLiveBadge("CHECKING WEATHER");
 
   setTimeout(async () => {
-    await prepareBroadcast();
-    speakSegment(0);
-  }, 3000);
+  console.log("StormVector: Refreshing broadcast...");
+
+  await prepareBroadcast();
+
+  console.log("StormVector: Segments =", liveSegments.length);
+
+  speakSegment(0);
+}, 3000);
 
   return;
 }
