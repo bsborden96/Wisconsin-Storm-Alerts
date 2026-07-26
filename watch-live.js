@@ -132,32 +132,37 @@ async function prepareBroadcast() {
 function createBroadcastPlan({ alerts, tempF, windSpd, dewF }) {
 
   const plan = {
-    priority: "normal",
-    intro: "normal",
-    includeDewPoint: true
-  };
+  priority: "normal",
+  intro: "normal",
+  includeDewPoint: true,
+  lead: "conditions"
+};
 
   if (alerts.some(a => isTornadoLevel(a.properties?.event || ""))) {
-    plan.priority = "breaking";
-    plan.intro = "breaking";
-    return plan;
-  }
+  plan.priority = "breaking";
+  plan.intro = "breaking";
+  plan.lead = "tornado";
+  return plan;
+}
 
   if (windSpd >= 20) {
-    plan.priority = "wind";
-    plan.intro = "wind";
-  }
+  plan.priority = "wind";
+  plan.intro = "wind";
+  plan.lead = "wind";
+}
 
   if (tempF >= 85 && dewF >= 65) {
-    plan.priority = "heat";
-    plan.intro = "heat";
-  }
+  plan.priority = "heat";
+  plan.intro = "heat";
+  plan.lead = "heat";
+}
 
   if (alerts.length === 0) {
-    plan.priority = "quiet";
-    plan.intro = "quiet";
-    plan.includeDewPoint = false;
-  }
+  plan.priority = "quiet";
+  plan.intro = "quiet";
+  plan.includeDewPoint = false;
+  plan.lead = "conditions";
+}
 
   return plan;
 }
