@@ -111,11 +111,13 @@ function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode,
   try { lastVisit = localStorage.getItem('stormvectorLastVisit'); } catch(_) {}
   const greetName = cityState ? `for ${cityState}` : 'for your area';
 
-  if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
+  segs.push("You're watching StormVector Live.");
+
+if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
     segs.push(`Welcome back. Here's your updated StormVector forecast ${greetName}, current as of right now. Since you last checked in ${timeAgo(Date.now() - parseInt(lastVisit,10))}, here's what's changed.`);
-  } else {
+} else {
     segs.push(`Hi, I'm Vector. Here's your live StormVector forecast ${greetName}.`);
-  }
+}
 
   if (tempF !== null) {
     let tempLine = `Right now it's ${tempF} degrees`;
