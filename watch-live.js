@@ -86,10 +86,17 @@ async function prepareBroadcast() {
   setLiveBadge("UPDATING");
   const locEl = document.getElementById('liveLocationCard');
   let cityState = '', county = '';
+let forecastUrl = null;
   try {
-    const res = await safeFetch(`https://api.weather.gov/points/${liveLat.toFixed(4)},${liveLon.toFixed(4)}`, { timeout: 8000 });
-    const data = await res.json();
-    const city = data.properties?.relativeLocation?.properties?.city || '';
+    const res = await safeFetch(
+  `https://api.weather.gov/points/${liveLat.toFixed(4)},${liveLon.toFixed(4)}`,
+  { timeout: 8000 }
+);
+const data = await res.json();
+
+forecastUrl = data.properties?.forecast;
+
+const city = data.properties?.relativeLocation?.properties?.city || '';
     const state = data.properties?.relativeLocation?.properties?.state || '';
     cityState = `${city}${city&&state?', ':''}${state}`;
     try {
@@ -135,7 +142,7 @@ if (forecastUrl) {
   } catch (_) {}
 }
 
-// THEN build the script
+// Build the broadcast script
 buildScript({
   cityState,
   tempF,
@@ -149,8 +156,27 @@ buildScript({
   forecast
 });
 
-  const btn = document.getElementById('liveStartBtn');
-  if (btn) { btn.disabled = false; btn.textContent = '▶ Start Broadcast'; }
+// Update the conditions row
+renderConditionsRow({
+  tempF,
+  feelsF,
+  windSpd,
+  windDeg,
+  windG,
+  dewF
+});
+
+// Update the animated background
+setBroadcastBg({
+  wcode,
+  alerts
+});
+
+// Enable the Start Broadcast button
+const btn = document.getElementById("liveStartBtn");
+if (btn) {
+  btn.disabled = false;
+  btn.textContent = "▶ Start Broadcast";
 }
 
 function createBroadcastPlan({ alerts, tempF, windSpd, dewF }) {
@@ -264,15 +290,27 @@ function addShortForecast(segs, forecast) {
   );
 
 }
-function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts }) {
+function buildScript({
+  cityState,
+  tempF,
+  feelsF,
+  windSpd,
+  windDeg,
+  windG,
+  wcode,
+  dewF,
+  alerts,
+  forecast
+}) {
+
   const segs = [];
 
-const plan = createBroadcastPlan({
-  alerts,
-  tempF,
-  windSpd,
-  dewF
-});
+  const plan = createBroadcastPlan({
+    alerts,
+    tempF,
+    windSpd,
+    dewF
+  });
 
 let lastVisit = null;
   try { lastVisit = localStorage.getItem('stormvectorLastVisit'); } catch(_) {}
