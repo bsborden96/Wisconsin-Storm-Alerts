@@ -237,15 +237,13 @@ if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
     segs.push(`${intro} Here's your live StormVector forecast ${greetName}.`);
 }
 
-  if (tempF !== null) {
-    let tempLine = `Right now it's ${tempF} degrees`;
-    if (feelsF !== null && feelsF !== tempF) tempLine += `, feeling like ${feelsF}`;
-    tempLine += '.';
-    if (windSpd >= 15) tempLine += ` Winds are out of the ${degToCompass(windDeg)} at ${windSpd} miles per hour${windG > windSpd + 5 ? `, gusting to ${windG}` : ''}.`;
-    segs.push(tempLine);
-  } else {
-    segs.push("I'm having trouble reaching live current conditions right now — bear with me.");
-  }
+  addCurrentConditions(segs, {
+  tempF,
+  feelsF,
+  windSpd,
+  windDeg,
+  windG
+});
 
   const tornadoAlerts = alerts.filter(a => isTornadoLevel(a.properties?.event || ''));
   if (tornadoAlerts.length > 0) {
