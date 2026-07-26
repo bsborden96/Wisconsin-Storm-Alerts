@@ -237,16 +237,19 @@ function speakSegment(i) {
 
   await prepareBroadcast();
 
-console.log("StormVector: Segments =", liveSegments.length);
+  console.log("StormVector: Segments =", liveSegments.length);
 
-speechSynthesis.cancel();
+  speechSynthesis.cancel();
 
-setTimeout(() => {
-  speakSegment(0);
-}, 500);
+  setTimeout(() => {
+    speakSegment(0);
+  }, 500);
 
-  return;
+}, 3000);
+
+return;
 }
+
   liveSegIdx = i;
   speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(liveSegments[i]);
