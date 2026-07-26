@@ -178,10 +178,34 @@ let lastVisit = null;
 
   segs.push("You're watching StormVector Live.");
 
+let intro;
+
+switch (plan.intro) {
+
+  case "breaking":
+    intro = "This is StormVector Breaking Weather.";
+    break;
+
+  case "wind":
+    intro = "Let's begin with today's windy conditions.";
+    break;
+
+  case "heat":
+    intro = "Let's take a look at today's heat and humidity.";
+    break;
+
+  case "quiet":
+    intro = "Good to have you with us.";
+    break;
+
+  default:
+    intro = "Hi, I'm Vector.";
+}
+
 if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
-    segs.push(`Welcome back. Here's your updated StormVector forecast ${greetName}, current as of right now. Since you last checked in ${timeAgo(Date.now() - parseInt(lastVisit,10))}, here's what's changed.`);
+    segs.push(`${intro} Since your last visit ${timeAgo(Date.now() - parseInt(lastVisit,10))}, here's what's changed ${greetName}.`);
 } else {
-    segs.push(`Hi, I'm Vector. Here's your live StormVector forecast ${greetName}.`);
+    segs.push(`${intro} Here's your live StormVector forecast ${greetName}.`);
 }
 
   if (tempF !== null) {
