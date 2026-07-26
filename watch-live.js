@@ -129,9 +129,50 @@ async function prepareBroadcast() {
   if (btn) { btn.disabled = false; btn.textContent = '▶ Start Broadcast'; }
 }
 
+function createBroadcastPlan({ alerts, tempF, windSpd, dewF }) {
+
+  const plan = {
+    priority: "normal",
+    intro: "normal",
+    includeDewPoint: true
+  };
+
+  if (alerts.some(a => isTornadoLevel(a.properties?.event || ""))) {
+    plan.priority = "breaking";
+    plan.intro = "breaking";
+    return plan;
+  }
+
+  if (windSpd >= 20) {
+    plan.priority = "wind";
+    plan.intro = "wind";
+  }
+
+  if (tempF >= 85 && dewF >= 65) {
+    plan.priority = "heat";
+    plan.intro = "heat";
+  }
+
+  if (alerts.length === 0) {
+    plan.priority = "quiet";
+    plan.intro = "quiet";
+    plan.includeDewPoint = false;
+  }
+
+  return plan;
+}
+
 function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts }) {
   const segs = [];
-  let lastVisit = null;
+
+const plan = createBroadcastPlan({
+  alerts,
+  tempF,
+  windSpd,
+  dewF
+});
+
+let lastVisit = null;
   try { lastVisit = localStorage.getItem('stormvectorLastVisit'); } catch(_) {}
   const greetName = cityState ? `for ${cityState}` : 'for your area';
 
