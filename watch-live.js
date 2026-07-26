@@ -191,6 +191,38 @@ function addCurrentConditions(segs, { tempF, feelsF, windSpd, windDeg, windG }) 
   }
 
 }
+function addAlerts(segs, alerts) {
+
+  const tornadoAlerts = alerts.filter(a =>
+    isTornadoLevel(a.properties?.event || "")
+  );
+
+  if (tornadoAlerts.length > 0) {
+
+    const a = tornadoAlerts[0];
+    const mv = parseMovement(a.properties?.description || "");
+
+    segs.push(
+      `This is a StormVector Breaking Weather update. A ${a.properties.event} is in effect for ${(a.properties.areaDesc || "your area").split(";")[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ""} Take shelter now if you are in the warned area.`
+    );
+
+  } else if (alerts.length > 0) {
+
+    const a = alerts[0];
+
+    segs.push(
+      `There ${alerts.length === 1 ? "is" : "are"} currently ${alerts.length} active weather alert${alerts.length === 1 ? "" : "s"} for your area. The highest priority is a ${a.properties.event} covering ${(a.properties.areaDesc || "").split(";")[0]}.`
+    );
+
+  } else {
+
+    segs.push(
+      "There are no active weather alerts for your location at this time."
+    );
+
+  }
+
+}
 function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts }) {
   const segs = [];
 
@@ -237,26 +269,31 @@ if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
     segs.push(`${intro} Here's your live StormVector forecast ${greetName}.`);
 }
 
+  if (plan.lead === "tornado") {
+
+  addAlerts(segs, alerts);
+
   addCurrentConditions(segs, {
-  tempF,
-  feelsF,
-  windSpd,
-  windDeg,
-  windG
-});
+    tempF,
+    feelsF,
+    windSpd,
+    windDeg,
+    windG
+  });
 
-  const tornadoAlerts = alerts.filter(a => isTornadoLevel(a.properties?.event || ''));
-  if (tornadoAlerts.length > 0) {
-    const a = tornadoAlerts[0];
-    const mv = parseMovement(a.properties?.description || '');
-    segs.push(`This is a StormVector Breaking Weather update. A ${a.properties.event} is in effect for ${(a.properties.areaDesc||'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} Take shelter now if you are in the warned area.`);
-  } else if (alerts.length > 0) {
-    const a = alerts[0];
-    segs.push(`There ${alerts.length===1?'is':'are'} currently ${alerts.length} active weather alert${alerts.length===1?'':'s'} for your area. The highest priority is a ${a.properties.event} covering ${(a.properties.areaDesc||'').split(';')[0]}.`);
-  } else {
-    segs.push('There are no active weather alerts for your location at this time.');
-  }
+} else {
 
+  addCurrentConditions(segs, {
+    tempF,
+    feelsF,
+    windSpd,
+    windDeg,
+    windG
+  });
+
+  addAlerts(segs, alerts);
+
+}
   if (dewF !== null) {
     if (dewF >= 60) segs.push(`Dew points are running high at ${dewF} degrees, which means plenty of moisture is available if storms fire later.`);
     else if (dewF <= 35) segs.push(`Dew points are low at ${dewF} degrees — expect a dry air mass overall.`);
