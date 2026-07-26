@@ -235,10 +235,13 @@ function speakSegment(i) {
 
   await prepareBroadcast();
 
-  console.log("StormVector: Segments =", liveSegments.length);
+console.log("StormVector: Segments =", liveSegments.length);
 
+speechSynthesis.cancel();
+
+setTimeout(() => {
   speakSegment(0);
-}, 3000);
+}, 500);
 
   return;
 }
