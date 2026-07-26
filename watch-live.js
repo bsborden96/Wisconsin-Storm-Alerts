@@ -19,6 +19,30 @@ let liveSegments = [];
 let liveSegIdx = 0;
 let liveVoice = null;
 let liveMuted = false;
+let liveMusic = null;
+let musicEnabled = true;
+
+function startMusic() {
+  if (!musicEnabled) return;
+
+  if (!liveMusic) {
+    liveMusic = document.getElementById("liveMusic");
+  }
+
+  if (!liveMusic) return;
+
+  liveMusic.volume = 0.35;
+  liveMusic.loop = true;
+
+  liveMusic.play().catch(() => {});
+}
+
+function stopMusic() {
+  if (!liveMusic) return;
+
+  liveMusic.pause();
+  liveMusic.currentTime = 0;
+}
 
 function toggleMenu() {
   const panel = document.getElementById('menuPanel'), btn = document.getElementById('menuBtn');
@@ -207,6 +231,7 @@ if ('speechSynthesis' in window) {
 
 function startBroadcast() {
   document.getElementById('liveStartOverlay').style.display = 'none';
+  startMusic();
   try { localStorage.setItem('stormvectorLastVisit', String(Date.now())); } catch(_) {}
   speakSegment(0);
 }
@@ -214,8 +239,19 @@ function replaySegment() { speakSegment(liveSegIdx); }
 function toggleMute() {
   liveMuted = !liveMuted;
   const btn = document.getElementById('liveMuteBtn');
-  if (liveMuted) { speechSynthesis.cancel(); setLiveBadge('MUTED'); if (btn) btn.textContent = '🔊 Resume'; }
-  else { setLiveBadge('LIVE'); if (btn) btn.textContent = '🔇 Stop'; speakSegment(liveSegIdx); }
+
+  if (liveMuted) {
+    speechSynthesis.cancel();
+    stopMusic();              // <-- Add this line
+    setLiveBadge('MUTED');
+    if (btn) btn.textContent = '🔊 Resume';
+  }
+  else {
+    setLiveBadge('LIVE');
+    if (btn) btn.textContent = '🔇 Stop';
+    startMusic();             // <-- Add this line
+    speakSegment(liveSegIdx);
+  }
 }
 function setLiveBadge(text) {
   const el = document.getElementById('liveBadge'); if (!el) return;
