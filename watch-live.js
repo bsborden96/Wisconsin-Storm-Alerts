@@ -115,15 +115,39 @@ async function prepareBroadcast() {
   } catch(_) {}
 
   let alerts = [];
-  try {
-    const res = await safeFetch(`https://api.weather.gov/alerts/active?point=${liveLat.toFixed(4)},${liveLon.toFixed(4)}`, { timeout: 10000 });
-    const data = await res.json();
-    alerts = (data.features || []).sort((a,b) => alertPriorityScore(a.properties?.event||'') - alertPriorityScore(b.properties?.event||''));
-  } catch(_) {}
+try {
+  const res = await safeFetch(`https://api.weather.gov/alerts/active?point=${liveLat.toFixed(4)},${liveLon.toFixed(4)}`, { timeout: 10000 });
+  const data = await res.json();
+  alerts = (data.features || []).sort((a,b) =>
+    alertPriorityScore(a.properties?.event||'') -
+    alertPriorityScore(b.properties?.event||'')
+  );
+} catch(_) {}
 
-  buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts });
-  renderConditionsRow({ tempF, feelsF, windSpd, windDeg, windG, dewF });
-  setBroadcastBg({ wcode, alerts });
+// ADD THIS HERE
+let forecast = null;
+
+if (forecastUrl) {
+  try {
+    const res = await safeFetch(forecastUrl, { timeout: 10000 });
+    const data = await res.json();
+    forecast = data.properties?.periods || [];
+  } catch (_) {}
+}
+
+// THEN build the script
+buildScript({
+  cityState,
+  tempF,
+  feelsF,
+  windSpd,
+  windDeg,
+  windG,
+  wcode,
+  dewF,
+  alerts,
+  forecast
+});
 
   const btn = document.getElementById('liveStartBtn');
   if (btn) { btn.disabled = false; btn.textContent = '▶ Start Broadcast'; }
@@ -223,6 +247,23 @@ function addAlerts(segs, alerts) {
   }
 
 }
+function addShortForecast(segs, forecast) {
+
+  if (!forecast || forecast.length === 0) {
+    return;
+  }
+
+  const next = forecast[0];
+
+  if (!next || !next.detailedForecast) {
+    return;
+  }
+
+  segs.push(
+    `Looking ahead, ${next.detailedForecast}`
+  );
+
+}
 function buildScript({ cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, alerts }) {
   const segs = [];
 
@@ -290,6 +331,8 @@ if (lastVisit && Date.now() - parseInt(lastVisit, 10) < 6 * 3600 * 1000) {
     windDeg,
     windG
   });
+
+  addShortForecast(segs, forecast);
 
   addAlerts(segs, alerts);
 
