@@ -176,7 +176,26 @@ function setBroadcastBg({ wcode, alerts }) {
 /* ── SPEECH + CAPTIONS ── */
 function pickVoice() {
   const voices = speechSynthesis.getVoices();
-  liveVoice = voices.find(v => /en-US/i.test(v.lang) && /Google|Samantha|Alex|Aria|Female/i.test(v.name)) || voices.find(v => /en/i.test(v.lang)) || voices[0] || null;
+
+  console.log("Available voices:", voices.map(v => v.name));
+
+  liveVoice =
+    voices.find(v =>
+      /en-US/i.test(v.lang) &&
+      /(David|Daniel|Aaron|Microsoft David|Google US English Male|Alex|Tom)/i.test(v.name)
+    ) ||
+
+    voices.find(v =>
+      /Male/i.test(v.name)
+    ) ||
+
+    voices.find(v =>
+      /en-US/i.test(v.lang)
+    ) ||
+
+    voices[0] ||
+
+    null;
 }
 if ('speechSynthesis' in window) {
   speechSynthesis.onvoiceschanged = pickVoice;
