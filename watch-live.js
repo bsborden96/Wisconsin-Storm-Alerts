@@ -226,7 +226,16 @@ function speakSegment(i) {
     if (cap && liveSegments[i]) cap.textContent = liveSegments[i];
     return;
   }
-  if (i >= liveSegments.length) { setLiveBadge('STANDBY'); return; }
+  if (i >= liveSegments.length) {
+  setLiveBadge("CHECKING WEATHER");
+
+  setTimeout(async () => {
+    await prepareBroadcast();
+    speakSegment(0);
+  }, 3000);
+
+  return;
+}
   liveSegIdx = i;
   speechSynthesis.cancel();
   const utter = new SpeechSynthesisUtterance(liveSegments[i]);
