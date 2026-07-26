@@ -59,6 +59,7 @@ function timeAgo(ms) {
 }
 
 async function prepareBroadcast() {
+  setLiveBadge("UPDATING");
   const locEl = document.getElementById('liveLocationCard');
   let cityState = '', county = '';
   try {
