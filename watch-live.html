@@ -10,6 +10,43 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
+
+<style>
+  #mainContent { max-width: 980px; margin-inline: auto; }
+  .live-stage {
+    position: relative; overflow: hidden; padding: clamp(24px, 5vw, 44px);
+    border: 1px solid rgba(0,207,255,.28); border-radius: 28px;
+    background: radial-gradient(circle at 50% 10%, rgba(0,207,255,.22), transparent 34%), linear-gradient(150deg, rgba(5,14,30,.92), rgba(11,28,56,.8));
+    box-shadow: 0 30px 90px rgba(0,0,0,.4), inset 0 0 70px rgba(0,207,255,.05);
+  }
+  .live-stage::before { content:""; position:absolute; inset:-45%; background: conic-gradient(from 180deg, transparent, rgba(0,207,255,.16), transparent 28%); animation: liveSweep 10s linear infinite; opacity:.75; }
+  .live-stage > * { position: relative; z-index: 1; }
+  @keyframes liveSweep { to { transform: rotate(1turn); } }
+  .live-badge { display:inline-flex; gap:8px; align-items:center; padding:7px 13px; border-radius:999px; background:rgba(255,255,255,.08); color:#bfefff; letter-spacing:.12em; font-family:'Share Tech Mono', monospace; }
+  .live-dot { width:9px; height:9px; border-radius:50%; background:#ff5757; box-shadow:0 0 14px #ff5757; }
+  .live-badge-on .live-dot { background:#49ff8b; box-shadow:0 0 14px #49ff8b; }
+  .live-avatar { width: clamp(132px, 28vw, 210px); height: clamp(132px, 28vw, 210px); margin: 22px auto 14px; display:grid; place-items:center; border-radius:50%; }
+  .live-avatar::before, .live-avatar::after { content:""; position:absolute; width:100%; height:100%; border-radius:50%; background: radial-gradient(circle, rgba(0,207,255,.28), transparent 62%); animation: avatarPulse 2.8s ease-out infinite; }
+  .live-avatar::after { animation-delay: 1.4s; }
+  .live-avatar.speaking::before, .live-avatar.speaking::after, .broadcast-active .live-avatar::before { background: radial-gradient(circle, rgba(110,255,138,.38), transparent 62%); animation-duration:1.2s; }
+  @keyframes avatarPulse { 0%{transform:scale(.86); opacity:.9} 100%{transform:scale(1.55); opacity:0} }
+  .live-avatar-ring { position:absolute; inset:8px; border-radius:50%; border:1px solid rgba(0,207,255,.42); box-shadow: inset 0 0 28px rgba(0,207,255,.2), 0 0 38px rgba(0,207,255,.2); }
+  .live-avatar-core { width:70%; height:70%; border-radius:50%; display:grid; place-items:center; font: clamp(58px, 13vw, 96px)/1 'Bebas Neue', sans-serif; color:#07111f; background:linear-gradient(135deg,#eaffff,#00cfff 58%,#1b6dff); box-shadow:0 0 35px rgba(0,207,255,.45); }
+  .live-name { font-family:'Bebas Neue', sans-serif; letter-spacing:.12em; font-size:clamp(30px, 7vw, 56px); }
+  .live-name-sub { display:block; font-family:'Share Tech Mono', monospace; font-size:clamp(12px, 2.4vw, 15px); color:#8fdfff; letter-spacing:.08em; }
+  .live-caption-box { margin:24px auto 0; max-width:820px; min-height:96px; padding:20px; border-radius:18px; background:rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.1); line-height:1.65; text-align:left; box-shadow: inset 0 0 30px rgba(0,0,0,.22); }
+  .live-controls, .live-conditions-row, .live-crew-row { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:18px; }
+  .live-ctrl-btn, .live-chip, .live-crew-card { border:1px solid rgba(0,207,255,.22); background:rgba(4,12,25,.72); color:#dff8ff; border-radius:14px; padding:12px 15px; backdrop-filter:blur(14px); }
+  .live-ctrl-btn { cursor:pointer; }
+  .live-chip-label, .live-crew-label { display:block; color:#7ecfff; font-size:12px; text-transform:uppercase; letter-spacing:.12em; }
+  .live-chip-val { display:block; font-size:18px; margin-top:4px; }
+  .live-start-overlay { position:fixed; inset:0; display:grid; place-items:center; background:rgba(2,8,16,.78); backdrop-filter:blur(10px); z-index:20; padding:20px; }
+  .live-start-inner { max-width:520px; border:1px solid rgba(0,207,255,.28); border-radius:24px; padding:30px; background:linear-gradient(160deg, rgba(6,20,42,.96), rgba(2,9,18,.96)); box-shadow:0 24px 80px rgba(0,0,0,.5); }
+  .live-start-title { font-family:'Bebas Neue', sans-serif; font-size:42px; letter-spacing:.1em; }
+  .live-start-sub, .live-start-note { color:#a8dff2; margin-top:10px; line-height:1.6; }
+  .live-start-btn { margin-top:20px; border:0; border-radius:999px; padding:13px 24px; background:linear-gradient(90deg,#00cfff,#6eff8a); color:#04101b; font-weight:800; cursor:pointer; }
+</style>
+
 </head>
 <body>
 
@@ -46,6 +83,11 @@
       </div>
       <div class="live-name">VECTOR <span class="live-name-sub">AI Meteorologist</span></div>
 
+      <div class="live-crew-row" aria-label="Broadcast crew status">
+        <div class="live-crew-card"><span class="live-crew-label">Producer</span>Builds the rundown from live data</div>
+        <div class="live-crew-card"><span class="live-crew-label">Broadcaster</span>Speaks the highest-impact story first</div>
+      </div>
+
       <div class="live-caption-box" id="liveCaptionBox" aria-live="polite">
         <span id="liveCaptionText">Preparing today's broadcast…</span>
       </div>
@@ -71,17 +113,3 @@
   <div class="section">
     <div class="live-conditions-row" id="liveConditionsRow"></div>
   </div>
-
-  <footer id="footerTime">StormVector Beta · Broadcast generated from NWS &amp; Open-Meteo data</footer>
-
-</main>
-
-<audio id="liveMusic" loop preload="auto">
-  <source src="stormvector-theme.mp3" type="audio/mpeg">
-</audio>
-
-<script src="shared.js"></script>
-<script src="bg-canvas.js"></script>
-<script src="watch-live.js"></script>
-</body>
-</html>
