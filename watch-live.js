@@ -1,3 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Watch Live — US Storm Alerts</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#050a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+
+<style>
+  #mainContent { max-width: 980px; margin-inline: auto; }
+  .live-stage {
+    position: relative; overflow: hidden; padding: clamp(24px, 5vw, 44px);
+    border: 1px solid rgba(0,207,255,.28); border-radius: 28px;
+    background: radial-gradient(circle at 50% 10%, rgba(0,207,255,.22), transparent 34%), linear-gradient(150deg, rgba(5,14,30,.92), rgba(11,28,56,.8));
+    box-shadow: 0 30px 90px rgba(0,0,0,.4), inset 0 0 70px rgba(0,207,255,.05);
+  }
+  .live-stage::before { content:""; position:absolute; inset:-45%; background: conic-gradient(from 180deg, transparent, rgba(0,207,255,.16), transparent 28%); animation: liveSweep 10s linear infinite; opacity:.75; }
+  .live-stage > * { position: relative; z-index: 1; }
+  @keyframes liveSweep { to { transform: rotate(1turn); } }
+  .live-badge { display:inline-flex; gap:8px; align-items:center; padding:7px 13px; border-radius:999px; background:rgba(255,255,255,.08); color:#bfefff; letter-spacing:.12em; font-family:'Share Tech Mono', monospace; }
+  .live-dot { width:9px; height:9px; border-radius:50%; background:#ff5757; box-shadow:0 0 14px #ff5757; }
+  .live-badge-on .live-dot { background:#49ff8b; box-shadow:0 0 14px #49ff8b; }
+  .live-avatar { width: clamp(132px, 28vw, 210px); height: clamp(132px, 28vw, 210px); margin: 22px auto 14px; display:grid; place-items:center; border-radius:50%; }
+  .live-avatar::before, .live-avatar::after { content:""; position:absolute; width:100%; height:100%; border-radius:50%; background: radial-gradient(circle, rgba(0,207,255,.28), transparent 62%); animation: avatarPulse 2.8s ease-out infinite; }
+  .live-avatar::after { animation-delay: 1.4s; }
+  .live-avatar.speaking::before, .live-avatar.speaking::after, .broadcast-active .live-avatar::before { background: radial-gradient(circle, rgba(110,255,138,.38), transparent 62%); animation-duration:1.2s; }
+  @keyframes avatarPulse { 0%{transform:scale(.86); opacity:.9} 100%{transform:scale(1.55); opacity:0} }
+  .live-avatar-ring { position:absolute; inset:8px; border-radius:50%; border:1px solid rgba(0,207,255,.42); box-shadow: inset 0 0 28px rgba(0,207,255,.2), 0 0 38px rgba(0,207,255,.2); }
+  .live-avatar-core { width:70%; height:70%; border-radius:50%; display:grid; place-items:center; font: clamp(58px, 13vw, 96px)/1 'Bebas Neue', sans-serif; color:#07111f; background:linear-gradient(135deg,#eaffff,#00cfff 58%,#1b6dff); box-shadow:0 0 35px rgba(0,207,255,.45); }
+  .live-name { font-family:'Bebas Neue', sans-serif; letter-spacing:.12em; font-size:clamp(30px, 7vw, 56px); }
+  .live-name-sub { display:block; font-family:'Share Tech Mono', monospace; font-size:clamp(12px, 2.4vw, 15px); color:#8fdfff; letter-spacing:.08em; }
+  .live-caption-box { margin:24px auto 0; max-width:820px; min-height:96px; padding:20px; border-radius:18px; background:rgba(0,0,0,.32); border:1px solid rgba(255,255,255,.1); line-height:1.65; text-align:left; box-shadow: inset 0 0 30px rgba(0,0,0,.22); }
+  .live-controls, .live-conditions-row, .live-crew-row { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:18px; }
+  .live-ctrl-btn, .live-chip, .live-crew-card { border:1px solid rgba(0,207,255,.22); background:rgba(4,12,25,.72); color:#dff8ff; border-radius:14px; padding:12px 15px; backdrop-filter:blur(14px); }
+  .live-ctrl-btn { cursor:pointer; }
+  .live-chip-label, .live-crew-label { display:block; color:#7ecfff; font-size:12px; text-transform:uppercase; letter-spacing:.12em; }
+  .live-chip-val { display:block; font-size:18px; margin-top:4px; }
+  .live-start-overlay { position:fixed; inset:0; display:grid; place-items:center; background:rgba(2,8,16,.78); backdrop-filter:blur(10px); z-index:20; padding:20px; }
+  .live-start-inner { max-width:520px; border:1px solid rgba(0,207,255,.28); border-radius:24px; padding:30px; background:linear-gradient(160deg, rgba(6,20,42,.96), rgba(2,9,18,.96)); box-shadow:0 24px 80px rgba(0,0,0,.5); }
+  .live-start-title { font-family:'Bebas Neue', sans-serif; font-size:42px; letter-spacing:.1em; }
+  .live-start-sub, .live-start-note { color:#a8dff2; margin-top:10px; line-height:1.6; }
+  .live-start-btn { margin-top:20px; border:0; border-radius:999px; padding:13px 24px; background:linear-gradient(90deg,#00cfff,#6eff8a); color:#04101b; font-weight:800; cursor:pointer; }
+</style>
+
+</head>
+<body>
+
+<canvas id="bgCanvas" aria-hidden="true"></canvas>
+<div id="ariaLive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+<!-- Breaking weather banner: hidden by default, shown/hidden by watch-live.js
+     during Breaking Weather Mode. Styling is injected by watch-live.js so this
+     page doesn't need styles.css changes to support it. -->
+<div id="liveBreakingBanner" class="live-breaking-banner" role="alert" hidden>⚠ STORMVECTOR BREAKING WEATHER ⚠</div>
+
+<div id="headerBar" aria-label="Navigation header">
+  <button class="menu-btn" id="menuBtn" onclick="toggleMenu()" aria-expanded="false" aria-controls="menuPanel" aria-label="Open navigation menu">☰</button>
+  <div id="headerTitle">WATCH LIVE</div>
+</div>
+<nav id="menuPanel" class="menu-panel" role="menu" aria-label="Main navigation">
+  <a href="./index.html" role="menuitem"><span class="menu-icon-char">🏠</span>Home</a>
+  <a href="./outlooks.html" role="menuitem"><span class="menu-icon-char">🧭</span>Outlooks</a>
+  <a href="./watch-live.html" role="menuitem"><span class="menu-icon-char">📺</span>Watch Live</a>
+</nav>
+
+<main id="mainContent">
+
+  <div class="section" style="padding-top:4px">
+    <div id="liveLocationCard" class="location-card" aria-live="polite">Locating…</div>
+  </div>
+
+  <div class="section">
+    <div class="live-stage" id="liveStage">
+      <div class="live-badge" id="liveBadge"><span class="live-dot"></span>STANDBY</div>
+      <div class="live-avatar" id="liveAvatar" role="img" aria-label="Vector, your AI meteorologist">
+        <div class="live-avatar-ring"></div>
+        <div class="live-avatar-core">V</div>
+      </div>
+      <div class="live-name">VECTOR <span class="live-name-sub">AI Meteorologist</span></div>
+
+      <div class="live-crew-row" aria-label="Broadcast crew status">
+        <div class="live-crew-card"><span class="live-crew-label">Producer</span>Builds the rundown from live data</div>
+        <div class="live-crew-card"><span class="live-crew-label">Broadcaster</span>Speaks the highest-impact story first</div>
+      </div>
+
+      <div class="live-caption-box" id="liveCaptionBox" aria-live="polite">
+        <span id="liveCaptionText">Preparing today's broadcast…</span>
+      </div>
+
+      <div class="live-controls" id="liveControls">
+        <button class="live-ctrl-btn" id="liveReplayBtn" onclick="replaySegment()" aria-label="Replay this segment">↺ Replay</button>
+        <button class="live-ctrl-btn" id="liveMuteBtn" onclick="toggleMute()" aria-label="Mute broadcast">🔇 Stop</button>
+      </div>
+    </div>
+
+    <div class="live-start-overlay" id="liveStartOverlay">
+      <div class="live-start-inner">
+        <div class="live-start-title">📡 STORMVECTOR LIVE</div>
+        <div class="live-start-sub">Vector is ready with your local forecast.</div>
+        <button class="live-start-btn" id="liveStartBtn" onclick="startBroadcast()" disabled>Preparing…</button>
+        <div class="live-start-note">Uses your device's built-in voice. Captions are shown for every word spoken.</div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <div class="section">
+    <div class="live-conditions-row" id="liveConditionsRow"></div>
+  </div>
+watch-live.js
+watch-live.js
++84
+-16
+
 /* ════════════════════════════════════════════════
    WATCH LIVE — StormVector Meteorologist (Vector)
    Depends on shared.js (loaded first) and bg-canvas.js
@@ -166,6 +286,7 @@ function stopMusic() {
 (function injectBreakingBannerStyles() {
   const style = document.createElement('style');
   style.textContent = `
+@@ -630,108 +690,110 @@ function buildScript({
   windDeg,
   windG,
   wcode,
@@ -191,7 +312,6 @@ function stopMusic() {
   try { lastVisit = localStorage.getItem('stormvectorLastVisit'); } catch(_) {}
   const greetName = cityState ? `for ${cityState}` : 'for your area';
 
-  segs.push("You're watching StormVector Live.");
   segs.push(pickPhrase(PHRASES.liveOpeners, 'liveOpeners'));
 
   let intro;
@@ -250,7 +370,6 @@ function stopMusic() {
   }
 
   segs.push(pickPhrase(PHRASES.closers, 'closers'));
-  liveSegments = segs;
   liveSegments = polishSegments(segs);
   liveBroadcastContext = { cityState, tempF, feelsF, windSpd, windDeg, windG, wcode, dewF, humidity, alerts, forecast, spc, plan };
   liveSegIdx = 0;
@@ -278,7 +397,7 @@ function setBroadcastBg({ wcode, alerts }) {
   else if ([45,48].includes(wcode)) window.setBgMode('fog');
   else if ([51,53,55,61,63,65,80,81,82].includes(wcode)) window.setBgMode('rain');
   else if (wcode === 1) window.setBgMode('partlycloudy');
-function pickVoice() {
+@@ -748,135 +810,138 @@ function pickVoice() {
   liveVoice =
     voices.find(v =>
       /en-US/i.test(v.lang) &&
@@ -304,12 +423,10 @@ if ('speechSynthesis' in window) {
 
 /* ── SEVERE WEATHER INTERRUPTION ─────────────────────
    While a broadcast is running, poll for newly-issued
-   tornado-level alerts. If one appears mid-broadcast,
    watch or warning alerts. If one appears mid-broadcast,
    cancel whatever's being said, sound the attention tone,
    deliver Breaking Weather Mode immediately, then resume
    the normal broadcast loop afterward. */
-let knownTornadoIds = new Set();
 let knownPriorityAlertIds = new Set();
 let breakingWeatherActive = false;
 let severeWatchTimer = null;
@@ -329,9 +446,6 @@ async function checkForBreakingWeather() {
     const res = await safeFetch(`https://api.weather.gov/alerts/active?point=${liveLat.toFixed(4)},${liveLon.toFixed(4)}`, { timeout: 10000 });
     const data = await res.json();
     const alerts = data.features || [];
-    const tornadoAlerts = alerts.filter(a => isTornadoLevel(a.properties?.event || ''));
-    const newOnes = tornadoAlerts.filter(a => !knownTornadoIds.has(a.id));
-    tornadoAlerts.forEach(a => knownTornadoIds.add(a.id));
     const priorityAlerts = alerts.filter(a => /Warning|Watch|Emergency/i.test(a.properties?.event || ''))
       .sort((a,b) => alertPriorityScore(a.properties?.event || '') - alertPriorityScore(b.properties?.event || ''));
     const newOnes = priorityAlerts.filter(a => !knownPriorityAlertIds.has(a.id));
@@ -377,10 +491,10 @@ async function interruptForBreakingWeather(priorityAlert, allAlerts) {
   const mv = parseMovement(priorityAlert.properties?.description || '');
   const isWarning = /Warning|Emergency/i.test(event);
   const breakingSegs = [
-  "This is the StormVector ENS interruption tone. Stand by for urgent weather information.",
-  `A ${event} is in effect for ${(priorityAlert.properties?.areaDesc || 'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} ${isWarning ? 'Move to a safe place now if you are in the warned area.' : 'Review your safety plan and be ready to act if warnings are issued.'}`,
-  "I am returning to the broadcast, but this alert stays at the top of the rundown."
-];
+    "This is the StormVector ENS interruption tone. Stand by for urgent weather information.",
+    `A ${event} is in effect for ${(priorityAlert.properties?.areaDesc || 'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} ${isWarning ? 'Move to a safe place now if you are in the warned area.' : 'Review your safety plan and be ready to act if warnings are issued.'}`,
+    "I am returning to the broadcast, but this alert stays at the top of the rundown."
+  ];
 
   await speakSequential(breakingSegs);
 
@@ -422,7 +536,7 @@ function showBreakingBanner(show) {
    long utterance queue. The standard workaround is nudging
    it with pause()/resume() periodically while it's actively
    speaking. This is a no-op on platforms that don't need it. */
-function startSpeechKeepAlive() {
+@@ -893,50 +958,51 @@ function startSpeechKeepAlive() {
 function stopSpeechKeepAlive() {
   if (speechKeepAlive) { clearInterval(speechKeepAlive); speechKeepAlive = null; }
 }
@@ -474,7 +588,7 @@ function toggleMute() {
   else {
     setLiveBadge('LIVE');
     if (btn) btn.textContent = '🔇 Stop';
-function toggleMute() {
+@@ -944,71 +1010,73 @@ function toggleMute() {
     requestWakeLock();
     startSevereWatch();
     startSpeechKeepAlive();
