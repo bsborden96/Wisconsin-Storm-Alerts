@@ -166,7 +166,6 @@ function stopMusic() {
 (function injectBreakingBannerStyles() {
   const style = document.createElement('style');
   style.textContent = `
-@@ -630,108 +690,110 @@ function buildScript({
   windDeg,
   windG,
   wcode,
@@ -279,7 +278,7 @@ function setBroadcastBg({ wcode, alerts }) {
   else if ([45,48].includes(wcode)) window.setBgMode('fog');
   else if ([51,53,55,61,63,65,80,81,82].includes(wcode)) window.setBgMode('rain');
   else if (wcode === 1) window.setBgMode('partlycloudy');
-@@ -748,135 +810,138 @@ function pickVoice() {
+function pickVoice() {
   liveVoice =
     voices.find(v =>
       /en-US/i.test(v.lang) &&
@@ -365,7 +364,6 @@ async function playEASTone() {
   } catch (_) { /* tone is decorative — never block the warning on it */ }
 }
 
-async function interruptForBreakingWeather(tornadoAlert, allAlerts) {
 async function interruptForBreakingWeather(priorityAlert, allAlerts) {
   breakingWeatherActive = true;
   resumeSegIdxAfterBreak = liveSegIdx;
@@ -375,18 +373,14 @@ async function interruptForBreakingWeather(priorityAlert, allAlerts) {
 
   await playEASTone();
 
-  const mv = parseMovement(tornadoAlert.properties?.description || '');
   const event = priorityAlert.properties?.event || 'weather alert';
   const mv = parseMovement(priorityAlert.properties?.description || '');
   const isWarning = /Warning|Emergency/i.test(event);
   const breakingSegs = [
-    "This is a StormVector Breaking Weather Update.",
-    `A ${tornadoAlert.properties.event} is in effect for ${(tornadoAlert.properties.areaDesc || 'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} Take shelter now if you are in the warned area.`,
-    "I'll continue to track this closely. Stay tuned and stay safe."
-    "This is the StormVector ENS interruption tone. Stand by for urgent weather information.",
-    `A ${event} is in effect for ${(priorityAlert.properties?.areaDesc || 'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} ${isWarning ? 'Move to a safe place now if you are in the warned area.' : 'Review your safety plan and be ready to act if warnings are issued.'}`,
-    "I am returning to the broadcast, but this alert stays at the top of the rundown."
-  ];
+  "This is the StormVector ENS interruption tone. Stand by for urgent weather information.",
+  `A ${event} is in effect for ${(priorityAlert.properties?.areaDesc || 'your area').split(';')[0]}.${mv ? ` The storm is moving ${mv.dir} at ${mv.spd} miles per hour.` : ''} ${isWarning ? 'Move to a safe place now if you are in the warned area.' : 'Review your safety plan and be ready to act if warnings are issued.'}`,
+  "I am returning to the broadcast, but this alert stays at the top of the rundown."
+];
 
   await speakSequential(breakingSegs);
 
@@ -400,10 +394,8 @@ function speakSequential(list) {
     let idx = 0;
     const next = () => {
       if (idx >= list.length) { resolve(); return; }
-      const utter = new SpeechSynthesisUtterance(list[idx]);
       const utter = new SpeechSynthesisUtterance(renderForSpeech(list[idx]));
       if (liveVoice) utter.voice = liveVoice;
-      utter.rate = 1.0; utter.pitch = 1.0;
       utter.rate = 0.94; utter.pitch = 1.02;
       utter.onstart = () => {
         const cap = document.getElementById('liveCaptionText');
@@ -430,7 +422,7 @@ function showBreakingBanner(show) {
    long utterance queue. The standard workaround is nudging
    it with pause()/resume() periodically while it's actively
    speaking. This is a no-op on platforms that don't need it. */
-@@ -893,50 +958,51 @@ function startSpeechKeepAlive() {
+function startSpeechKeepAlive() {
 function stopSpeechKeepAlive() {
   if (speechKeepAlive) { clearInterval(speechKeepAlive); speechKeepAlive = null; }
 }
@@ -482,7 +474,7 @@ function toggleMute() {
   else {
     setLiveBadge('LIVE');
     if (btn) btn.textContent = '🔇 Stop';
-@@ -944,71 +1010,73 @@ function toggleMute() {
+function toggleMute() {
     requestWakeLock();
     startSevereWatch();
     startSpeechKeepAlive();
@@ -527,10 +519,8 @@ function speakSegment(i) {
   liveSegIdx = i;
   speechSynthesis.cancel();
   const isAndroid = /Android/i.test(navigator.userAgent);
-  const utter = new SpeechSynthesisUtterance(liveSegments[i]);
   const utter = new SpeechSynthesisUtterance(renderForSpeech(liveSegments[i]));
   if (liveVoice) utter.voice = liveVoice;
-  utter.rate = isAndroid ? 0.95 : 1.0; utter.pitch = 1.0;
   utter.rate = isAndroid ? 0.92 : 0.96; utter.pitch = 1.02;
   utter.volume = 1.0;
   utter.onstart = () => {
