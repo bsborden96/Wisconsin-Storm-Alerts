@@ -5556,6 +5556,148 @@ function setBroadcastBg(
 
 }
 
+function updateWatchLiveWeatherTheme(ctx) {
+
+  const body = document.body;
+
+  body.classList.remove(
+    'weather-theme-watch',
+    'weather-theme-warning',
+    'weather-theme-critical'
+  );
+
+  const alerts =
+    ctx?.alerts || [];
+
+  if (!alerts.length) {
+    return;
+  }
+
+  let level = 0;
+
+  for (const alert of alerts) {
+
+    const props =
+      alert.properties || {};
+
+    const event =
+      String(
+        props.event || ''
+      ).toLowerCase();
+
+    const headline =
+      String(
+        props.headline || ''
+      ).toLowerCase();
+
+    const description =
+      String(
+        props.description || ''
+      ).toLowerCase();
+
+    const combined =
+      `${event} ${headline} ${description}`;
+
+
+    /* ═══════════════════════════════════════
+       LEVEL 3 — CRITICAL / PDS / EMERGENCY
+    ═══════════════════════════════════════ */
+
+    if (
+      combined.includes('tornado emergency') ||
+      combined.includes('flash flood emergency') ||
+      combined.includes('particularly dangerous situation') ||
+      /\bpds\b/.test(combined)
+    ) {
+
+      level =
+        Math.max(
+          level,
+          3
+        );
+
+      continue;
+    }
+
+
+    /* ═══════════════════════════════════════
+       LEVEL 2 — WARNINGS
+    ═══════════════════════════════════════ */
+
+    if (
+      event.includes('tornado warning') ||
+      event.includes('severe thunderstorm warning') ||
+      event.includes('flash flood warning') ||
+      event.includes('flood warning') ||
+      event.includes('blizzard warning') ||
+      event.includes('ice storm warning') ||
+      event.includes('winter storm warning') ||
+      event.includes('high wind warning') ||
+      event.includes('excessive heat warning') ||
+      event.includes('snow squall warning')
+    ) {
+
+      level =
+        Math.max(
+          level,
+          2
+        );
+
+      continue;
+    }
+
+
+    /* ═══════════════════════════════════════
+       LEVEL 1 — WATCH / WEATHER-AWARE
+    ═══════════════════════════════════════ */
+
+    if (
+      event.includes('tornado watch') ||
+      event.includes('severe thunderstorm watch') ||
+      event.includes('flash flood watch') ||
+      event.includes('flood watch') ||
+      event.includes('winter storm watch') ||
+      event.includes('high wind watch') ||
+      event.includes('excessive heat watch') ||
+      event.includes('fire weather watch')
+    ) {
+
+      level =
+        Math.max(
+          level,
+          1
+        );
+    }
+
+  }
+
+
+  if (level === 3) {
+
+    body.classList.add(
+      'weather-theme-critical'
+    );
+
+  }
+
+  else if (level === 2) {
+
+    body.classList.add(
+      'weather-theme-warning'
+    );
+
+  }
+
+  else if (level === 1) {
+
+    body.classList.add(
+      'weather-theme-watch'
+    );
+
+  }
+
+}
+
 
 /* ═══════════════════════════════════════════════
    WHAT CHANGED
@@ -7464,18 +7606,27 @@ async function prepareBroadcast() {
 
 
   renderObservationInfo(
-    observation
-  );
+  observation
+);
 
 
-  setBroadcastBg(
-    ctx
-  );
+setBroadcastBg(
+  ctx
+);
 
 
-  updateGraphicsData(
-    ctx
-  );
+/*
+  Automatically change the Watch Live theme
+  based on active NWS alerts.
+*/
+updateWatchLiveWeatherTheme(
+  ctx
+);
+
+
+updateGraphicsData(
+  ctx
+);
 
 
   detectWeatherChanges(
