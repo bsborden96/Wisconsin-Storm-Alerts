@@ -3076,3 +3076,220 @@ body.watch-live-page .live-start-btn:disabled {
     transform: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════
+   WATCH LIVE — VECTOR SPEAKING MOUTH
+   Paste directly after the final } in styles.css
+════════════════════════════════════════════════ */
+
+/* Give the avatar core positioning space for the mouth */
+body.watch-live-page .live-avatar-core {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Keep the V slightly higher so the mouth fits below it */
+body.watch-live-page .vector-core-letter {
+  position: relative;
+  z-index: 2;
+  display: block;
+  transform: translateY(-11%);
+  pointer-events: none;
+}
+
+/* Mouth container */
+body.watch-live-page .vector-mouth {
+  position: absolute;
+  left: 50%;
+  bottom: 16%;
+  transform: translateX(-50%);
+  width: 58%;
+  height: 22%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  z-index: 5;
+  pointer-events: none;
+}
+
+/* Individual mouth bars */
+body.watch-live-page .vector-mouth span {
+  display: block;
+  width: 6px;
+  min-width: 6px;
+  height: 4px;
+  border-radius: 999px;
+  background: #04101b;
+  opacity: 0.92;
+  transform-origin: center;
+  box-shadow: 0 0 4px rgba(0,0,0,0.35);
+}
+
+/* Resting mouth shape */
+body.watch-live-page .vector-mouth span:nth-child(1) {
+  height: 4px;
+}
+
+body.watch-live-page .vector-mouth span:nth-child(2) {
+  height: 5px;
+}
+
+body.watch-live-page .vector-mouth span:nth-child(3) {
+  height: 7px;
+}
+
+body.watch-live-page .vector-mouth span:nth-child(4) {
+  height: 5px;
+}
+
+body.watch-live-page .vector-mouth span:nth-child(5) {
+  height: 4px;
+}
+
+
+/* ════════════════════════════════════════════════
+   SPEAKING STATE
+════════════════════════════════════════════════ */
+
+/*
+   watch-live.js adds .speaking to #liveAvatar
+   while Vector is actively talking.
+*/
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span {
+  opacity: 1;
+  animation-name: vectorMouthTalk;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Slightly different timing on every bar */
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(1) {
+  animation-duration: 0.28s;
+  animation-delay: -0.06s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(2) {
+  animation-duration: 0.34s;
+  animation-delay: -0.15s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(3) {
+  animation-duration: 0.24s;
+  animation-delay: -0.10s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(4) {
+  animation-duration: 0.31s;
+  animation-delay: -0.18s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(5) {
+  animation-duration: 0.27s;
+  animation-delay: -0.08s;
+}
+
+@keyframes vectorMouthTalk {
+  0% {
+    transform: scaleY(0.45);
+  }
+
+  20% {
+    transform: scaleY(1.15);
+  }
+
+  45% {
+    transform: scaleY(0.75);
+  }
+
+  70% {
+    transform: scaleY(1.8);
+  }
+
+  100% {
+    transform: scaleY(1.05);
+  }
+}
+
+
+/* ════════════════════════════════════════════════
+   SPEAKING GLOW
+════════════════════════════════════════════════ */
+
+body.watch-live-page #liveAvatar.speaking .live-avatar-core {
+  animation: vectorSpeakingGlow 1.15s ease-in-out infinite;
+}
+
+@keyframes vectorSpeakingGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 28px rgba(0,207,255,0.42),
+      0 0 52px rgba(0,207,255,0.16);
+  }
+
+  50% {
+    box-shadow:
+      0 0 42px rgba(0,207,255,0.70),
+      0 0 78px rgba(110,255,138,0.18);
+  }
+}
+
+
+/* Outer ring reacts while Vector talks */
+body.watch-live-page #liveAvatar.speaking .live-avatar-ring {
+  animation: vectorSpeakingRing 1.6s ease-in-out infinite;
+}
+
+@keyframes vectorSpeakingRing {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.95;
+    transform: scale(1.045);
+  }
+}
+
+
+/* ════════════════════════════════════════════════
+   MOBILE TUNING
+════════════════════════════════════════════════ */
+
+@media (max-width: 480px) {
+
+  body.watch-live-page .vector-mouth {
+    gap: 3px;
+    width: 56%;
+  }
+
+  body.watch-live-page .vector-mouth span {
+    width: 5px;
+    min-width: 5px;
+  }
+
+}
+
+
+/* ════════════════════════════════════════════════
+   REDUCED MOTION
+════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  body.watch-live-page #liveAvatar.speaking .vector-mouth span,
+  body.watch-live-page #liveAvatar.speaking .live-avatar-core,
+  body.watch-live-page #liveAvatar.speaking .live-avatar-ring {
+    animation: none !important;
+  }
+
+  body.watch-live-page #liveAvatar.speaking .vector-mouth span {
+    transform: scaleY(1.2);
+  }
+
+}
