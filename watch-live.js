@@ -1,19 +1,18 @@
 /* ═══════════════════════════════════════════════════════
    STORMVECTOR LIVE — VECTOR BROADCAST ENGINE
-   Version: Smooth Broadcast / iPhone Friendly
+   iPHONE / SAFARI STARTUP VERSION
 
-   FEATURES
-   • Location requested only after user taps Go Live
-   • Unlocks BOTH music and speech during that tap
-   • Uses stormvector-theme.mp3
-   • Smooth music ducking under Vector
-   • Natural sentence transitions
-   • Shorter / cleaner NWS forecast language
-   • Different rundown every broadcast loop
-   • Remembers changing weather values
-   • Animated Vector speaking state
-   • Watches for new severe weather alerts
-   • Breaking weather interruption
+   STARTUP FLOW
+   1. User taps Enable Location & Go Live
+   2. Theme audio is unlocked immediately
+   3. Vector immediately speaks an audible startup line
+   4. Location permission is requested
+   5. Weather data loads
+   6. Vector rolls directly into the local broadcast
+
+   IMPORTANT:
+   We DO NOT use a silent speech primer.
+   We DO NOT cancel speech after weather finishes loading.
 ═══════════════════════════════════════════════════════ */
 
 
@@ -27,7 +26,6 @@ let liveCityState = null;
 
 let liveSegments = [];
 let liveSegIdx = 0;
-
 let liveVoice = null;
 
 let liveMuted = false;
@@ -49,6 +47,8 @@ let severeWatchTimer = null;
 
 let speechGeneration = 0;
 
+let startupSpeechPromise = null;
+
 const spokenFactMemory = new Map();
 const knownPriorityAlertIds = new Set();
 const phraseHistory = {};
@@ -64,7 +64,7 @@ const SPC_RANK = {
 
 
 /* ════════════════════════════════════════════════
-   SHARED.JS FALLBACKS
+   FALLBACK HELPERS
 ════════════════════════════════════════════════ */
 
 (function installFallbacks() {
@@ -380,7 +380,10 @@ function clamp(
 
   return Math.max(
     min,
-    Math.min(max, value)
+    Math.min(
+      max,
+      value
+    )
   );
 
 }
@@ -401,16 +404,16 @@ function wait(ms) {
 
 function capitalize(text) {
 
-  text =
+  const value =
     String(text || '');
 
-  if (!text) {
+  if (!value) {
     return '';
   }
 
   return (
-    text.charAt(0).toUpperCase() +
-    text.slice(1)
+    value.charAt(0).toUpperCase() +
+    value.slice(1)
   );
 
 }
@@ -543,7 +546,9 @@ function polishSegments(
    SPEECH TEXT CLEANUP
 ════════════════════════════════════════════════ */
 
-function renderForSpeech(text) {
+function renderForSpeech(
+  text
+) {
 
   return String(text || '')
 
@@ -598,49 +603,47 @@ function cleanForecastText(
       .replace(/\s+/g, ' ')
       .trim();
 
-  /*
-    Remove a few phrases that sound fine
-    in written NWS products but awkward
-    when read aloud by Vector.
-  */
 
   cleaned =
     cleaned
+
       .replace(
         /^Tonight:\s*/i,
         ''
       )
+
       .replace(
         /^Today:\s*/i,
         ''
       )
+
       .replace(
         /^This Afternoon:\s*/i,
         ''
       )
+
       .replace(
         /\bChance of precipitation is\b/gi,
         'Rain chances are'
       )
+
       .replace(
         /\bNew precipitation amounts of less than a tenth of an inch possible\.?/gi,
         ''
       )
+
       .replace(
         /\bNew precipitation amounts between .*? possible\.?/gi,
         ''
       )
+
       .replace(
         /\s+/g,
         ' '
       )
+
       .trim();
 
-
-  /*
-    Keep Vector from reading a massive forecast
-    paragraph in one breath.
-  */
 
   const sentences =
     cleaned.match(
@@ -723,7 +726,7 @@ function skyDescription(
 
 
 /* ════════════════════════════════════════════════
-   PHRASE BANKS
+   SPEECH BANK
 ════════════════════════════════════════════════ */
 
 const PHRASES = {
@@ -967,8 +970,11 @@ function geolocationErrorMessage(
 ) {
 
   if (!error) {
+
     return 'StormVector could not get your location.';
+
   }
+
 
   switch (error.code) {
 
@@ -1028,6 +1034,12 @@ function requestCurrentLocation() {
             locationReady =
               true;
 
+            console.log(
+              'StormVector location:',
+              liveLat,
+              liveLon
+            );
+
             resolve(position);
 
           },
@@ -1085,8 +1097,10 @@ async function fetchAlerts(
         }
       );
 
+
     const data =
       await response.json();
+
 
     return data.features || [];
 
@@ -1098,6 +1112,7 @@ async function fetchAlerts(
       'StormVector alerts failed:',
       error
     );
+
 
     return [];
 
@@ -1128,8 +1143,10 @@ async function fetchNwsContext(
     const data =
       await response.json();
 
+
     const properties =
       data.properties || {};
+
 
     const relativeLocation =
       properties
@@ -1144,7 +1161,9 @@ async function fetchNwsContext(
 
         ? `${relativeLocation.city}, ${relativeLocation.state}`
 
-        : null;
+        : relativeLocation?.city ||
+          relativeLocation?.state ||
+          null;
 
 
     let today =
@@ -1194,10 +1213,12 @@ async function fetchNwsContext(
                   period.startTime
                 );
 
+
               const end =
                 new Date(
                   period.endTime
                 );
+
 
               return (
                 start <= now &&
@@ -1205,7 +1226,9 @@ async function fetchNwsContext(
               );
 
             }
-          ) || periods[0];
+          ) ||
+
+          periods[0];
 
 
         const nightPeriod =
@@ -1220,15 +1243,21 @@ async function fetchNwsContext(
 
         today =
           cleanForecastText(
+
             currentPeriod?.detailedForecast ||
+
             currentPeriod?.shortForecast
+
           );
 
 
         tonight =
           cleanForecastText(
+
             nightPeriod?.detailedForecast ||
+
             nightPeriod?.shortForecast
+
           );
 
       }
@@ -1264,6 +1293,7 @@ async function fetchNwsContext(
       'StormVector NWS location failed:',
       error
     );
+
 
     return {
 
@@ -1317,6 +1347,7 @@ async function fetchOpenMeteo(
   const current =
     data.current || {};
 
+
   const daily =
     data.daily || {};
 
@@ -1328,14 +1359,24 @@ async function fetchOpenMeteo(
         return null;
       }
 
-      return new Date(value)
-        .toLocaleTimeString(
-          [],
-          {
-            hour: 'numeric',
-            minute: '2-digit'
-          }
-        );
+      try {
+
+        return new Date(value)
+          .toLocaleTimeString(
+            [],
+            {
+              hour: 'numeric',
+              minute: '2-digit'
+            }
+          );
+
+      }
+
+      catch (_) {
+
+        return null;
+
+      }
 
     };
 
@@ -1344,25 +1385,33 @@ async function fetchOpenMeteo(
 
     tempF:
       current.temperature_2m !== undefined
-        ? Math.round(current.temperature_2m)
+        ? Math.round(
+            current.temperature_2m
+          )
         : null,
 
 
     feelsF:
       current.apparent_temperature !== undefined
-        ? Math.round(current.apparent_temperature)
+        ? Math.round(
+            current.apparent_temperature
+          )
         : null,
 
 
     humidity:
       current.relative_humidity_2m !== undefined
-        ? Math.round(current.relative_humidity_2m)
+        ? Math.round(
+            current.relative_humidity_2m
+          )
         : null,
 
 
     dewF:
       current.dew_point_2m !== undefined
-        ? Math.round(current.dew_point_2m)
+        ? Math.round(
+            current.dew_point_2m
+          )
         : null,
 
 
@@ -1374,7 +1423,9 @@ async function fetchOpenMeteo(
 
     windSpd:
       current.wind_speed_10m !== undefined
-        ? Math.round(current.wind_speed_10m)
+        ? Math.round(
+            current.wind_speed_10m
+          )
         : 0,
 
 
@@ -1386,7 +1437,9 @@ async function fetchOpenMeteo(
 
     windG:
       current.wind_gusts_10m !== undefined
-        ? Math.round(current.wind_gusts_10m)
+        ? Math.round(
+            current.wind_gusts_10m
+          )
         : 0,
 
 
@@ -1407,7 +1460,7 @@ async function fetchOpenMeteo(
 
 
 /* ════════════════════════════════════════════════
-   SPC DAY 1 OUTLOOK
+   SPC OUTLOOK
 ════════════════════════════════════════════════ */
 
 function pointInRing(
@@ -1417,6 +1470,7 @@ function pointInRing(
 
   let inside =
     false;
+
 
   for (
     let i = 0,
@@ -1452,6 +1506,7 @@ function pointInRing(
       &&
 
       point[0] <
+
       (
         (xj - xi) *
         (point[1] - yi) /
@@ -1468,6 +1523,7 @@ function pointInRing(
     }
 
   }
+
 
   return inside;
 
@@ -1492,6 +1548,7 @@ function pointInPolygon(
 
   }
 
+
   for (
     let i = 1;
     i < coordinates.length;
@@ -1511,6 +1568,7 @@ function pointInPolygon(
 
   }
 
+
   return true;
 
 }
@@ -1522,7 +1580,9 @@ function pointInGeometry(
 ) {
 
   if (!geometry) {
+
     return false;
+
   }
 
 
@@ -1609,16 +1669,23 @@ async function fetchSpcOutlook(
 
         const label =
           String(
+
             feature.properties?.LABEL ||
+
             feature.properties?.label ||
+
             feature.properties?.DN ||
+
             ''
+
           )
           .toUpperCase();
 
 
         if (!SPC_RANK[label]) {
+
           continue;
+
         }
 
 
@@ -1679,8 +1746,11 @@ function renderConditionsRow(
       'liveConditionsRow'
     );
 
+
   if (!row) {
+
     return;
+
   }
 
 
@@ -1780,40 +1850,65 @@ function setBroadcastBg(
   }
 
 
-  if ([95,96,99].includes(ctx.wcode)) {
+  if (
+    [95,96,99]
+      .includes(
+        ctx.wcode
+      )
+  ) {
 
-    window.setBgMode('storm');
+    window.setBgMode(
+      'storm'
+    );
 
   }
+
 
   else if (
     [71,73,75,77,85,86]
-      .includes(ctx.wcode)
+      .includes(
+        ctx.wcode
+      )
   ) {
 
-    window.setBgMode('snow');
+    window.setBgMode(
+      'snow'
+    );
 
   }
+
 
   else if (
     [45,48]
-      .includes(ctx.wcode)
+      .includes(
+        ctx.wcode
+      )
   ) {
 
-    window.setBgMode('fog');
+    window.setBgMode(
+      'fog'
+    );
 
   }
+
 
   else if (
     [51,53,55,61,63,65,80,81,82]
-      .includes(ctx.wcode)
+      .includes(
+        ctx.wcode
+      )
   ) {
 
-    window.setBgMode('rain');
+    window.setBgMode(
+      'rain'
+    );
 
   }
 
-  else if (ctx.wcode === 1) {
+
+  else if (
+    ctx.wcode === 1
+  ) {
 
     window.setBgMode(
       'partlycloudy'
@@ -1821,9 +1916,12 @@ function setBroadcastBg(
 
   }
 
+
   else if (
     [2,3]
-      .includes(ctx.wcode)
+      .includes(
+        ctx.wcode
+      )
   ) {
 
     window.setBgMode(
@@ -1831,6 +1929,7 @@ function setBroadcastBg(
     );
 
   }
+
 
   else {
 
@@ -1848,7 +1947,9 @@ function setRobotSpeaking(
 ) {
 
   document
-    .getElementById('liveAvatar')
+    .getElementById(
+      'liveAvatar'
+    )
     ?.classList
     .toggle(
       'speaking',
@@ -1884,7 +1985,9 @@ function setCaption(
   }
 
 
-  announce(text);
+  announce(
+    text
+  );
 
 }
 
@@ -1900,7 +2003,9 @@ function setLiveBadge(
 
 
   if (!badge) {
+
     return;
+
   }
 
 
@@ -1915,16 +2020,17 @@ function setLiveBadge(
   `;
 
 
-  badge.classList.toggle(
-    'live-badge-on',
-    text === 'LIVE'
-  );
+  badge.classList
+    .toggle(
+      'live-badge-on',
+      text === 'LIVE'
+    );
 
 }
 
 
 /* ════════════════════════════════════════════════
-   BROADCAST SCRIPT BUILDERS
+   BROADCAST BUILDERS
 ════════════════════════════════════════════════ */
 
 function addCurrentConditions(
@@ -1932,7 +2038,9 @@ function addCurrentConditions(
   ctx
 ) {
 
-  if (ctx.tempF === null) {
+  if (
+    ctx.tempF === null
+  ) {
 
     segments.push(
       "I'm still waiting on the latest temperature, but the rest of the weather data is coming through."
@@ -1944,11 +2052,15 @@ function addCurrentConditions(
 
 
   const oldTemp =
-    spokenFactMemory.get('temperature');
+    spokenFactMemory.get(
+      'temperature'
+    );
 
 
   const oldFeels =
-    spokenFactMemory.get('feels');
+    spokenFactMemory.get(
+      'feels'
+    );
 
 
   const feelsClause =
@@ -1971,17 +2083,25 @@ function addCurrentConditions(
       : '';
 
 
-  if (oldTemp === undefined) {
+  if (
+    oldTemp === undefined
+  ) {
 
     segments.push(
+
       pickFilled(
         PHRASES.currentFirst,
         'current-first',
         {
-          tempF: ctx.tempF,
+
+          tempF:
+            ctx.tempF,
+
           feelsClause
+
         }
       )
+
     );
 
   }
@@ -1996,7 +2116,9 @@ function addCurrentConditions(
       ctx.tempF -
       oldTemp;
 
+
     segments.push(
+
       pickFilled(
         PHRASES.currentWarmer,
         'current-warmer',
@@ -2014,6 +2136,7 @@ function addCurrentConditions(
 
         }
       )
+
     );
 
   }
@@ -2028,7 +2151,9 @@ function addCurrentConditions(
       oldTemp -
       ctx.tempF;
 
+
     segments.push(
+
       pickFilled(
         PHRASES.currentCooler,
         'current-cooler',
@@ -2046,6 +2171,7 @@ function addCurrentConditions(
 
         }
       )
+
     );
 
   }
@@ -2054,6 +2180,7 @@ function addCurrentConditions(
   else {
 
     segments.push(
+
       pickFilled(
         PHRASES.currentSteady,
         'current-steady',
@@ -2066,6 +2193,7 @@ function addCurrentConditions(
 
         }
       )
+
     );
 
   }
@@ -2093,6 +2221,7 @@ function addCurrentConditions(
   ) {
 
     segments.push(
+
       pickFilled(
         PHRASES.conditions,
         'conditions',
@@ -2100,6 +2229,7 @@ function addCurrentConditions(
           condition
         }
       )
+
     );
 
   }
@@ -2148,11 +2278,6 @@ function addWind(
     );
 
 
-  /*
-    If wind is exactly the same, don't repeat
-    it every single loop unless it matters.
-  */
-
   if (
     !force &&
     broadcastLoopCount > 0 &&
@@ -2172,6 +2297,7 @@ function addWind(
 
 
   const gustClause =
+
     ctx.windG >
     ctx.windSpd + 5
 
@@ -2181,15 +2307,22 @@ function addWind(
 
 
   segments.push(
+
     pickFilled(
       PHRASES.wind,
       'wind',
       {
+
         direction,
-        speed: ctx.windSpd,
+
+        speed:
+          ctx.windSpd,
+
         gustClause
+
       }
     )
+
   );
 
 
@@ -2217,8 +2350,12 @@ function addHumidity(
   ctx
 ) {
 
-  if (ctx.dewF === null) {
+  if (
+    ctx.dewF === null
+  ) {
+
     return;
+
   }
 
 
@@ -2240,13 +2377,15 @@ function addHumidity(
 
 
   segments.push(
+
     pickFilled(
       PHRASES.humidity,
       'humidity',
       {
 
         humidity:
-          ctx.humidity ?? 'unknown',
+          ctx.humidity ??
+          'unknown',
 
         dewF:
           ctx.dewF,
@@ -2258,6 +2397,7 @@ function addHumidity(
 
       }
     )
+
   );
 
 
@@ -2276,7 +2416,9 @@ function addAlerts(
 
   if (!alerts.length) {
 
-    if (broadcastLoopCount === 0) {
+    if (
+      broadcastLoopCount === 0
+    ) {
 
       segments.push(
         'There are no active National Weather Service alerts for your location right now.'
@@ -2303,7 +2445,10 @@ function addAlerts(
 
 
   sorted
-    .slice(0,2)
+    .slice(
+      0,
+      2
+    )
     .forEach(
       alert => {
 
@@ -2323,7 +2468,9 @@ function addAlerts(
           '';
 
 
-        if (properties.expires) {
+        if (
+          properties.expires
+        ) {
 
           try {
 
@@ -2347,7 +2494,9 @@ function addAlerts(
 
 
         segments.push(
+
           `A ${properties.event || 'weather alert'} is in effect for ${area}${expiration ? ` until ${expiration}` : ''}.`
+
         );
 
 
@@ -2360,7 +2509,9 @@ function addAlerts(
         if (movement) {
 
           segments.push(
+
             `That storm is moving ${movement.dir} at ${movement.spd} miles per hour.`
+
           );
 
         }
@@ -2400,7 +2551,9 @@ function addSpc(
 
 
   if (!labels[spc]) {
+
     return;
+
   }
 
 
@@ -2422,7 +2575,9 @@ function addSpc(
 
 
   segments.push(
+
     `The Storm Prediction Center has your location under ${labels[spc]} today.`
+
   );
 
 
@@ -2432,7 +2587,7 @@ function addSpc(
   ) {
 
     segments.push(
-      'That's a meaningful severe weather signal, so I'll keep it near the top of the broadcast.'
+      "That's a meaningful severe weather signal, so I'll keep it near the top of the broadcast."
     );
 
   }
@@ -2451,16 +2606,22 @@ function addTodayForecast(
   ctx
 ) {
 
-  if (!ctx.forecast?.today) {
+  if (
+    !ctx.forecast?.today
+  ) {
+
     return;
+
   }
 
 
   segments.push(
+
     `${pickPhrase(
       PHRASES.forecastTransitions,
       'forecast-transition'
     )} ${ctx.forecast.today}`
+
   );
 
 }
@@ -2471,23 +2632,29 @@ function addTonightForecast(
   ctx
 ) {
 
-  if (!ctx.forecast?.tonight) {
+  if (
+    !ctx.forecast?.tonight
+  ) {
+
     return;
+
   }
 
 
   segments.push(
+
     `${pickPhrase(
       PHRASES.tonightTransitions,
       'tonight-transition'
     )} ${ctx.forecast.tonight}`
+
   );
 
 }
 
 
 /* ════════════════════════════════════════════════
-   BUILD BROADCAST
+   BUILD SCRIPT
 ════════════════════════════════════════════════ */
 
 function buildScript(
@@ -2530,23 +2697,22 @@ function buildScript(
 
 
   /*
-    FIRST PASS
+    First broadcast.
+
+    We DO NOT add another big "Welcome" line here
+    because Vector already spoke during startup.
   */
 
-  if (broadcastLoopCount === 0) {
+  if (
+    broadcastLoopCount === 0
+  ) {
 
-    segments.push(
-      pickPhrase(
-        PHRASES.firstOpeners,
-        'first-openers'
-      )
-    );
-
-
-    if (warnings.length) {
+    if (
+      warnings.length
+    ) {
 
       segments.push(
-        `We have active warning information${cityText}, so that's where we're starting.`
+        `I've got the latest weather loaded${cityText}, and we have active warning information, so let's get right to it.`
       );
 
     }
@@ -2554,17 +2720,13 @@ function buildScript(
     else {
 
       segments.push(
-        `Here's the weather picture${cityText}.`
+        `I've got the latest weather loaded${cityText}. Here's where things stand.`
       );
 
     }
 
   }
 
-
-  /*
-    SUBSEQUENT PASSES
-  */
 
   else {
 
@@ -2596,6 +2758,7 @@ function buildScript(
 
 
     segments.push(
+
       pickPhrase(
 
         somethingChanged
@@ -2607,6 +2770,7 @@ function buildScript(
           : 'steady-openers'
 
       )
+
     );
 
   }
@@ -2619,10 +2783,12 @@ function buildScript(
 
 
   /*
-    SEVERE WEATHER MODE
+    Severe weather mode
   */
 
-  if (severeMode) {
+  if (
+    severeMode
+  ) {
 
     addAlerts(
       segments,
@@ -2656,17 +2822,19 @@ function buildScript(
 
 
     segments.push(
+
       pickPhrase(
         PHRASES.severeClosers,
         'severe-closers'
       )
+
     );
 
   }
 
 
   /*
-    NORMAL WEATHER MODE
+    Normal weather mode
   */
 
   else {
@@ -2675,12 +2843,9 @@ function buildScript(
       broadcastLoopCount % 5;
 
 
-    /*
-      LOOP 1:
-      Current conditions + main forecast
-    */
-
-    if (rotation === 0) {
+    if (
+      rotation === 0
+    ) {
 
       addCurrentConditions(
         segments,
@@ -2709,12 +2874,9 @@ function buildScript(
     }
 
 
-    /*
-      LOOP 2:
-      Conditions + tonight + SPC
-    */
-
-    else if (rotation === 1) {
+    else if (
+      rotation === 1
+    ) {
 
       addCurrentConditions(
         segments,
@@ -2736,12 +2898,9 @@ function buildScript(
     }
 
 
-    /*
-      LOOP 3:
-      Conditions + comfort + wind
-    */
-
-    else if (rotation === 2) {
+    else if (
+      rotation === 2
+    ) {
 
       addCurrentConditions(
         segments,
@@ -2761,10 +2920,14 @@ function buildScript(
       );
 
 
-      if (ctx.sunset) {
+      if (
+        ctx.sunset
+      ) {
 
         segments.push(
+
           `Sunset comes around ${ctx.sunset} this evening.`
+
         );
 
       }
@@ -2772,12 +2935,9 @@ function buildScript(
     }
 
 
-    /*
-      LOOP 4:
-      Forecast-heavy update
-    */
-
-    else if (rotation === 3) {
+    else if (
+      rotation === 3
+    ) {
 
       addCurrentConditions(
         segments,
@@ -2799,11 +2959,6 @@ function buildScript(
     }
 
 
-    /*
-      LOOP 5:
-      Short conversational check
-    */
-
     else {
 
       addCurrentConditions(
@@ -2813,30 +2968,39 @@ function buildScript(
 
 
       const quiet =
+
         !weatherCodePhrase(
           ctx.wcode
         ) &&
+
         ctx.windSpd < 15;
 
 
-      if (quiet) {
+      if (
+        quiet
+      ) {
 
         segments.push(
+
           pickPhrase(
             PHRASES.quiet,
             'quiet'
           )
+
         );
 
 
         segments.push(
+
           pickPhrase(
             PHRASES.trivia,
             'trivia'
           )
+
         );
 
       }
+
 
       else {
 
@@ -2857,10 +3021,12 @@ function buildScript(
 
 
     segments.push(
+
       pickPhrase(
         PHRASES.closers,
         'normal-closers'
       )
+
     );
 
   }
@@ -2885,7 +3051,7 @@ function buildScript(
 
 
 /* ════════════════════════════════════════════════
-   PREPARE WEATHER
+   PREPARE BROADCAST
 ════════════════════════════════════════════════ */
 
 async function prepareBroadcast() {
@@ -3047,31 +3213,34 @@ async function prepareBroadcast() {
 
 
   /*
-    Alerts that already exist when the page starts
-    should NOT trigger a fake "new alert" interrupt.
+    Existing alerts should not trigger
+    a fake "new alert" interruption.
   */
 
-  if (broadcastLoopCount === 0) {
+  if (
+    broadcastLoopCount === 0
+  ) {
 
-    ctx.alerts.forEach(
-      alert => {
+    ctx.alerts
+      .forEach(
+        alert => {
 
-        if (
-          /Warning|Watch|Emergency/i
-            .test(
-              alert.properties?.event || ''
-            )
-        ) {
+          if (
+            /Warning|Watch|Emergency/i
+              .test(
+                alert.properties?.event || ''
+              )
+          ) {
 
-          knownPriorityAlertIds
-            .add(
-              alert.id
-            );
+            knownPriorityAlertIds
+              .add(
+                alert.id
+              );
+
+          }
 
         }
-
-      }
-    );
+      );
 
   }
 
@@ -3105,7 +3274,9 @@ function pickVoice() {
   if (
     !('speechSynthesis' in window)
   ) {
+
     return;
+
   }
 
 
@@ -3118,12 +3289,15 @@ function pickVoice() {
 
     voices.find(
       voice =>
+
         /en-US/i.test(
           voice.lang
         ) &&
+
         /Daniel|Aaron|David|Alex|Tom/i.test(
           voice.name
         )
+
     )
 
     ||
@@ -3155,7 +3329,8 @@ function pickVoice() {
 
   console.log(
     'StormVector voice:',
-    liveVoice?.name || 'default'
+    liveVoice?.name ||
+    'default'
   );
 
 }
@@ -3168,19 +3343,24 @@ if (
   speechSynthesis.onvoiceschanged =
     pickVoice;
 
+
   pickVoice();
 
 }
 
 
 /* ════════════════════════════════════════════════
-   AUDIO UNLOCK
+   MUSIC
 ════════════════════════════════════════════════ */
 
 function ensureLiveMusicElement() {
 
-  if (liveMusic) {
+  if (
+    liveMusic
+  ) {
+
     return liveMusic;
+
   }
 
 
@@ -3190,7 +3370,9 @@ function ensureLiveMusicElement() {
     );
 
 
-  if (!liveMusic) {
+  if (
+    !liveMusic
+  ) {
 
     liveMusic =
       document.createElement(
@@ -3202,20 +3384,18 @@ function ensureLiveMusicElement() {
       'liveMusic';
 
 
-    document.body.appendChild(
-      liveMusic
-    );
+    document.body
+      .appendChild(
+        liveMusic
+      );
 
   }
 
 
-  /*
-    Do NOT reset currentTime every time
-    ensureLiveMusicElement gets called.
-  */
-
   if (
-    !liveMusic.getAttribute('src')
+    !liveMusic.getAttribute(
+      'src'
+    )
   ) {
 
     liveMusic.src =
@@ -3243,123 +3423,6 @@ function ensureLiveMusicElement() {
 }
 
 
-/*
-  CRITICAL iPHONE FIX:
-
-  This function is called immediately from
-  the user's button tap BEFORE geolocation
-  and API calls.
-
-  That keeps Safari's user interaction
-  permission alive for our audio.
-*/
-
-function unlockMediaFromUserGesture() {
-
-  const music =
-    ensureLiveMusicElement();
-
-
-  try {
-
-    music.volume =
-      0;
-
-
-    const playPromise =
-      music.play();
-
-
-    if (
-      playPromise &&
-      typeof playPromise.catch ===
-      'function'
-    ) {
-
-      playPromise.catch(
-        error =>
-          console.warn(
-            'StormVector music unlock:',
-            error
-          )
-      );
-
-    }
-
-  }
-
-  catch (error) {
-
-    console.warn(
-      'StormVector music unlock failed:',
-      error
-    );
-
-  }
-
-
-  /*
-    Prime speechSynthesis during the same
-    user interaction.
-
-    Volume = 0, so nothing is heard.
-  */
-
-  if (
-    'speechSynthesis' in window
-  ) {
-
-    try {
-
-      speechSynthesis.cancel();
-
-
-      const primer =
-        new SpeechSynthesisUtterance(
-          ' '
-        );
-
-
-      primer.volume =
-        0;
-
-
-      primer.rate =
-        1;
-
-
-      if (liveVoice) {
-
-        primer.voice =
-          liveVoice;
-
-      }
-
-
-      speechSynthesis.speak(
-        primer
-      );
-
-    }
-
-    catch (error) {
-
-      console.warn(
-        'StormVector speech unlock failed:',
-        error
-      );
-
-    }
-
-  }
-
-}
-
-
-/* ════════════════════════════════════════════════
-   MUSIC MIXER
-════════════════════════════════════════════════ */
-
 function setMusicVolume(
   target,
   duration = 350
@@ -3377,7 +3440,9 @@ function setMusicVolume(
     );
 
 
-  if (musicFadeFrame) {
+  if (
+    musicFadeFrame
+  ) {
 
     cancelAnimationFrame(
       musicFadeFrame
@@ -3401,6 +3466,7 @@ function setMusicVolume(
   function frame(now) {
 
     const progress =
+
       duration <= 0
 
         ? 1
@@ -3415,10 +3481,6 @@ function setMusicVolume(
             1
           );
 
-
-    /*
-      Ease instead of a perfectly linear fade.
-    */
 
     const eased =
       1 -
@@ -3440,7 +3502,9 @@ function setMusicVolume(
       eased;
 
 
-    if (progress < 1) {
+    if (
+      progress < 1
+    ) {
 
       musicFadeFrame =
         requestAnimationFrame(
@@ -3448,6 +3512,7 @@ function setMusicVolume(
         );
 
     }
+
 
     else {
 
@@ -3475,7 +3540,9 @@ async function bringMusicUp() {
 
   try {
 
-    if (music.paused) {
+    if (
+      music.paused
+    ) {
 
       await music.play();
 
@@ -3484,10 +3551,11 @@ async function bringMusicUp() {
 
     setMusicVolume(
       0.17,
-      1100
+      900
     );
 
   }
+
 
   catch (error) {
 
@@ -3507,13 +3575,15 @@ function duckMusic() {
     !liveMusic ||
     liveMusic.paused
   ) {
+
     return;
+
   }
 
 
   setMusicVolume(
     0.045,
-    300
+    260
   );
 
 }
@@ -3525,13 +3595,15 @@ function sentenceBreakMusic() {
     !liveMusic ||
     liveMusic.paused
   ) {
+
     return;
+
   }
 
 
   setMusicVolume(
     0.085,
-    240
+    220
   );
 
 }
@@ -3543,13 +3615,15 @@ function restoreMusic() {
     !liveMusic ||
     liveMusic.paused
   ) {
+
     return;
+
   }
 
 
   setMusicVolume(
     0.17,
-    700
+    650
   );
 
 }
@@ -3559,8 +3633,12 @@ function stopMusic(
   reset = false
 ) {
 
-  if (!liveMusic) {
+  if (
+    !liveMusic
+  ) {
+
     return;
+
   }
 
 
@@ -3573,15 +3651,21 @@ function stopMusic(
   setTimeout(
     () => {
 
-      if (!liveMusic) {
+      if (
+        !liveMusic
+      ) {
+
         return;
+
       }
 
 
       liveMusic.pause();
 
 
-      if (reset) {
+      if (
+        reset
+      ) {
 
         liveMusic.currentTime =
           0;
@@ -3596,7 +3680,7 @@ function stopMusic(
 
 
 /* ════════════════════════════════════════════════
-   SPEECH ENGINE
+   CREATE SPEECH UTTERANCE
 ════════════════════════════════════════════════ */
 
 function createUtterance(
@@ -3611,7 +3695,9 @@ function createUtterance(
     );
 
 
-  if (liveVoice) {
+  if (
+    liveVoice
+  ) {
 
     utterance.voice =
       liveVoice;
@@ -3632,13 +3718,6 @@ function createUtterance(
         navigator.userAgent
       );
 
-
-  /*
-    Slightly slower than before.
-
-    Weather broadcasts sound considerably more
-    natural when the device TTS isn't rushing.
-  */
 
   utterance.rate =
     isiPhone
@@ -3662,7 +3741,459 @@ function createUtterance(
 
 
 /* ════════════════════════════════════════════════
-   PLAY ONE SEGMENT
+   IPHONE STARTUP UNLOCK
+════════════════════════════════════════════════ */
+
+function startMediaFromUserGesture() {
+
+  /*
+    THIS FUNCTION MUST BE CALLED BEFORE
+    THE FIRST AWAIT IN startBroadcast().
+  */
+
+
+  const music =
+    ensureLiveMusicElement();
+
+
+  /*
+    Start theme during the actual button tap.
+  */
+
+  try {
+
+    music.volume =
+      0.025;
+
+
+    const playPromise =
+      music.play();
+
+
+    if (
+      playPromise &&
+      typeof playPromise.catch === 'function'
+    ) {
+
+      playPromise.catch(
+        error =>
+          console.warn(
+            'StormVector theme unlock failed:',
+            error
+          )
+      );
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      'StormVector theme unlock failed:',
+      error
+    );
+
+  }
+
+
+  /*
+    IMPORTANT:
+
+    Start REAL audible speech during
+    the actual user button press.
+
+    No silent primer.
+    No immediate speechSynthesis.cancel().
+  */
+
+  startupSpeechPromise =
+    new Promise(
+      resolve => {
+
+        if (
+          !('speechSynthesis' in window)
+        ) {
+
+          resolve();
+
+          return;
+
+        }
+
+
+        const text =
+
+          pickPhrase(
+            [
+
+              "Vector here. Give me a second while I pull up your local weather.",
+
+              "Vector here. I'm grabbing your location and the latest weather now.",
+
+              "All right, I'm Vector. Give me a second while I get your local weather loaded.",
+
+              "Vector here. Let me pull up the latest weather for where you are."
+
+            ],
+            'startup-lines'
+          );
+
+
+        const utterance =
+          createUtterance(
+            text
+          );
+
+
+        utterance.rate =
+          0.94;
+
+
+        utterance.onstart =
+          () => {
+
+            setLiveBadge(
+              'CONNECTING'
+            );
+
+
+            setRobotSpeaking(
+              true
+            );
+
+
+            setCaption(
+              text
+            );
+
+
+            duckMusic();
+
+          };
+
+
+        utterance.onend =
+          () => {
+
+            setRobotSpeaking(
+              false
+            );
+
+
+            sentenceBreakMusic();
+
+
+            resolve();
+
+          };
+
+
+        utterance.onerror =
+          error => {
+
+            console.warn(
+              'StormVector startup speech error:',
+              error
+            );
+
+
+            setRobotSpeaking(
+              false
+            );
+
+
+            resolve();
+
+          };
+
+
+        speechSynthesis.speak(
+          utterance
+        );
+
+      }
+    );
+
+}
+
+
+/* ════════════════════════════════════════════════
+   START BROADCAST
+════════════════════════════════════════════════ */
+
+async function startBroadcast() {
+
+  if (
+    startupRunning
+  ) {
+
+    return;
+
+  }
+
+
+  startupRunning =
+    true;
+
+
+  const button =
+    document.getElementById(
+      'liveStartBtn'
+    );
+
+
+  /*
+    ABSOLUTELY NOTHING ASYNCHRONOUS
+    GOES ABOVE THIS LINE.
+
+    This runs from the user's actual tap.
+  */
+
+  startMediaFromUserGesture();
+
+
+  if (
+    button
+  ) {
+
+    button.disabled =
+      true;
+
+
+    button.textContent =
+      '📍 Getting Location…';
+
+  }
+
+
+  try {
+
+    /*
+      LOCATION
+    */
+
+    if (
+      !locationReady
+    ) {
+
+      setLocationText(
+        'Waiting for location permission…'
+      );
+
+
+      await requestCurrentLocation();
+
+    }
+
+
+    /*
+      WEATHER
+    */
+
+    setLocationText(
+      'Loading local weather…'
+    );
+
+
+    if (
+      button
+    ) {
+
+      button.textContent =
+        'Loading Weather…';
+
+    }
+
+
+    await prepareBroadcast();
+
+
+    /*
+      SHOW LIVE PAGE
+    */
+
+    liveStarted =
+      true;
+
+
+    liveMuted =
+      false;
+
+
+    document.body
+      .classList
+      .add(
+        'broadcast-active'
+      );
+
+
+    const overlay =
+      document.getElementById(
+        'liveStartOverlay'
+      );
+
+
+    if (
+      overlay
+    ) {
+
+      overlay.style.display =
+        'none';
+
+    }
+
+
+    /*
+      Bring theme up.
+
+      It was already started inside
+      the original button tap.
+    */
+
+    await bringMusicUp();
+
+
+    requestWakeLock();
+
+
+    startSevereWatch();
+
+
+    startSpeechKeepAlive();
+
+
+    /*
+      DO NOT CALL speechSynthesis.cancel() HERE.
+
+      Let the audible startup sentence
+      finish naturally.
+    */
+
+
+    if (
+      startupSpeechPromise
+    ) {
+
+      /*
+        Safety timeout prevents a browser speech
+        glitch from hanging the entire broadcast.
+      */
+
+      await Promise.race([
+
+        startupSpeechPromise,
+
+        wait(6000)
+
+      ]);
+
+    }
+
+
+    setRobotSpeaking(
+      false
+    );
+
+
+    setLiveBadge(
+      'LIVE'
+    );
+
+
+    await wait(
+      250
+    );
+
+
+    /*
+      The real weather broadcast starts
+      immediately after the startup line.
+    */
+
+    speakSegment(
+      0
+    );
+
+  }
+
+
+  catch (error) {
+
+    console.error(
+      'StormVector startup failed:',
+      error
+    );
+
+
+    /*
+      We only cancel here because startup
+      FAILED completely.
+    */
+
+    try {
+
+      speechSynthesis.cancel();
+
+    }
+
+    catch (_) {}
+
+
+    setRobotSpeaking(
+      false
+    );
+
+
+    stopMusic(
+      false
+    );
+
+
+    setLiveBadge(
+      'STANDBY'
+    );
+
+
+    setLocationText(
+      error.message ||
+      'Unable to start StormVector.'
+    );
+
+
+    setCaption(
+      'StormVector could not start the local broadcast. Check location permission and try again.'
+    );
+
+
+    if (
+      button
+    ) {
+
+      button.disabled =
+        false;
+
+
+      button.textContent =
+        '📍 Enable Location & Go Live';
+
+    }
+
+  }
+
+
+  finally {
+
+    startupRunning =
+      false;
+
+  }
+
+}
+
+
+/* ════════════════════════════════════════════════
+   SPEAK NORMAL SEGMENT
 ════════════════════════════════════════════════ */
 
 function speakSegment(
@@ -3673,14 +4204,37 @@ function speakSegment(
     breakingWeatherActive ||
     liveMuted
   ) {
+
     return;
+
   }
 
 
   if (
     !liveSegments.length
   ) {
+
     return;
+
+  }
+
+
+  if (
+    !('speechSynthesis' in window)
+  ) {
+
+    if (
+      liveSegments[index]
+    ) {
+
+      setCaption(
+        liveSegments[index]
+      );
+
+    }
+
+    return;
+
   }
 
 
@@ -3725,7 +4279,9 @@ function speakSegment(
         generation !==
         speechGeneration
       ) {
+
         return;
+
       }
 
 
@@ -3756,7 +4312,9 @@ function speakSegment(
         generation !==
         speechGeneration
       ) {
+
         return;
+
       }
 
 
@@ -3769,17 +4327,14 @@ function speakSegment(
         liveMuted ||
         breakingWeatherActive
       ) {
+
         return;
+
       }
 
 
       sentenceBreakMusic();
 
-
-      /*
-        Pause depends on sentence style rather
-        than just text length.
-      */
 
       let pause =
         420;
@@ -3787,7 +4342,9 @@ function speakSegment(
 
       if (
         /warning|watch|emergency/i
-          .test(text)
+          .test(
+            text
+          )
       ) {
 
         pause =
@@ -3795,9 +4352,9 @@ function speakSegment(
 
       }
 
+
       else if (
-        text.length >
-        220
+        text.length > 220
       ) {
 
         pause =
@@ -3805,9 +4362,9 @@ function speakSegment(
 
       }
 
+
       else if (
-        text.length <
-        70
+        text.length < 70
       ) {
 
         pause =
@@ -3852,7 +4409,9 @@ function speakSegment(
         generation !==
         speechGeneration
       ) {
+
         return;
+
       }
 
 
@@ -3908,14 +4467,6 @@ async function finishBroadcastLoop() {
   restoreMusic();
 
 
-  /*
-    This is intentionally not immediate.
-
-    Vector now behaves like a continuous
-    weather channel instead of instantly
-    restarting the same report.
-  */
-
   await wait(
     5500
   );
@@ -3925,7 +4476,9 @@ async function finishBroadcastLoop() {
     liveMuted ||
     breakingWeatherActive
   ) {
+
     return;
+
   }
 
 
@@ -3942,6 +4495,7 @@ async function finishBroadcastLoop() {
     await prepareBroadcast();
 
   }
+
 
   catch (error) {
 
@@ -3967,7 +4521,9 @@ async function finishBroadcastLoop() {
     liveMuted ||
     breakingWeatherActive
   ) {
+
     return;
+
   }
 
 
@@ -3984,7 +4540,7 @@ async function finishBroadcastLoop() {
 
 
 /* ════════════════════════════════════════════════
-   REPLAY / STOP / RESUME
+   REPLAY
 ════════════════════════════════════════════════ */
 
 function replaySegment() {
@@ -3993,7 +4549,9 @@ function replaySegment() {
     !liveSegments.length ||
     liveMuted
   ) {
+
     return;
+
   }
 
 
@@ -4019,6 +4577,10 @@ function replaySegment() {
 }
 
 
+/* ════════════════════════════════════════════════
+   STOP / RESUME
+════════════════════════════════════════════════ */
+
 async function toggleMute() {
 
   const button =
@@ -4034,7 +4596,9 @@ async function toggleMute() {
   speechGeneration++;
 
 
-  if (liveMuted) {
+  if (
+    liveMuted
+  ) {
 
     speechSynthesis.cancel();
 
@@ -4063,7 +4627,9 @@ async function toggleMute() {
     );
 
 
-    if (button) {
+    if (
+      button
+    ) {
 
       button.innerHTML =
         '<span class="live-control-icon">🔊</span> Resume';
@@ -4076,7 +4642,9 @@ async function toggleMute() {
   }
 
 
-  if (button) {
+  if (
+    button
+  ) {
 
     button.innerHTML =
       '<span class="live-control-icon">🔇</span> Stop';
@@ -4085,14 +4653,17 @@ async function toggleMute() {
 
 
   /*
-    Resume is also a direct user gesture,
-    so media playback is safe here.
+    Resume button itself is another
+    direct user gesture.
   */
 
-  unlockMediaFromUserGesture();
+  try {
 
+    await bringMusicUp();
 
-  await bringMusicUp();
+  }
+
+  catch (_) {}
 
 
   requestWakeLock();
@@ -4105,7 +4676,7 @@ async function toggleMute() {
 
 
   await wait(
-    180
+    150
   );
 
 
@@ -4117,241 +4688,7 @@ async function toggleMute() {
 
 
 /* ════════════════════════════════════════════════
-   START BROADCAST
-════════════════════════════════════════════════ */
-
-async function startBroadcast() {
-
-  if (startupRunning) {
-    return;
-  }
-
-
-  startupRunning =
-    true;
-
-
-  const button =
-    document.getElementById(
-      'liveStartBtn'
-    );
-
-
-  /*
-    CRITICAL:
-
-    Do this BEFORE ANY await.
-
-    Safari sees this function executing directly
-    from the user's button press and unlocks
-    both audio systems.
-  */
-
-  unlockMediaFromUserGesture();
-
-
-  if (button) {
-
-    button.disabled =
-      true;
-
-    button.textContent =
-      '📍 Getting Location…';
-
-  }
-
-
-  setCaption(
-    'Getting your location and loading the latest weather…'
-  );
-
-
-  try {
-
-    /*
-      LOCATION
-    */
-
-    if (!locationReady) {
-
-      setLocationText(
-        'Waiting for location permission…'
-      );
-
-
-      await requestCurrentLocation();
-
-    }
-
-
-    /*
-      WEATHER
-    */
-
-    setLocationText(
-      'Loading local weather…'
-    );
-
-
-    if (button) {
-
-      button.textContent =
-        'Loading Weather…';
-
-    }
-
-
-    await prepareBroadcast();
-
-
-    /*
-      SHOW LIVE PAGE
-    */
-
-    liveStarted =
-      true;
-
-
-    liveMuted =
-      false;
-
-
-    document.body
-      .classList
-      .add(
-        'broadcast-active'
-      );
-
-
-    const overlay =
-      document.getElementById(
-        'liveStartOverlay'
-      );
-
-
-    if (overlay) {
-
-      overlay.style.display =
-        'none';
-
-    }
-
-
-    /*
-      MUSIC
-
-      It should already technically be playing
-      silently from unlockMediaFromUserGesture().
-    */
-
-    await bringMusicUp();
-
-
-    requestWakeLock();
-
-
-    startSevereWatch();
-
-
-    startSpeechKeepAlive();
-
-
-    /*
-      Cancel only our silent speech primer.
-    */
-
-    speechGeneration++;
-
-
-    speechSynthesis.cancel();
-
-
-    setLiveBadge(
-      'ON AIR'
-    );
-
-
-    setCaption(
-      'Vector is going live…'
-    );
-
-
-    /*
-      Give theme music a tiny intro before
-      Vector begins.
-    */
-
-    await wait(
-      850
-    );
-
-
-    speakSegment(
-      0
-    );
-
-  }
-
-
-  catch (error) {
-
-    console.error(
-      'StormVector startup failed:',
-      error
-    );
-
-
-    stopMusic(
-      false
-    );
-
-
-    setRobotSpeaking(
-      false
-    );
-
-
-    setLiveBadge(
-      'STANDBY'
-    );
-
-
-    setLocationText(
-      error.message ||
-      'Unable to start StormVector.'
-    );
-
-
-    setCaption(
-      'StormVector could not start the local broadcast. Check location permission and try again.'
-    );
-
-
-    if (button) {
-
-      button.disabled =
-        false;
-
-      button.textContent =
-        '📍 Enable Location & Go Live';
-
-    }
-
-  }
-
-
-  finally {
-
-    startupRunning =
-      false;
-
-  }
-
-}
-
-
-/* ════════════════════════════════════════════════
-   BREAKING WEATHER WATCH
+   SEVERE WEATHER WATCH
 ════════════════════════════════════════════════ */
 
 function startSevereWatch() {
@@ -4370,7 +4707,9 @@ function startSevereWatch() {
 
 function stopSevereWatch() {
 
-  if (severeWatchTimer) {
+  if (
+    severeWatchTimer
+  ) {
 
     clearInterval(
       severeWatchTimer
@@ -4392,7 +4731,9 @@ async function checkForBreakingWeather() {
     breakingWeatherActive ||
     !locationReady
   ) {
+
     return;
+
   }
 
 
@@ -4418,9 +4759,11 @@ async function checkForBreakingWeather() {
 
         .sort(
           (a,b) =>
+
             window.alertPriorityScore(
               a.properties?.event || ''
             ) -
+
             window.alertPriorityScore(
               b.properties?.event || ''
             )
@@ -4428,25 +4771,29 @@ async function checkForBreakingWeather() {
 
 
     const newAlerts =
-      priorityAlerts.filter(
+      priorityAlerts
+        .filter(
+          alert =>
+            !knownPriorityAlertIds
+              .has(
+                alert.id
+              )
+        );
+
+
+    priorityAlerts
+      .forEach(
         alert =>
-          !knownPriorityAlertIds
-            .has(
+          knownPriorityAlertIds
+            .add(
               alert.id
             )
       );
 
 
-    priorityAlerts.forEach(
-      alert =>
-        knownPriorityAlertIds
-          .add(
-            alert.id
-          )
-    );
-
-
-    if (newAlerts.length) {
+    if (
+      newAlerts.length
+    ) {
 
       await interruptForBreakingWeather(
         newAlerts[0]
@@ -4455,6 +4802,7 @@ async function checkForBreakingWeather() {
     }
 
   }
+
 
   catch (error) {
 
@@ -4477,12 +4825,18 @@ async function playAttentionTone() {
   try {
 
     const AudioContextClass =
+
       window.AudioContext ||
+
       window.webkitAudioContext;
 
 
-    if (!AudioContextClass) {
+    if (
+      !AudioContextClass
+    ) {
+
       return;
+
     }
 
 
@@ -4501,7 +4855,7 @@ async function playAttentionTone() {
 
 
     const duration =
-      3.0;
+      3;
 
 
     const gain =
@@ -4517,36 +4871,40 @@ async function playAttentionTone() {
     );
 
 
-    [853,960].forEach(
-      frequency => {
+    [
+      853,
+      960
+    ]
+      .forEach(
+        frequency => {
 
-        const oscillator =
-          context.createOscillator();
-
-
-        oscillator.type =
-          'sine';
-
-
-        oscillator.frequency.value =
-          frequency;
+          const oscillator =
+            context.createOscillator();
 
 
-        oscillator.connect(
-          gain
-        );
+          oscillator.type =
+            'sine';
 
 
-        oscillator.start();
+          oscillator.frequency.value =
+            frequency;
 
 
-        oscillator.stop(
-          context.currentTime +
-          duration
-        );
+          oscillator.connect(
+            gain
+          );
 
-      }
-    );
+
+          oscillator.start();
+
+
+          oscillator.stop(
+            context.currentTime +
+            duration
+          );
+
+        }
+      );
 
 
     await wait(
@@ -4557,9 +4915,12 @@ async function playAttentionTone() {
 
     await context
       .close()
-      .catch(() => {});
+      .catch(
+        () => {}
+      );
 
   }
+
 
   catch (error) {
 
@@ -4613,7 +4974,9 @@ async function interruptForBreakingWeather(
     );
 
 
-  if (banner) {
+  if (
+    banner
+  ) {
 
     banner.hidden =
       false;
@@ -4649,7 +5012,9 @@ async function interruptForBreakingWeather(
 
   const warning =
     /Warning|Emergency/i
-      .test(event);
+      .test(
+        event
+      );
 
 
   const messages = [
@@ -4661,7 +5026,9 @@ async function interruptForBreakingWeather(
 
 
     warning
+
       ? 'If you are in the warned area, take action now and follow National Weather Service instructions.'
+
       : 'Review your severe weather plan and be ready to act if warnings are issued.'
 
   ];
@@ -4678,6 +5045,7 @@ async function interruptForBreakingWeather(
 
   }
 
+
   catch (error) {
 
     console.warn(
@@ -4688,7 +5056,9 @@ async function interruptForBreakingWeather(
   }
 
 
-  if (banner) {
+  if (
+    banner
+  ) {
 
     banner.hidden =
       true;
@@ -4703,7 +5073,9 @@ async function interruptForBreakingWeather(
   restoreMusic();
 
 
-  if (!liveMuted) {
+  if (
+    !liveMuted
+  ) {
 
     await wait(
       700
@@ -4720,7 +5092,7 @@ async function interruptForBreakingWeather(
 
 
 /* ════════════════════════════════════════════════
-   SPEAK SEQUENTIAL
+   SEQUENTIAL BREAKING SPEECH
 ════════════════════════════════════════════════ */
 
 function speakSequential(
@@ -4839,7 +5211,7 @@ function speakSequential(
 
 
 /* ════════════════════════════════════════════════
-   MOBILE RELIABILITY
+   MOBILE SPEECH RELIABILITY
 ════════════════════════════════════════════════ */
 
 function startSpeechKeepAlive() {
@@ -4848,8 +5220,9 @@ function startSpeechKeepAlive() {
 
 
   /*
-    Android needs this more than iOS.
-    Do NOT repeatedly pause/resume iPhone speech.
+    Android Chrome sometimes stops long-running
+    speech synthesis. iPhone does NOT use this
+    pause/resume workaround.
   */
 
   if (
@@ -4857,7 +5230,9 @@ function startSpeechKeepAlive() {
       navigator.userAgent
     )
   ) {
+
     return;
+
   }
 
 
@@ -4890,7 +5265,9 @@ function startSpeechKeepAlive() {
 
 function stopSpeechKeepAlive() {
 
-  if (speechKeepAlive) {
+  if (
+    speechKeepAlive
+  ) {
 
     clearInterval(
       speechKeepAlive
@@ -4930,6 +5307,7 @@ async function requestWakeLock() {
 
   }
 
+
   catch (_) {}
 
 }
@@ -4942,6 +5320,7 @@ function releaseWakeLock() {
     wakeLock?.release();
 
   }
+
 
   catch (_) {}
 
@@ -4966,8 +5345,12 @@ function announce(
     );
 
 
-  if (!element) {
+  if (
+    !element
+  ) {
+
     return;
+
   }
 
 
@@ -4988,7 +5371,7 @@ function announce(
 
 
 /* ════════════════════════════════════════════════
-   VISIBILITY HANDLING
+   VISIBILITY
 ════════════════════════════════════════════════ */
 
 document.addEventListener(
@@ -4999,7 +5382,9 @@ document.addEventListener(
       document.visibilityState !==
       'visible'
     ) {
+
       return;
+
     }
 
 
@@ -5023,6 +5408,10 @@ document.addEventListener(
 document.addEventListener(
   'DOMContentLoaded',
   () => {
+
+    /*
+      NO automatic location request here.
+    */
 
     ensureLiveMusicElement();
 
@@ -5051,7 +5440,9 @@ document.addEventListener(
       );
 
 
-    if (button) {
+    if (
+      button
+    ) {
 
       button.disabled =
         false;
@@ -5083,6 +5474,7 @@ window.addEventListener(
 
     }
 
+
     catch (_) {}
 
 
@@ -5095,13 +5487,16 @@ window.addEventListener(
     releaseWakeLock();
 
 
-    if (liveMusic) {
+    if (
+      liveMusic
+    ) {
 
       try {
 
         liveMusic.pause();
 
       }
+
 
       catch (_) {}
 
