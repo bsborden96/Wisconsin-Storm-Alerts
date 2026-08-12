@@ -3293,3 +3293,164 @@ body.watch-live-page #liveAvatar.speaking .live-avatar-ring {
   }
 
 }
+
+/* ════════════════════════════════════════════════
+   VECTOR MOUTH — FINAL OVERRIDES
+   Fixes existing robot CSS hiding the mouth
+════════════════════════════════════════════════ */
+
+/*
+  Existing StormVector CSS hides spans inside
+  .live-avatar-core. These five spans ARE the mouth,
+  so force them back on.
+*/
+body.watch-live-page .live-avatar-core .vector-mouth span {
+  display: block !important;
+}
+
+
+/*
+  Position the mouth inside the robot's HEAD,
+  rather than down near the body.
+*/
+body.watch-live-page .vector-mouth {
+  position: absolute;
+
+  left: 50%;
+  top: 31%;
+  bottom: auto;
+
+  transform: translateX(-50%);
+
+  width: 38%;
+  height: 9%;
+
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+
+  gap: 3px;
+
+  z-index: 20;
+
+  pointer-events: none;
+}
+
+
+/*
+  Remove the filter-created stacking context from
+  the core so the mouth can sit above the face panel.
+*/
+body.watch-live-page .live-avatar-core {
+  overflow: visible;
+}
+
+
+/* Individual mouth bars */
+
+body.watch-live-page .live-avatar-core .vector-mouth span {
+  width: 5px;
+  min-width: 5px;
+
+  height: 3px;
+
+  border-radius: 999px;
+
+  background: #00eaff;
+
+  opacity: .9;
+
+  box-shadow:
+    0 0 4px rgba(0,234,255,.85),
+    0 0 8px rgba(0,207,255,.45);
+
+  transform-origin: center;
+}
+
+
+/* Resting mouth */
+
+body.watch-live-page .live-avatar-core .vector-mouth span:nth-child(1) {
+  height: 3px;
+}
+
+body.watch-live-page .live-avatar-core .vector-mouth span:nth-child(2) {
+  height: 4px;
+}
+
+body.watch-live-page .live-avatar-core .vector-mouth span:nth-child(3) {
+  height: 5px;
+}
+
+body.watch-live-page .live-avatar-core .vector-mouth span:nth-child(4) {
+  height: 4px;
+}
+
+body.watch-live-page .live-avatar-core .vector-mouth span:nth-child(5) {
+  height: 3px;
+}
+
+
+/* Talking */
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span {
+  display: block !important;
+
+  animation:
+    vectorMouthFinalTalk
+    .28s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(1) {
+  animation-duration: .24s;
+  animation-delay: -.07s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(2) {
+  animation-duration: .31s;
+  animation-delay: -.16s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(3) {
+  animation-duration: .21s;
+  animation-delay: -.11s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(4) {
+  animation-duration: .29s;
+  animation-delay: -.19s;
+}
+
+body.watch-live-page #liveAvatar.speaking .vector-mouth span:nth-child(5) {
+  animation-duration: .25s;
+  animation-delay: -.09s;
+}
+
+
+@keyframes vectorMouthFinalTalk {
+
+  0% {
+    transform: scaleY(.45);
+  }
+
+  25% {
+    transform: scaleY(1.1);
+  }
+
+  50% {
+    transform: scaleY(.7);
+  }
+
+  75% {
+    transform: scaleY(2.1);
+  }
+
+  100% {
+    transform: scaleY(1);
+  }
+
+}
