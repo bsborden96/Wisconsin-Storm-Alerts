@@ -1,6 +1,7 @@
 /* ═══════════════════════════════════════════════════════
    STORMVECTOR LIVE — VECTOR BROADCAST ENGINE
    iPHONE / SAFARI STARTUP VERSION
+   NATURAL BROADCAST / PERSONALITY UPGRADE
 
    STARTUP FLOW
    1. User taps Enable Location & Go Live
@@ -13,6 +14,15 @@
    IMPORTANT:
    We DO NOT use a silent speech primer.
    We DO NOT cancel speech after weather finishes loading.
+
+   UPGRADE GOALS
+   • More natural meteorologist-style delivery
+   • Better context and transitions
+   • Less repetitive looping
+   • Reacts to meaningful weather changes
+   • Serious tone during severe weather
+   • More personality during quiet weather
+   • Keeps existing iPhone startup behavior intact
 ═══════════════════════════════════════════════════════ */
 
 
@@ -48,6 +58,8 @@ let severeWatchTimer = null;
 let speechGeneration = 0;
 
 let startupSpeechPromise = null;
+
+let currentBroadcastContext = null;
 
 const spokenFactMemory = new Map();
 const knownPriorityAlertIds = new Set();
@@ -725,6 +737,38 @@ function skyDescription(
 }
 
 
+function getDayPart() {
+
+  const hour =
+    new Date()
+      .getHours();
+
+  if (
+    hour >= 5 &&
+    hour < 12
+  ) {
+    return 'morning';
+  }
+
+  if (
+    hour >= 12 &&
+    hour < 17
+  ) {
+    return 'afternoon';
+  }
+
+  if (
+    hour >= 17 &&
+    hour < 22
+  ) {
+    return 'evening';
+  }
+
+  return 'overnight';
+
+}
+
+
 /* ════════════════════════════════════════════════
    SPEECH BANK
 ════════════════════════════════════════════════ */
@@ -746,7 +790,7 @@ const PHRASES = {
 
   continuingOpeners: [
 
-    "Let's check back in.",
+    "All right, let's check back in.",
 
     "Here's what's changed since the last update.",
 
@@ -791,7 +835,9 @@ const PHRASES = {
 
     "Temperatures have climbed {difference}, putting us at {tempF} degrees{feelsClause}.",
 
-    "It's a little warmer now, up to {tempF} degrees{feelsClause}."
+    "It's a little warmer now, up to {tempF} degrees{feelsClause}.",
+
+    "We've gained a little ground temperature-wise. We're up to {tempF} degrees{feelsClause}."
 
   ],
 
@@ -802,7 +848,9 @@ const PHRASES = {
 
     "Temperatures have dropped {difference}, bringing us down to {tempF} degrees{feelsClause}.",
 
-    "It's a little cooler now, sitting at {tempF} degrees{feelsClause}."
+    "It's a little cooler now, sitting at {tempF} degrees{feelsClause}.",
+
+    "We've lost a little warmth since the last update. We're down to {tempF} degrees{feelsClause}."
 
   ],
 
@@ -813,7 +861,9 @@ const PHRASES = {
 
     "We're holding pretty steady near {tempF} degrees{feelsClause}.",
 
-    "Not much movement in the temperature. We're still at about {tempF} degrees{feelsClause}."
+    "Not much movement in the temperature. We're still at about {tempF} degrees{feelsClause}.",
+
+    "Temperature-wise, we're basically unchanged at {tempF} degrees{feelsClause}."
 
   ],
 
@@ -824,7 +874,9 @@ const PHRASES = {
 
     "The current weather picture includes {condition}.",
 
-    "Outside, we've got {condition} right now."
+    "Outside, we've got {condition} right now.",
+
+    "Sky conditions are showing {condition} at the moment."
 
   ],
 
@@ -840,13 +892,57 @@ const PHRASES = {
   ],
 
 
-  humidity: [
+  windIncreasing: [
 
-    "The dew point is {dewF}, so the air feels {dewLabel}.",
+    "The wind has picked up since the last update. We're now around {speed} miles per hour{gustClause}.",
 
-    "Humidity is around {humidity} percent, with a dew point of {dewF}.",
+    "Winds are stronger than they were a few minutes ago, now running around {speed} miles per hour{gustClause}.",
 
-    "Moisture-wise, the dew point is around {dewF}, putting us in the {dewLabel} range."
+    "We've seen the wind increase a bit. It's now around {speed} miles per hour{gustClause}."
+
+  ],
+
+
+  windDecreasing: [
+
+    "The wind has eased off some since the last check, now around {speed} miles per hour.",
+
+    "Winds have backed down a little. We're now near {speed} miles per hour.",
+
+    "The breeze has relaxed some since the last update, down to around {speed} miles per hour."
+
+  ],
+
+
+  humidityComfortable: [
+
+    "Humidity isn't causing much trouble right now. The dew point is around {dewF}.",
+
+    "The air feels fairly comfortable, with a dew point near {dewF}.",
+
+    "Moisture levels are pretty manageable right now."
+
+  ],
+
+
+  humiditySticky: [
+
+    "You can feel more moisture in the air now. The dew point is around {dewF}.",
+
+    "It's getting noticeably more humid, with a dew point near {dewF}.",
+
+    "There's definitely a muggy feel outside right now."
+
+  ],
+
+
+  humidityOppressive: [
+
+    "Humidity is pretty uncomfortable right now, with the dew point near {dewF}.",
+
+    "The air is very muggy, and the dew point is up around {dewF}.",
+
+    "We're dealing with a pretty oppressive air mass from a humidity standpoint."
 
   ],
 
@@ -859,7 +955,9 @@ const PHRASES = {
 
     "For the next several hours,",
 
-    "Here's how the forecast shapes up,"
+    "Here's how the forecast shapes up,",
+
+    "Now looking farther ahead,"
 
   ],
 
@@ -890,6 +988,39 @@ const PHRASES = {
   ],
 
 
+  hot: [
+
+    "The heat is becoming one of the bigger weather stories right now.",
+
+    "Temperatures are high enough that heat deserves some attention.",
+
+    "It's getting pretty hot out there, so keep that in mind if you're spending time outside."
+
+  ],
+
+
+  cold: [
+
+    "Cold is one of the bigger factors in the weather picture right now.",
+
+    "Temperatures are low enough that the cold deserves some respect.",
+
+    "It's a cold setup out there, especially if you're going to be outside for a while."
+
+  ],
+
+
+  gusty: [
+
+    "Those gusts are strong enough to move loose outdoor objects.",
+
+    "With gusts at that level, high-profile vehicles may notice it on exposed roads.",
+
+    "That wind is strong enough that anything loose outside is worth securing."
+
+  ],
+
+
   closers: [
 
     "That's where things stand. I'll keep watching for anything that changes.",
@@ -910,6 +1041,32 @@ const PHRASES = {
     "Keep a way to receive warnings nearby. I'll continue watching this closely.",
 
     "That threat stays our priority. I'll update you as soon as anything changes."
+
+  ],
+
+
+  severeLead: [
+
+    "Here's the part that matters most right now.",
+
+    "Let's go straight to the highest-impact weather first.",
+
+    "Severe weather takes priority, so here's what you need to know."
+
+  ],
+
+
+  transitions: [
+
+    "One thing worth noting,",
+
+    "Here's something else I'm watching,",
+
+    "Switching gears for a moment,",
+
+    "Another part of the weather picture,",
+
+    "Now, here's the next thing to keep in mind,"
 
   ],
 
@@ -2030,6 +2187,192 @@ function setLiveBadge(
 
 
 /* ════════════════════════════════════════════════
+   CONTEXT ANALYSIS
+════════════════════════════════════════════════ */
+
+function getWeatherChanges(
+  ctx
+) {
+
+  const previous =
+    currentBroadcastContext;
+
+
+  const changes = {
+
+    tempChanged: false,
+    tempDirection: null,
+    tempDifference: 0,
+
+    windChanged: false,
+    windDirection: null,
+    windDifference: 0,
+
+    gustChanged: false,
+
+    dewChanged: false,
+
+    conditionChanged: false,
+
+    alertCountChanged: false,
+
+    newSevereMode: false,
+
+    spcChanged: false
+
+  };
+
+
+  if (!previous) {
+
+    return changes;
+
+  }
+
+
+  if (
+    previous.tempF !== null &&
+    ctx.tempF !== null &&
+    previous.tempF !== ctx.tempF
+  ) {
+
+    changes.tempChanged =
+      true;
+
+
+    changes.tempDifference =
+      Math.abs(
+        ctx.tempF -
+        previous.tempF
+      );
+
+
+    changes.tempDirection =
+      ctx.tempF >
+      previous.tempF
+        ? 'warmer'
+        : 'cooler';
+
+  }
+
+
+  if (
+    previous.windSpd !==
+    ctx.windSpd
+  ) {
+
+    changes.windChanged =
+      true;
+
+
+    changes.windDifference =
+      Math.abs(
+        ctx.windSpd -
+        previous.windSpd
+      );
+
+
+    changes.windDirection =
+      ctx.windSpd >
+      previous.windSpd
+        ? 'stronger'
+        : 'weaker';
+
+  }
+
+
+  if (
+    previous.windG !==
+    ctx.windG
+  ) {
+
+    changes.gustChanged =
+      true;
+
+  }
+
+
+  if (
+    previous.dewF !==
+    ctx.dewF
+  ) {
+
+    changes.dewChanged =
+      true;
+
+  }
+
+
+  if (
+    previous.wcode !==
+    ctx.wcode
+  ) {
+
+    changes.conditionChanged =
+      true;
+
+  }
+
+
+  if (
+    previous.alerts.length !==
+    ctx.alerts.length
+  ) {
+
+    changes.alertCountChanged =
+      true;
+
+  }
+
+
+  const previousSevere =
+    previous.alerts.some(
+      alert =>
+        /Warning|Watch|Emergency/i
+          .test(
+            alert.properties?.event || ''
+          )
+    );
+
+
+  const currentSevere =
+    ctx.alerts.some(
+      alert =>
+        /Warning|Watch|Emergency/i
+          .test(
+            alert.properties?.event || ''
+          )
+    );
+
+
+  if (
+    !previousSevere &&
+    currentSevere
+  ) {
+
+    changes.newSevereMode =
+      true;
+
+  }
+
+
+  if (
+    previous.spc !==
+    ctx.spc
+  ) {
+
+    changes.spcChanged =
+      true;
+
+  }
+
+
+  return changes;
+
+}
+
+
+/* ════════════════════════════════════════════════
    BROADCAST BUILDERS
 ════════════════════════════════════════════════ */
 
@@ -2278,18 +2621,6 @@ function addWind(
     );
 
 
-  if (
-    !force &&
-    broadcastLoopCount > 0 &&
-    previousWind === ctx.windSpd &&
-    broadcastLoopCount % 3 !== 0
-  ) {
-
-    return;
-
-  }
-
-
   const direction =
     window.degToCompass(
       ctx.windDeg
@@ -2306,24 +2637,90 @@ function addWind(
       : '';
 
 
-  segments.push(
+  if (
+    previousWind !== undefined &&
+    ctx.windSpd >=
+      previousWind + 4
+  ) {
 
-    pickFilled(
-      PHRASES.wind,
-      'wind',
-      {
+    segments.push(
 
-        direction,
+      pickFilled(
+        PHRASES.windIncreasing,
+        'wind-increasing',
+        {
 
-        speed:
-          ctx.windSpd,
+          speed:
+            ctx.windSpd,
 
-        gustClause
+          gustClause
 
-      }
-    )
+        }
+      )
 
-  );
+    );
+
+  }
+
+
+  else if (
+    previousWind !== undefined &&
+    ctx.windSpd <=
+      previousWind - 4
+  ) {
+
+    segments.push(
+
+      pickFilled(
+        PHRASES.windDecreasing,
+        'wind-decreasing',
+        {
+
+          speed:
+            ctx.windSpd
+
+        }
+      )
+
+    );
+
+  }
+
+
+  else {
+
+    if (
+      !force &&
+      broadcastLoopCount > 0 &&
+      previousWind === ctx.windSpd &&
+      broadcastLoopCount % 3 !== 0
+    ) {
+
+      return;
+
+    }
+
+
+    segments.push(
+
+      pickFilled(
+        PHRASES.wind,
+        'wind',
+        {
+
+          direction,
+
+          speed:
+            ctx.windSpd,
+
+          gustClause
+
+        }
+      )
+
+    );
+
+  }
 
 
   if (
@@ -2331,7 +2728,12 @@ function addWind(
   ) {
 
     segments.push(
-      'Those gusts are strong enough to move loose outdoor objects and make driving tougher for high-profile vehicles.'
+
+      pickPhrase(
+        PHRASES.gusty,
+        'gusty'
+      )
+
     );
 
   }
@@ -2376,11 +2778,35 @@ function addHumidity(
   }
 
 
+  let pool =
+    PHRASES.humidityComfortable;
+
+
+  if (
+    ctx.dewF >= 68
+  ) {
+
+    pool =
+      PHRASES.humidityOppressive;
+
+  }
+
+
+  else if (
+    ctx.dewF >= 62
+  ) {
+
+    pool =
+      PHRASES.humiditySticky;
+
+  }
+
+
   segments.push(
 
     pickFilled(
-      PHRASES.humidity,
-      'humidity',
+      pool,
+      'humidity-context',
       {
 
         humidity:
@@ -2653,6 +3079,52 @@ function addTonightForecast(
 }
 
 
+function addTemperatureImpact(
+  segments,
+  ctx
+) {
+
+  if (
+    ctx.tempF === null
+  ) {
+    return;
+  }
+
+
+  if (
+    ctx.tempF >= 90
+  ) {
+
+    segments.push(
+
+      pickPhrase(
+        PHRASES.hot,
+        'hot'
+      )
+
+    );
+
+  }
+
+
+  else if (
+    ctx.tempF <= 20
+  ) {
+
+    segments.push(
+
+      pickPhrase(
+        PHRASES.cold,
+        'cold'
+      )
+
+    );
+
+  }
+
+}
+
+
 /* ════════════════════════════════════════════════
    BUILD SCRIPT
 ════════════════════════════════════════════════ */
@@ -2663,6 +3135,12 @@ function buildScript(
 
   const segments =
     [];
+
+
+  const changes =
+    getWeatherChanges(
+      ctx
+    );
 
 
   const warnings =
@@ -2696,13 +3174,6 @@ function buildScript(
       : ' in your area';
 
 
-  /*
-    First broadcast.
-
-    We DO NOT add another big "Welcome" line here
-    because Vector already spoke during startup.
-  */
-
   if (
     broadcastLoopCount === 0
   ) {
@@ -2712,10 +3183,21 @@ function buildScript(
     ) {
 
       segments.push(
-        `I've got the latest weather loaded${cityText}, and we have active warning information, so let's get right to it.`
+        `I've got the latest weather loaded${cityText}, and we have active warning information.`
+      );
+
+
+      segments.push(
+
+        pickPhrase(
+          PHRASES.severeLead,
+          'severe-lead'
+        )
+
       );
 
     }
+
 
     else {
 
@@ -2730,31 +3212,21 @@ function buildScript(
 
   else {
 
-    const oldTemp =
-      spokenFactMemory.get(
-        'temperature'
-      );
-
-
-    const oldAlertCount =
-      spokenFactMemory.get(
-        'alertCount'
-      );
-
-
     const somethingChanged =
 
-      (
-        oldTemp !== undefined &&
-        oldTemp !== ctx.tempF
-      )
+      changes.tempChanged ||
 
-      ||
+      changes.windChanged ||
 
-      (
-        oldAlertCount !== undefined &&
-        oldAlertCount !== ctx.alerts.length
-      );
+      changes.gustChanged ||
+
+      changes.dewChanged ||
+
+      changes.conditionChanged ||
+
+      changes.alertCountChanged ||
+
+      changes.spcChanged;
 
 
     segments.push(
@@ -2773,17 +3245,22 @@ function buildScript(
 
     );
 
+
+    if (
+      changes.newSevereMode
+    ) {
+
+      segments.push(
+        "We do have new severe weather information in the picture, so that's taking priority."
+      );
+
+    }
+
   }
 
 
-  spokenFactMemory.set(
-    'alertCount',
-    ctx.alerts.length
-  );
-
-
   /*
-    Severe weather mode
+    SEVERE WEATHER MODE
   */
 
   if (
@@ -2802,11 +3279,18 @@ function buildScript(
     );
 
 
-    addWind(
-      segments,
-      ctx,
-      true
-    );
+    if (
+      ctx.windSpd >= 8 ||
+      ctx.windG >= 15
+    ) {
+
+      addWind(
+        segments,
+        ctx,
+        true
+      );
+
+    }
 
 
     addSpc(
@@ -2834,13 +3318,13 @@ function buildScript(
 
 
   /*
-    Normal weather mode
+    NORMAL WEATHER MODE
   */
 
   else {
 
     const rotation =
-      broadcastLoopCount % 5;
+      broadcastLoopCount % 6;
 
 
     if (
@@ -2848,6 +3332,12 @@ function buildScript(
     ) {
 
       addCurrentConditions(
+        segments,
+        ctx
+      );
+
+
+      addTemperatureImpact(
         segments,
         ctx
       );
@@ -2945,6 +3435,16 @@ function buildScript(
       );
 
 
+      segments.push(
+
+        pickPhrase(
+          PHRASES.transitions,
+          'general-transition'
+        )
+
+      );
+
+
       addTodayForecast(
         segments,
         ctx
@@ -2954,6 +3454,36 @@ function buildScript(
       addTonightForecast(
         segments,
         ctx
+      );
+
+    }
+
+
+    else if (
+      rotation === 4
+    ) {
+
+      addCurrentConditions(
+        segments,
+        ctx
+      );
+
+
+      addTemperatureImpact(
+        segments,
+        ctx
+      );
+
+
+      addHumidity(
+        segments,
+        ctx
+      );
+
+
+      addSpc(
+        segments,
+        ctx.spc
       );
 
     }
@@ -2973,7 +3503,8 @@ function buildScript(
           ctx.wcode
         ) &&
 
-        ctx.windSpd < 15;
+        ctx.windSpd < 15 &&
+        ctx.windG < 25;
 
 
       if (
@@ -2990,14 +3521,20 @@ function buildScript(
         );
 
 
-        segments.push(
+        if (
+          broadcastLoopCount % 2 === 1
+        ) {
 
-          pickPhrase(
-            PHRASES.trivia,
-            'trivia'
-          )
+          segments.push(
 
-        );
+            pickPhrase(
+              PHRASES.trivia,
+              'trivia'
+            )
+
+          );
+
+        }
 
       }
 
@@ -3046,6 +3583,14 @@ function buildScript(
     'StormVector rundown:',
     liveSegments
   );
+
+
+  currentBroadcastContext = {
+    ...ctx,
+    alerts: [
+      ...ctx.alerts
+    ]
+  };
 
 }
 
@@ -3211,11 +3756,6 @@ async function prepareBroadcast() {
 
   };
 
-
-  /*
-    Existing alerts should not trigger
-    a fake "new alert" interruption.
-  */
 
   if (
     broadcastLoopCount === 0
@@ -3684,7 +4224,8 @@ function stopMusic(
 ════════════════════════════════════════════════ */
 
 function createUtterance(
-  text
+  text,
+  mode = 'normal'
 ) {
 
   const utterance =
@@ -3719,7 +4260,7 @@ function createUtterance(
       );
 
 
-  utterance.rate =
+  let baseRate =
     isiPhone
       ? 0.93
       : isAndroid
@@ -3727,8 +4268,38 @@ function createUtterance(
         : 0.96;
 
 
+  if (
+    mode === 'severe'
+  ) {
+
+    baseRate -=
+      0.03;
+
+  }
+
+
+  else if (
+    mode === 'casual'
+  ) {
+
+    baseRate +=
+      0.01;
+
+  }
+
+
+  utterance.rate =
+    clamp(
+      baseRate,
+      0.85,
+      1
+    );
+
+
   utterance.pitch =
-    1;
+    mode === 'severe'
+      ? 0.98
+      : 1;
 
 
   utterance.volume =
@@ -3746,19 +4317,9 @@ function createUtterance(
 
 function startMediaFromUserGesture() {
 
-  /*
-    THIS FUNCTION MUST BE CALLED BEFORE
-    THE FIRST AWAIT IN startBroadcast().
-  */
-
-
   const music =
     ensureLiveMusicElement();
 
-
-  /*
-    Start theme during the actual button tap.
-  */
 
   try {
 
@@ -3797,16 +4358,6 @@ function startMediaFromUserGesture() {
   }
 
 
-  /*
-    IMPORTANT:
-
-    Start REAL audible speech during
-    the actual user button press.
-
-    No silent primer.
-    No immediate speechSynthesis.cancel().
-  */
-
   startupSpeechPromise =
     new Promise(
       resolve => {
@@ -3822,27 +4373,34 @@ function startMediaFromUserGesture() {
         }
 
 
+        const dayPart =
+          getDayPart();
+
+
+        const startupLines = [
+
+          `Vector here. Give me a second while I pull up your local weather for this ${dayPart}.`,
+
+          "Vector here. I'm grabbing your location and the latest weather now.",
+
+          "All right, I'm Vector. Give me a second while I get your local weather loaded.",
+
+          "Vector here. Let me pull up the latest weather for where you are."
+
+        ];
+
+
         const text =
-
           pickPhrase(
-            [
-
-              "Vector here. Give me a second while I pull up your local weather.",
-
-              "Vector here. I'm grabbing your location and the latest weather now.",
-
-              "All right, I'm Vector. Give me a second while I get your local weather loaded.",
-
-              "Vector here. Let me pull up the latest weather for where you are."
-
-            ],
+            startupLines,
             'startup-lines'
           );
 
 
         const utterance =
           createUtterance(
-            text
+            text,
+            'casual'
           );
 
 
@@ -3943,13 +4501,6 @@ async function startBroadcast() {
     );
 
 
-  /*
-    ABSOLUTELY NOTHING ASYNCHRONOUS
-    GOES ABOVE THIS LINE.
-
-    This runs from the user's actual tap.
-  */
-
   startMediaFromUserGesture();
 
 
@@ -3969,10 +4520,6 @@ async function startBroadcast() {
 
   try {
 
-    /*
-      LOCATION
-    */
-
     if (
       !locationReady
     ) {
@@ -3986,10 +4533,6 @@ async function startBroadcast() {
 
     }
 
-
-    /*
-      WEATHER
-    */
 
     setLocationText(
       'Loading local weather…'
@@ -4008,10 +4551,6 @@ async function startBroadcast() {
 
     await prepareBroadcast();
 
-
-    /*
-      SHOW LIVE PAGE
-    */
 
     liveStarted =
       true;
@@ -4044,13 +4583,6 @@ async function startBroadcast() {
     }
 
 
-    /*
-      Bring theme up.
-
-      It was already started inside
-      the original button tap.
-    */
-
     await bringMusicUp();
 
 
@@ -4063,22 +4595,9 @@ async function startBroadcast() {
     startSpeechKeepAlive();
 
 
-    /*
-      DO NOT CALL speechSynthesis.cancel() HERE.
-
-      Let the audible startup sentence
-      finish naturally.
-    */
-
-
     if (
       startupSpeechPromise
     ) {
-
-      /*
-        Safety timeout prevents a browser speech
-        glitch from hanging the entire broadcast.
-      */
 
       await Promise.race([
 
@@ -4106,11 +4625,6 @@ async function startBroadcast() {
     );
 
 
-    /*
-      The real weather broadcast starts
-      immediately after the startup line.
-    */
-
     speakSegment(
       0
     );
@@ -4125,11 +4639,6 @@ async function startBroadcast() {
       error
     );
 
-
-    /*
-      We only cancel here because startup
-      FAILED completely.
-    */
 
     try {
 
@@ -4238,10 +4747,6 @@ function speakSegment(
   }
 
 
-  /*
-    Rundown finished.
-  */
-
   if (
     index >=
     liveSegments.length
@@ -4266,9 +4771,28 @@ function speakSegment(
     speechGeneration;
 
 
+  const severeText =
+    /warning|watch|emergency|take action|severe weather/i
+      .test(
+        text
+      );
+
+
+  const casualText =
+    /weather fact|quiet weather|pretty quiet|calm stretch/i
+      .test(
+        text
+      );
+
+
   const utterance =
     createUtterance(
-      text
+      text,
+      severeText
+        ? 'severe'
+        : casualText
+          ? 'casual'
+          : 'normal'
     );
 
 
@@ -4289,7 +4813,9 @@ function speakSegment(
 
 
       setLiveBadge(
-        'LIVE'
+        severeText
+          ? 'WEATHER ALERT'
+          : 'LIVE'
       );
 
 
@@ -4341,14 +4867,11 @@ function speakSegment(
 
 
       if (
-        /warning|watch|emergency/i
-          .test(
-            text
-          )
+        severeText
       ) {
 
         pause =
-          600;
+          650;
 
       }
 
@@ -4651,11 +5174,6 @@ async function toggleMute() {
 
   }
 
-
-  /*
-    Resume button itself is another
-    direct user gesture.
-  */
 
   try {
 
@@ -5131,12 +5649,13 @@ function speakSequential(
 
         const utterance =
           createUtterance(
-            text
+            text,
+            'severe'
           );
 
 
         utterance.rate =
-          0.92;
+          0.90;
 
 
         utterance.onstart =
@@ -5173,7 +5692,7 @@ function speakSequential(
 
             setTimeout(
               next,
-              450
+              500
             );
 
           };
@@ -5218,12 +5737,6 @@ function startSpeechKeepAlive() {
 
   stopSpeechKeepAlive();
 
-
-  /*
-    Android Chrome sometimes stops long-running
-    speech synthesis. iPhone does NOT use this
-    pause/resume workaround.
-  */
 
   if (
     !/Android/i.test(
@@ -5408,10 +5921,6 @@ document.addEventListener(
 document.addEventListener(
   'DOMContentLoaded',
   () => {
-
-    /*
-      NO automatic location request here.
-    */
 
     ensureLiveMusicElement();
 
