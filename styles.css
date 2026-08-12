@@ -7351,3 +7351,482 @@ body.watch-live-page .severe-takeover-close {
       scaleY(1.2);
   }
 }
+/* ══════════════════════════════════════════════
+   WATCH LIVE — WEATHER ALERT THEMES
+   Paste at the VERY BOTTOM of styles.css
+   Scoped ONLY to Watch Live
+══════════════════════════════════════════════ */
+
+
+/* ══════════════════════════════════════════════
+   LEVEL 1 — WATCH / WEATHER AWARE
+══════════════════════════════════════════════ */
+
+body.watch-live-page.weather-theme-watch .live-stage {
+  border-color: rgba(255,75,75,.38);
+
+  background:
+    radial-gradient(
+      circle at 50% 14%,
+      rgba(210,40,50,.20),
+      transparent 36%
+    ),
+    linear-gradient(
+      150deg,
+      rgba(28,7,14,.96),
+      rgba(42,12,24,.88)
+    );
+
+  box-shadow:
+    0 30px 90px rgba(0,0,0,.45),
+    inset 0 0 75px rgba(210,40,50,.07);
+}
+
+
+body.watch-live-page.weather-theme-watch .live-stage::before {
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent,
+      rgba(255,65,70,.16),
+      transparent 28%
+    );
+}
+
+
+body.watch-live-page.weather-theme-watch .live-avatar::before {
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,65,70,.29),
+      rgba(120,15,28,.12) 42%,
+      transparent 70%
+    );
+}
+
+
+body.watch-live-page.weather-theme-watch .live-avatar-ring {
+  border-color: rgba(255,75,75,.27);
+
+  box-shadow:
+    0 0 28px rgba(255,55,60,.16);
+}
+
+
+body.watch-live-page.weather-theme-watch .vector-core-letter {
+  border-color: rgba(255,78,78,.48);
+
+  box-shadow:
+    inset 0 0 18px rgba(255,60,60,.12),
+    0 0 14px rgba(255,60,60,.15);
+}
+
+
+body.watch-live-page.weather-theme-watch .vector-core-letter::before {
+  background:
+    linear-gradient(
+      90deg,
+      #ffb5b5 0%,
+      #ff6565 28%,
+      transparent 29%,
+      transparent 70%,
+      #ff6565 71%,
+      #ffb5b5 100%
+    );
+
+  filter:
+    drop-shadow(
+      0 0 7px rgba(255,70,70,.8)
+    );
+}
+
+
+body.watch-live-page.weather-theme-watch .vector-mouth span {
+  background: #ff7777;
+
+  box-shadow:
+    0 0 3px #ff4040,
+    0 0 8px rgba(255,60,60,.85),
+    0 0 12px rgba(255,40,40,.35);
+}
+
+
+body.watch-live-page.weather-theme-watch .live-badge {
+  border-color: rgba(255,80,80,.25);
+
+  color: #ffd0d0;
+}
+
+
+body.watch-live-page.weather-theme-watch .live-badge-on .live-dot {
+  background: #ff5a5a;
+
+  box-shadow:
+    0 0 15px rgba(255,75,75,.9);
+}
+
+
+body.watch-live-page.weather-theme-watch .live-caption-box,
+body.watch-live-page.weather-theme-watch .live-chip,
+body.watch-live-page.weather-theme-watch .vector-graphics-panel,
+body.watch-live-page.weather-theme-watch .live-presenter-column {
+  border-color: rgba(255,70,70,.17);
+}
+
+
+body.watch-live-page.weather-theme-watch .live-chip-label,
+body.watch-live-page.weather-theme-watch .live-name-sub,
+body.watch-live-page.weather-theme-watch .vector-graphic-title,
+body.watch-live-page.weather-theme-watch .live-caption-head {
+  color: #ff9a9a;
+}
+
+
+/* ══════════════════════════════════════════════
+   LEVEL 2 — WARNING
+══════════════════════════════════════════════ */
+
+body.watch-live-page.weather-theme-warning .live-stage {
+  border-color: rgba(255,45,45,.55);
+
+  background:
+    radial-gradient(
+      circle at 50% 14%,
+      rgba(255,20,30,.27),
+      transparent 38%
+    ),
+    linear-gradient(
+      150deg,
+      rgba(35,3,8,.97),
+      rgba(54,5,14,.93)
+    );
+
+  box-shadow:
+    0 30px 95px rgba(0,0,0,.52),
+    0 0 30px rgba(255,0,0,.08),
+    inset 0 0 80px rgba(255,20,20,.10);
+}
+
+
+body.watch-live-page.weather-theme-warning .live-stage::before {
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent,
+      rgba(255,30,30,.25),
+      transparent 28%
+    );
+}
+
+
+body.watch-live-page.weather-theme-warning .live-avatar::before {
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,35,40,.40),
+      rgba(125,0,16,.18) 43%,
+      transparent 70%
+    );
+}
+
+
+body.watch-live-page.weather-theme-warning .live-avatar-ring {
+  border-color: rgba(255,45,45,.45);
+
+  box-shadow:
+    0 0 34px rgba(255,20,20,.26);
+}
+
+
+body.watch-live-page.weather-theme-warning .vector-core-letter {
+  border-color: rgba(255,65,65,.72);
+
+  box-shadow:
+    inset 0 0 20px rgba(255,40,40,.18),
+    0 0 22px rgba(255,30,30,.23);
+}
+
+
+body.watch-live-page.weather-theme-warning .vector-core-letter::before {
+  background:
+    linear-gradient(
+      90deg,
+      #ff9b9b 0%,
+      #ff3939 28%,
+      transparent 29%,
+      transparent 70%,
+      #ff3939 71%,
+      #ff9b9b 100%
+    );
+
+  filter:
+    drop-shadow(
+      0 0 8px rgba(255,35,35,.90)
+    );
+}
+
+
+body.watch-live-page.weather-theme-warning .vector-mouth span {
+  background: #ff5555;
+
+  box-shadow:
+    0 0 4px #ff1111,
+    0 0 9px rgba(255,20,20,.95),
+    0 0 15px rgba(255,0,0,.45);
+}
+
+
+body.watch-live-page.weather-theme-warning .live-badge {
+  background: rgba(120,0,5,.28);
+
+  border-color: rgba(255,55,55,.40);
+
+  color: #ffe3e3;
+}
+
+
+body.watch-live-page.weather-theme-warning .live-badge-on .live-dot {
+  background: #ff2727;
+
+  box-shadow:
+    0 0 18px rgba(255,20,20,1);
+}
+
+
+body.watch-live-page.weather-theme-warning .live-caption-box,
+body.watch-live-page.weather-theme-warning .live-chip,
+body.watch-live-page.weather-theme-warning .vector-graphics-panel,
+body.watch-live-page.weather-theme-warning .live-presenter-column {
+  border-color: rgba(255,50,50,.25);
+}
+
+
+body.watch-live-page.weather-theme-warning .live-chip-label,
+body.watch-live-page.weather-theme-warning .live-name-sub,
+body.watch-live-page.weather-theme-warning .vector-graphic-title,
+body.watch-live-page.weather-theme-warning .live-caption-head {
+  color: #ff8d8d;
+}
+
+
+/* ══════════════════════════════════════════════
+   LEVEL 3 — PDS / EMERGENCY
+══════════════════════════════════════════════ */
+
+body.watch-live-page.weather-theme-critical .live-stage {
+  border-color: rgba(255,20,20,.78);
+
+  background:
+    radial-gradient(
+      circle at 50% 12%,
+      rgba(255,0,0,.36),
+      transparent 40%
+    ),
+    linear-gradient(
+      150deg,
+      rgba(35,0,5,.99),
+      rgba(65,0,8,.97)
+    );
+
+  box-shadow:
+    0 30px 100px rgba(0,0,0,.58),
+    0 0 42px rgba(255,0,0,.16),
+    inset 0 0 95px rgba(255,0,0,.15);
+
+  animation:
+    vectorCriticalStage 1.8s ease-in-out infinite;
+}
+
+
+@keyframes vectorCriticalStage {
+  0%,
+  100% {
+    border-color: rgba(255,25,25,.64);
+
+    box-shadow:
+      0 30px 100px rgba(0,0,0,.58),
+      0 0 28px rgba(255,0,0,.12),
+      inset 0 0 90px rgba(255,0,0,.12);
+  }
+
+  50% {
+    border-color: rgba(255,70,70,.95);
+
+    box-shadow:
+      0 30px 100px rgba(0,0,0,.58),
+      0 0 48px rgba(255,0,0,.30),
+      inset 0 0 105px rgba(255,0,0,.22);
+  }
+}
+
+
+body.watch-live-page.weather-theme-critical .live-stage::before {
+  background:
+    conic-gradient(
+      from 180deg,
+      transparent,
+      rgba(255,0,0,.38),
+      transparent 28%
+    );
+
+  animation-duration: 7s;
+}
+
+
+body.watch-live-page.weather-theme-critical .live-avatar::before {
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,0,0,.55),
+      rgba(130,0,8,.23) 43%,
+      transparent 70%
+    );
+
+  animation-duration: 1.2s;
+}
+
+
+body.watch-live-page.weather-theme-critical .live-avatar-ring {
+  border: 2px solid rgba(255,30,30,.65);
+
+  box-shadow:
+    0 0 42px rgba(255,0,0,.42);
+}
+
+
+body.watch-live-page.weather-theme-critical .vector-core-letter {
+  border-color: rgba(255,55,55,.95);
+
+  background:
+    radial-gradient(
+      circle at 50% 0%,
+      rgba(255,35,35,.15),
+      transparent 38%
+    ),
+    linear-gradient(
+      160deg,
+      #190306,
+      #070001
+    );
+
+  box-shadow:
+    inset 0 0 24px rgba(255,0,0,.23),
+    0 0 28px rgba(255,0,0,.36);
+}
+
+
+body.watch-live-page.weather-theme-critical .vector-core-letter::before {
+  background:
+    linear-gradient(
+      90deg,
+      #ffd0d0 0%,
+      #ff2929 28%,
+      transparent 29%,
+      transparent 70%,
+      #ff2929 71%,
+      #ffd0d0 100%
+    );
+
+  filter:
+    drop-shadow(
+      0 0 10px rgba(255,0,0,1)
+    );
+}
+
+
+body.watch-live-page.weather-theme-critical .vector-mouth span {
+  background: #ff3838;
+
+  box-shadow:
+    0 0 4px #ff0000,
+    0 0 11px rgba(255,0,0,1),
+    0 0 18px rgba(255,0,0,.60);
+}
+
+
+body.watch-live-page.weather-theme-critical .live-badge {
+  background: rgba(130,0,0,.40);
+
+  border-color: rgba(255,40,40,.66);
+
+  color: #fff;
+}
+
+
+body.watch-live-page.weather-theme-critical .live-badge-on .live-dot {
+  background: #ff0000;
+
+  box-shadow:
+    0 0 22px rgba(255,0,0,1);
+
+  animation:
+    vectorCriticalDot .75s ease-in-out infinite;
+}
+
+
+@keyframes vectorCriticalDot {
+  0%,
+  100% {
+    opacity: .65;
+    transform: scale(.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.25);
+  }
+}
+
+
+body.watch-live-page.weather-theme-critical .live-caption-box,
+body.watch-live-page.weather-theme-critical .live-chip,
+body.watch-live-page.weather-theme-critical .vector-graphics-panel,
+body.watch-live-page.weather-theme-critical .live-presenter-column {
+  border-color: rgba(255,30,30,.34);
+}
+
+
+body.watch-live-page.weather-theme-critical .live-chip-label,
+body.watch-live-page.weather-theme-critical .live-name-sub,
+body.watch-live-page.weather-theme-critical .vector-graphic-title,
+body.watch-live-page.weather-theme-critical .live-caption-head {
+  color: #ff7474;
+}
+
+
+/* ══════════════════════════════════════════════
+   ALERT THEME WHILE VECTOR IS SPEAKING
+══════════════════════════════════════════════ */
+
+body.watch-live-page.weather-theme-watch #liveAvatar.speaking .vector-core-letter,
+body.watch-live-page.weather-theme-warning #liveAvatar.speaking .vector-core-letter,
+body.watch-live-page.weather-theme-critical #liveAvatar.speaking .vector-core-letter {
+  border-color: rgba(255,100,100,.95);
+}
+
+
+body.watch-live-page.weather-theme-watch .live-avatar.speaking::before,
+body.watch-live-page.weather-theme-warning .live-avatar.speaking::before,
+body.watch-live-page.weather-theme-critical .live-avatar.speaking::before {
+  background:
+    radial-gradient(
+      circle,
+      rgba(255,35,35,.48),
+      rgba(120,0,20,.18) 42%,
+      transparent 70%
+    );
+}
+
+
+/* ══════════════════════════════════════════════
+   REDUCED MOTION
+══════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  body.watch-live-page.weather-theme-critical .live-stage,
+  body.watch-live-page.weather-theme-critical .live-badge-on .live-dot {
+    animation: none !important;
+  }
+
+}
