@@ -2,24 +2,66 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+
 <title>Watch Live — StormVector</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, viewport-fit=cover"
+>
+
 <meta name="theme-color" content="#050a14">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<meta
+  name="apple-mobile-web-app-capable"
+  content="yes"
+>
 
-<link rel="stylesheet" href="styles.css">
+<meta
+  name="mobile-web-app-capable"
+  content="yes"
+>
+
+<meta
+  name="apple-mobile-web-app-status-bar-style"
+  content="black-translucent"
+>
+
+<link
+  rel="preconnect"
+  href="https://fonts.googleapis.com"
+>
+
+<link
+  rel="preconnect"
+  href="https://fonts.gstatic.com"
+  crossorigin
+>
+
+<link
+  href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&display=swap"
+  rel="stylesheet"
+>
+
+<link
+  rel="stylesheet"
+  href="styles.css"
+>
+
 </head>
 
 <body class="watch-live-page">
 
-<canvas id="bgCanvas" aria-hidden="true"></canvas>
+<!-- ═══════════════════════════════════════════
+     ANIMATED WEATHER BACKGROUND
+════════════════════════════════════════════ -->
+<canvas
+  id="bgCanvas"
+  aria-hidden="true">
+</canvas>
 
+
+<!-- Screen-reader announcements -->
 <div
   id="ariaLive"
   class="sr-only"
@@ -27,17 +69,27 @@
   aria-atomic="true">
 </div>
 
-<!-- Breaking Weather Banner -->
+
+<!-- ═══════════════════════════════════════════
+     BREAKING WEATHER BANNER
+════════════════════════════════════════════ -->
 <div
   id="liveBreakingBanner"
   class="live-breaking-banner"
   role="alert"
   hidden>
+
   ⚠ STORMVECTOR BREAKING WEATHER ⚠
+
 </div>
 
-<!-- Header -->
-<div id="headerBar" aria-label="Navigation header">
+
+<!-- ═══════════════════════════════════════════
+     HEADER
+════════════════════════════════════════════ -->
+<div
+  id="headerBar"
+  aria-label="Navigation header">
 
   <button
     class="menu-btn"
@@ -46,7 +98,9 @@
     aria-expanded="false"
     aria-controls="menuPanel"
     aria-label="Open navigation menu">
+
     ☰
+
   </button>
 
   <div id="headerTitle">
@@ -55,263 +109,138 @@
 
 </div>
 
-<!-- Navigation -->
+
+<!-- ═══════════════════════════════════════════
+     NAVIGATION
+════════════════════════════════════════════ -->
 <nav
   id="menuPanel"
   class="menu-panel"
   role="menu"
   aria-label="Main navigation">
 
-  <a href="./index.html" role="menuitem">
-    <span class="menu-icon-char">🏠</span>
+  <a
+    href="./index.html"
+    role="menuitem">
+
+    <span class="menu-icon-char">
+      🏠
+    </span>
+
     Home
+
   </a>
 
-  <a href="./outlooks.html" role="menuitem">
-    <span class="menu-icon-char">🧭</span>
+  <a
+    href="./outlooks.html"
+    role="menuitem">
+
+    <span class="menu-icon-char">
+      🧭
+    </span>
+
     Outlooks
+
   </a>
 
-  <a href="./watch-live.html" role="menuitem">
-    <span class="menu-icon-char">📺</span>
+  <a
+    href="./watch-live.html"
+    role="menuitem">
+
+    <span class="menu-icon-char">
+      📺
+    </span>
+
     Watch Live
+
   </a>
 
 </nav>
 
-<!-- Main -->
-<main id="mainContent" class="live-main">
 
-  <!-- User Location -->
-  <section class="section live-location-section">
+<!-- ═══════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════ -->
+<main id="mainContent">
+
+
+  <!-- LOCATION -->
+  <section
+    class="section"
+    style="padding-top:4px">
 
     <div
       id="liveLocationCard"
-      class="location-card live-location-card"
+      class="location-card"
       aria-live="polite">
 
-      <span class="live-location-icon">📍</span>
-
-      <span class="live-location-text">
-        Locating…
-      </span>
+      Locating…
 
     </div>
 
   </section>
 
 
-  <!-- Broadcast Stage -->
-  <section class="section live-broadcast-section">
+
+  <!-- ═══════════════════════════════════════
+       LIVE BROADCAST
+  ════════════════════════════════════════ -->
+  <section class="section">
 
     <div
       class="live-stage"
       id="liveStage">
 
-      <!-- Background FX -->
+
+      <!-- LIVE STATUS -->
       <div
-        class="live-stage-grid"
-        aria-hidden="true">
+        class="live-badge"
+        id="liveBadge">
+
+        <span class="live-dot"></span>
+
+        STANDBY
+
       </div>
 
+
+
+      <!-- ═══════════════════════════════════
+           VECTOR — AI METEOROLOGIST
+      ════════════════════════════════════ -->
       <div
-        class="live-stage-glow"
-        aria-hidden="true">
-      </div>
+        class="live-avatar"
+        id="liveAvatar"
+        role="img"
+        aria-label="Vector, the StormVector AI meteorologist">
 
-
-      <!-- Broadcast Header -->
-      <div class="live-topline">
-
+        <!-- orbit / halo -->
         <div
-          class="live-badge"
-          id="liveBadge">
-
-          <span class="live-dot"></span>
-
-          <span class="live-badge-text">
-            STANDBY
-          </span>
-
-        </div>
-
-        <div class="live-network-mark">
-          STORMVECTOR WEATHER NETWORK
-        </div>
-
-      </div>
-
-
-      <!-- Vector Presenter -->
-      <div class="vector-presenter-wrap">
-
-        <div
-          class="vector-backlight"
-          aria-hidden="true">
-        </div>
-
-        <div
-          class="vector-orbit vector-orbit-one"
-          aria-hidden="true">
-        </div>
-
-        <div
-          class="vector-orbit vector-orbit-two"
+          class="live-avatar-ring"
           aria-hidden="true">
         </div>
 
 
         <!--
-          VECTOR ROBOT
+          Vector's robot body is created from this
+          element using the Watch Live CSS.
 
-          The JavaScript adds the class "speaking"
-          to #liveAvatar while speech is active.
-
-          CSS uses that class to animate Vector's
-          mouth, glow and other speaking effects.
+          JavaScript adds "speaking" to #liveAvatar
+          while Vector is talking.
         -->
         <div
-          class="vector-robot"
-          id="liveAvatar"
-          role="img"
-          aria-label="Vector, the StormVector AI meteorologist">
+          class="live-avatar-core"
+          aria-hidden="true">
 
-
-          <!-- Antenna -->
-          <div class="vector-antenna">
-
-            <div class="vector-antenna-stem"></div>
-
-            <span class="vector-antenna-tip"></span>
-
-          </div>
-
-
-          <!-- Head -->
-          <div class="vector-head">
-
-            <div
-              class="vector-ear vector-ear-left">
-            </div>
-
-            <div
-              class="vector-ear vector-ear-right">
-            </div>
-
-
-            <!-- Face Screen -->
-            <div class="vector-face">
-
-              <div
-                class="vector-face-glare"
-                aria-hidden="true">
-              </div>
-
-
-              <!-- Eyes -->
-              <div class="vector-eyes">
-
-                <span class="vector-eye">
-                  <span class="vector-eye-core"></span>
-                </span>
-
-                <span class="vector-eye">
-                  <span class="vector-eye-core"></span>
-                </span>
-
-              </div>
-
-
-              <!-- Animated Speaking Mouth -->
-              <div
-                class="vector-mouth"
-                aria-hidden="true">
-
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- Neck -->
-          <div class="vector-neck">
-
-            <span></span>
-            <span></span>
-
-          </div>
-
-
-          <!-- Body -->
-          <div class="vector-body">
-
-            <div class="vector-body-highlight"></div>
-
-
-            <!-- Left Shoulder -->
-            <div
-              class="vector-shoulder vector-shoulder-left">
-
-              <div class="vector-arm vector-arm-left"></div>
-
-            </div>
-
-
-            <!-- Right Shoulder -->
-            <div
-              class="vector-shoulder vector-shoulder-right">
-
-              <div class="vector-arm vector-arm-right"></div>
-
-            </div>
-
-
-            <!-- Chest -->
-            <div class="vector-chest-screen">
-
-              <div class="vector-chest-logo">
-                V
-              </div>
-
-              <div class="vector-chest-status">
-
-                <span class="vector-chest-dot"></span>
-
-                VECTOR
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- Floating Thruster Glow -->
-          <div
-            class="vector-hover-glow"
-            aria-hidden="true">
-          </div>
-
-
-          <!-- Floating Shadow -->
-          <div
-            class="vector-shadow"
-            aria-hidden="true">
-          </div>
+          V
 
         </div>
 
       </div>
 
 
-      <!-- Presenter Name -->
+
+      <!-- VECTOR NAME -->
       <div class="live-name">
 
         VECTOR
@@ -320,48 +249,63 @@
           AI METEOROLOGIST
         </span>
 
-        <span class="live-name-status">
-          LIVE LOCAL WEATHER
-        </span>
+      </div>
+
+
+
+      <!-- ═══════════════════════════════════
+           BROADCAST STATUS
+      ════════════════════════════════════ -->
+      <div
+        class="live-crew-row"
+        aria-label="Broadcast system status">
+
+        <div class="live-crew-card">
+
+          <span class="live-crew-label">
+            Producer
+          </span>
+
+          Builds the rundown from live weather data
+
+        </div>
+
+
+        <div class="live-crew-card">
+
+          <span class="live-crew-label">
+            Broadcaster
+          </span>
+
+          Vector adapts each update as conditions change
+
+        </div>
 
       </div>
 
 
-      <!-- Caption / Speech Box -->
+
+      <!-- ═══════════════════════════════════
+           CAPTIONS
+      ════════════════════════════════════ -->
       <div
         class="live-caption-box"
         id="liveCaptionBox"
         aria-live="polite">
 
-        <div class="live-caption-header">
-
-          <div class="live-caption-kicker">
-
-            <span class="caption-pulse"></span>
-
-            VECTOR ON AIR
-
-          </div>
-
-          <div class="live-caption-network">
-            STORMVECTOR
-          </div>
-
-        </div>
-
-
-        <div
-          id="liveCaptionText"
-          class="live-caption-text">
+        <span id="liveCaptionText">
 
           Preparing your local broadcast…
 
-        </div>
+        </span>
 
       </div>
 
 
-      <!-- Current Conditions -->
+
+      <!-- ═══════════════════════════════════
+           CURRENT CONDITIONS
+      ════════════════════════════════════ -->
       <div
         class="live-conditions-row"
         id="liveConditionsRow"
@@ -369,196 +313,14 @@
       </div>
 
 
-      <!-- Controls -->
+
+      <!-- ═══════════════════════════════════
+           CONTROLS
+      ════════════════════════════════════ -->
       <div
         class="live-controls"
         id="liveControls">
 
-        <button
-          class="live-ctrl-btn"
-          id="liveReplayBtn"
-          onclick="replaySegment()"
-          aria-label="Replay this weather segment">
-
-          <span class="live-control-icon">
-            ↺
-          </span>
-
-          Replay
-
-        </button>
-
 
         <button
-          class="live-ctrl-btn live-stop-btn"
-          id="liveMuteBtn"
-          onclick="toggleMute()"
-          aria-label="Stop broadcast">
-
-          <span class="live-control-icon">
-            🔇
-          </span>
-
-          Stop
-
-        </button>
-
-      </div>
-
-
-      <!-- Broadcast System Status -->
-      <div class="live-status-strip">
-
-        <div class="live-status-item">
-
-          <span class="live-status-label">
-            PRODUCER
-          </span>
-
-          <span class="live-status-value">
-            Live Weather Data
-          </span>
-
-        </div>
-
-
-        <div class="live-status-divider"></div>
-
-
-        <div class="live-status-item">
-
-          <span class="live-status-label">
-            VECTOR
-          </span>
-
-          <span class="live-status-value">
-            Adaptive Broadcast
-          </span>
-
-        </div>
-
-
-        <div class="live-status-divider"></div>
-
-
-        <div class="live-status-item">
-
-          <span class="live-status-label">
-            SOURCES
-          </span>
-
-          <span class="live-status-value">
-            NWS • SPC • Open-Meteo
-          </span>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </section>
-
-</main>
-
-
-<!-- Start Broadcast Overlay -->
-<div
-  class="live-start-overlay"
-  id="liveStartOverlay">
-
-  <div class="live-start-inner">
-
-    <div class="live-start-signal">
-
-      <span></span>
-      <span></span>
-      <span></span>
-
-    </div>
-
-
-    <div class="live-start-eyebrow">
-      STORMVECTOR WEATHER NETWORK
-    </div>
-
-
-    <div class="live-start-title">
-      STORMVECTOR LIVE
-    </div>
-
-
-    <div class="live-start-sub">
-
-      Vector is preparing a live weather broadcast
-      for your current location.
-
-    </div>
-
-
-    <div class="live-start-features">
-
-      <div>
-        <span>📍</span>
-        Local Conditions
-      </div>
-
-      <div>
-        <span>⚠️</span>
-        Live Alerts
-      </div>
-
-      <div>
-        <span>🎙️</span>
-        Vector Broadcast
-      </div>
-
-    </div>
-
-
-    <button
-      class="live-start-btn"
-      id="liveStartBtn"
-      onclick="startBroadcast()"
-      disabled>
-
-      Preparing…
-
-    </button>
-
-
-    <div class="live-start-note">
-
-      StormVector uses your device location to build
-      your local weather broadcast. Audio begins after
-      you tap Go Live.
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<!--
-  Existing repository music file.
-
-  Keep stormvector-theme.mp3 in the same directory
-  as watch-live.html.
--->
-<audio
-  id="liveMusic"
-  src="./stormvector-theme.mp3"
-  loop
-  preload="auto"
-  playsinline>
-</audio>
-
-
-<!-- Existing StormVector Scripts -->
-<script src="shared.js"></script>
-<script src="bg-canvas.js"></script>
-<script src="watch-live.js"></script>
-
-</body>
-</html>
+          class="live
