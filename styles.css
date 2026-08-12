@@ -4994,16 +4994,6 @@ body.watch-live-page .live-start-btn:disabled {
       1 1
       calc(50% - 5px);
   }
-
-  body.watch-live-page .vector-mouth {
-    gap: 2px;
-  }
-
-  body.watch-live-page .vector-mouth span {
-    width: 4px;
-
-    min-width: 4px;
-  }
 }
 
 @media (max-width:390px) {
