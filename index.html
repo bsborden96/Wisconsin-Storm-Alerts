@@ -6,7 +6,7 @@
   <meta charset="UTF-8">
 
   <title>
-    Watch Live — StormVector
+    StormVector — Vector
   </title>
 
   <meta
@@ -57,7 +57,7 @@
 
 
   <!-- ═══════════════════════════════════════
-       LEAFLET RADAR MAP
+       LEAFLET
   ════════════════════════════════════════ -->
 
   <link
@@ -68,7 +68,7 @@
 
 
   <!-- ═══════════════════════════════════════
-       STORMVECTOR STYLES
+       STORMVECTOR
   ════════════════════════════════════════ -->
 
   <link
@@ -83,7 +83,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     ANIMATED WEATHER BACKGROUND
+     WEATHER BACKGROUND
 ════════════════════════════════════════════════ -->
 
 <canvas
@@ -93,7 +93,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     ACCESSIBILITY ANNOUNCEMENTS
+     ACCESSIBILITY
 ════════════════════════════════════════════════ -->
 
 <div
@@ -120,7 +120,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     SEVERE WEATHER TAKEOVER
+     SEVERE TAKEOVER
 ════════════════════════════════════════════════ -->
 
 <div
@@ -128,11 +128,13 @@
   class="severe-takeover"
   hidden>
 
-  <div class="severe-takeover-header">
+  <div class="severe-takeover-inner">
 
-    <span class="severe-takeover-kicker">
+    <div class="severe-takeover-kicker">
+
       STORMVECTOR WEATHER ALERT
-    </span>
+
+    </div>
 
     <strong
       id="severeTakeoverTitle"
@@ -142,31 +144,29 @@
 
     </strong>
 
-    <span
+    <div
       id="severeTakeoverArea"
       class="severe-takeover-area">
 
-      Selected location
+      Current location
 
-    </span>
+    </div>
+
+    <div
+      id="severeTakeoverSafety"
+      class="severe-takeover-safety">
+
+      Follow National Weather Service instructions.
+
+    </div>
 
   </div>
-
-
-  <button
-    id="severeTakeoverClose"
-    class="severe-takeover-close"
-    type="button">
-
-    RETURN TO BROADCAST
-
-  </button>
 
 </div>
 
 
 <!-- ═══════════════════════════════════════════════
-     STARTUP POPUP
+     STARTUP
 ════════════════════════════════════════════════ -->
 
 <div
@@ -180,6 +180,13 @@
     aria-labelledby="liveStartTitle">
 
 
+    <img
+      src="./Vector-logo.png"
+      alt="StormVector"
+      class="live-start-logo"
+    >
+
+
     <div class="live-start-network">
 
       STORMVECTOR WEATHER NETWORK
@@ -191,15 +198,16 @@
       id="liveStartTitle"
       class="live-start-title">
 
-      WATCH LIVE
+      VECTOR
 
     </h1>
 
 
     <p class="live-start-sub">
 
-      Start Vector using your current location,
-      or search anywhere in the United States.
+      Your automated weather broadcast.
+      Use your current location or search anywhere
+      in the United States.
 
     </p>
 
@@ -212,7 +220,7 @@
       type="button"
       onclick="startBroadcast()">
 
-      ENABLE LOCATION & GO LIVE
+      USE MY LOCATION
 
     </button>
 
@@ -220,13 +228,13 @@
     <div class="live-start-divider">
 
       <span>
-        OR SEARCH A LOCATION
+        OR
       </span>
 
     </div>
 
 
-    <!-- SEARCHED LOCATION -->
+    <!-- SEARCH LOCATION -->
 
     <div class="live-popup-search-wrap">
 
@@ -234,7 +242,7 @@
         for="livePopupLocationSearch"
         class="live-popup-search-label">
 
-        CITY OR LOCATION
+        SEARCH LOCATION
 
       </label>
 
@@ -249,7 +257,7 @@
           autocomplete="off"
           autocapitalize="words"
           spellcheck="false"
-          placeholder="Search city, town, or place"
+          placeholder="City, town, or place"
           aria-autocomplete="list"
           aria-controls="livePopupSearchSuggestions"
           aria-expanded="false"
@@ -278,7 +286,7 @@
 
       <div
         id="livePopupSearchSuggestions"
-        class="live-search-suggestions live-popup-suggestions"
+        class="live-search-suggestions"
         role="listbox"
         hidden>
       </div>
@@ -288,8 +296,9 @@
 
     <p class="live-start-note">
 
-      StormVector uses your selected location only
-      to build the weather broadcast shown on this page.
+      When current location is enabled, Vector can
+      continue updating weather information as your
+      location changes.
 
     </p>
 
@@ -300,73 +309,36 @@
 
 <!-- ═══════════════════════════════════════════════
      HEADER
+
+     NO HAMBURGER MENU
+     NO OUTLOOKS PAGE
+     NO WATCH LIVE LINK
 ════════════════════════════════════════════════ -->
 
 <header
   id="headerBar"
-  aria-label="StormVector navigation">
+  class="vector-header">
 
+  <img
+    id="vectorHeaderLogo"
+    class="vector-header-logo"
+    src="./Vector-logo.png"
+    alt="StormVector"
+  >
 
-  <button
-    class="menu-btn"
-    id="menuBtn"
-    type="button"
-    onclick="toggleMenu()"
-    aria-expanded="false"
-    aria-controls="menuPanel"
-    aria-label="Open navigation menu">
+  <div class="vector-header-right">
 
-    ☰
+    <span
+      id="vectorHeaderStatus"
+      class="vector-header-status">
 
-  </button>
+      STANDBY
 
-
-  <div id="headerTitle">
-
-    WATCH LIVE
+    </span>
 
   </div>
 
 </header>
-
-
-<!-- ═══════════════════════════════════════════════
-     NAVIGATION
-════════════════════════════════════════════════ -->
-
-<nav
-  id="menuPanel"
-  class="menu-panel"
-  aria-label="Main navigation">
-
-
-  <a href="./index.html">
-
-    <span class="menu-icon-char">
-      HOME
-    </span>
-
-  </a>
-
-
-  <a href="./outlooks.html">
-
-    <span class="menu-icon-char">
-      OUTLOOKS
-    </span>
-
-  </a>
-
-
-  <a href="./watch-live.html">
-
-    <span class="menu-icon-char">
-      WATCH LIVE
-    </span>
-
-  </a>
-
-</nav>
 
 
 <!-- ═══════════════════════════════════════════════
@@ -380,7 +352,7 @@
        LOCATION
   ════════════════════════════════════════════ -->
 
-  <section class="section live-location-section">
+  <section class="section">
 
     <div
       id="liveLocationCard"
@@ -403,7 +375,29 @@
           id="liveLocationSource"
           class="live-location-source">
 
-          StormVector Live Weather
+          StormVector
+
+        </span>
+
+      </div>
+
+
+      <div class="location-status-group">
+
+        <span
+          id="vectorTravelStatus"
+          class="vector-status-pill">
+
+          LOCATION OFF
+
+        </span>
+
+
+        <span
+          id="vectorThreatStatus"
+          class="vector-status-pill vector-threat-normal">
+
+          NORMAL
 
         </span>
 
@@ -417,7 +411,7 @@
         onclick="returnToMyLocation()"
         hidden>
 
-        RETURN TO MY LOCATION
+        USE MY LOCATION
 
       </button>
 
@@ -427,7 +421,7 @@
 
 
   <!-- ═══════════════════════════════════════════
-       SEARCH AFTER BROADCAST HAS STARTED
+       LOCATION SEARCH
   ════════════════════════════════════════════ -->
 
   <section class="section">
@@ -493,7 +487,7 @@
 
 
   <!-- ═══════════════════════════════════════════
-       LIVE BROADCAST
+       VECTOR LIVE
   ════════════════════════════════════════════ -->
 
   <section class="section">
@@ -503,7 +497,7 @@
       class="live-stage">
 
 
-      <!-- TOP STATUS BAR -->
+      <!-- STATUS -->
 
       <div class="live-topbar">
 
@@ -525,7 +519,7 @@
 
         <div class="live-network-label">
 
-          STORMVECTOR WEATHER NETWORK
+          VECTOR AUTOMATED WEATHER
 
         </div>
 
@@ -533,15 +527,13 @@
 
 
       <!-- ═════════════════════════════════════
-           MAIN BROADCAST GRID
+           BROADCAST
       ══════════════════════════════════════ -->
 
       <div class="live-broadcast-grid">
 
 
-        <!-- ═════════════════════════════════
-             VECTOR
-        ══════════════════════════════════ -->
+        <!-- VECTOR -->
 
         <div class="live-presenter-column">
 
@@ -564,16 +556,12 @@
               aria-hidden="true">
 
 
-              <!-- FACE SCREEN -->
-
               <span class="vector-core-letter">
 
                 V
 
               </span>
 
-
-              <!-- WORKING SPEAKING MOUTH -->
 
               <div class="vector-mouth">
 
@@ -603,20 +591,19 @@
           </div>
 
 
-          <div
-            class="live-crew-row"
-            aria-label="StormVector data status">
+          <div class="live-crew-row">
 
 
             <div class="live-crew-card">
 
               <span class="live-crew-label">
 
-                WEATHER ENGINE
+                WEATHER DATA
 
               </span>
 
-              Official weather data and live observations
+              National Weather Service,
+              SPC and live observations
 
             </div>
 
@@ -625,11 +612,12 @@
 
               <span class="live-crew-label">
 
-                VECTOR
+                LIVE LOCATION
 
               </span>
 
-              Continuous local weather coverage
+              Weather follows you when
+              device location is active
 
             </div>
 
@@ -639,13 +627,13 @@
 
 
         <!-- ═════════════════════════════════
-             MANUAL VIEW PANEL
+             WEATHER DISPLAY
         ══════════════════════════════════ -->
 
         <div class="vector-graphics-panel">
 
 
-          <!-- PANEL HEADER -->
+          <!-- DISPLAY HEADER -->
 
           <div class="vector-graphics-header">
 
@@ -681,19 +669,12 @@
           </div>
 
 
-          <!-- ═══════════════════════════════
-               MANUAL VIEW SELECTOR
-
-               IMPORTANT:
-               JS will NOT change these views
-               automatically during normal speech.
-          ════════════════════════════════ -->
+          <!-- MAIN DISPLAY TABS -->
 
           <div
             id="liveViewSelector"
             class="live-view-selector"
-            role="tablist"
-            aria-label="StormVector display views">
+            role="tablist">
 
 
             <button
@@ -759,7 +740,7 @@
 
 
           <!-- ═══════════════════════════════
-               NOW / CONDITIONS
+               CURRENT CONDITIONS
           ════════════════════════════════ -->
 
           <div
@@ -873,189 +854,308 @@
             data-graphic="radar">
 
 
-            <!-- RADAR TOOLBAR -->
+            <!-- RADAR PRODUCT TABS -->
 
-            <div class="radar-toolbar">
-
-
-              <div>
-
-                <span class="graphic-label">
-
-                  LIVE NOAA RADAR
-
-                </span>
+            <div
+              id="radarProductTabs"
+              class="radar-product-tabs">
 
 
-                <span
-                  id="radarLocationLabel"
-                  class="radar-location-label">
+              <button
+                class="radar-product-btn active"
+                type="button"
+                data-radar-product="radar">
 
-                  Selected location
+                RADAR
 
-                </span>
+              </button>
+
+
+              <button
+                class="radar-product-btn"
+                type="button"
+                data-radar-product="spc">
+
+                SPC OUTLOOK
+
+              </button>
+
+
+              <button
+                class="radar-product-btn"
+                type="button"
+                data-radar-product="tornado">
+
+                TORNADO OUTLOOK
+
+              </button>
+
+            </div>
+
+
+            <!-- LIVE RADAR PANEL -->
+
+            <div
+              id="radarProductRadar"
+              class="radar-product-panel active">
+
+
+              <div class="radar-toolbar">
+
+
+                <div>
+
+                  <span class="graphic-label">
+
+                    LIVE NOAA RADAR
+
+                  </span>
+
+
+                  <span
+                    id="radarLocationLabel"
+                    class="radar-location-label">
+
+                    Selected location
+
+                  </span>
+
+                </div>
+
+
+                <div class="radar-toolbar-actions">
+
+
+                  <button
+                    id="radarLocalBtn"
+                    class="radar-tool-btn active"
+                    type="button">
+
+                    LOCAL
+
+                  </button>
+
+
+                  <button
+                    id="radarRegionalBtn"
+                    class="radar-tool-btn"
+                    type="button">
+
+                    REGIONAL
+
+                  </button>
+
+
+                  <button
+                    id="radarStateBtn"
+                    class="radar-tool-btn"
+                    type="button">
+
+                    STATE
+
+                  </button>
+
+                </div>
 
               </div>
 
 
-              <div class="radar-toolbar-actions">
+              <div
+                id="stormVectorRadar"
+                class="stormvector-radar"
+                aria-label="StormVector weather radar">
+              </div>
+
+
+              <div
+                id="radarLegend"
+                class="radar-legend">
+
+
+                <div class="radar-legend-title">
+
+                  REFLECTIVITY
+
+                </div>
+
+
+                <div class="radar-legend-scale">
+
+                  <span class="radar-db-1"></span>
+
+                  <span class="radar-db-2"></span>
+
+                  <span class="radar-db-3"></span>
+
+                  <span class="radar-db-4"></span>
+
+                  <span class="radar-db-5"></span>
+
+                  <span class="radar-db-6"></span>
+
+                </div>
+
+
+                <div class="radar-legend-labels">
+
+                  <span>
+                    LIGHT
+                  </span>
+
+                  <span>
+                    HEAVY
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <div class="radar-control-row">
 
 
                 <button
-                  id="radarLocalBtn"
+                  id="radarCenterBtn"
+                  class="radar-tool-btn"
+                  type="button">
+
+                  RECENTER
+
+                </button>
+
+
+                <button
+                  id="radarWarningsBtn"
                   class="radar-tool-btn active"
                   type="button">
 
-                  LOCAL
+                  WARNINGS ON
 
                 </button>
 
 
                 <button
-                  id="radarRegionalBtn"
+                  id="radarRefreshBtn"
                   class="radar-tool-btn"
                   type="button">
 
-                  REGIONAL
-
-                </button>
-
-
-                <button
-                  id="radarStateBtn"
-                  class="radar-tool-btn"
-                  type="button">
-
-                  STATE
+                  REFRESH
 
                 </button>
 
               </div>
 
+
+              <div class="radar-footer">
+
+                <span id="radarStatus">
+
+                  Radar waiting for location
+
+                </span>
+
+
+                <span id="radarTimestamp">
+
+                  --
+
+                </span>
+
+              </div>
+
             </div>
 
 
-            <!-- RADAR MAP -->
+            <!-- SPC OUTLOOK -->
 
             <div
-              id="stormVectorRadar"
-              class="stormvector-radar"
-              aria-label="StormVector weather radar">
+              id="radarProductSpc"
+              class="radar-product-panel">
+
+
+              <div class="official-product-card">
+
+
+                <div class="official-product-header">
+
+                  <span>
+
+                    NOAA / NWS
+
+                  </span>
+
+                  <strong>
+
+                    SPC DAY 1 OUTLOOK
+
+                  </strong>
+
+                </div>
+
+
+                <img
+                  id="spcOutlookImage"
+                  class="official-product-image"
+                  alt="Official Storm Prediction Center Day 1 categorical outlook"
+                >
+
+
+                <div
+                  id="spcOutlookStatus"
+                  class="official-product-status">
+
+                  Waiting for SPC outlook.
+
+                </div>
+
+              </div>
+
             </div>
 
 
-            <!-- RADAR LEGEND -->
+            <!-- TORNADO OUTLOOK -->
 
             <div
-              id="radarLegend"
-              class="radar-legend"
-              aria-label="Radar reflectivity legend">
+              id="radarProductTornado"
+              class="radar-product-panel">
 
 
-              <div class="radar-legend-title">
-
-                REFLECTIVITY
-
-              </div>
+              <div class="official-product-card">
 
 
-              <div class="radar-legend-scale">
+                <div class="official-product-header">
 
-                <span
-                  class="radar-legend-color radar-db-1">
-                </span>
+                  <span>
 
-                <span
-                  class="radar-legend-color radar-db-2">
-                </span>
+                    NOAA / NWS
 
-                <span
-                  class="radar-legend-color radar-db-3">
-                </span>
+                  </span>
 
-                <span
-                  class="radar-legend-color radar-db-4">
-                </span>
+                  <strong>
 
-                <span
-                  class="radar-legend-color radar-db-5">
-                </span>
+                    SPC TORNADO OUTLOOK
 
-                <span
-                  class="radar-legend-color radar-db-6">
-                </span>
+                  </strong>
 
-              </div>
+                </div>
 
 
-              <div class="radar-legend-labels">
+                <img
+                  id="spcTornadoImage"
+                  class="official-product-image"
+                  alt="Official Storm Prediction Center tornado probability outlook"
+                >
 
-                <span>
-                  LIGHT
-                </span>
 
-                <span>
-                  HEAVY
-                </span>
+                <div
+                  id="spcTornadoStatus"
+                  class="official-product-status">
+
+                  Waiting for tornado outlook.
+
+                </div>
 
               </div>
-
-            </div>
-
-
-            <!-- RADAR CONTROLS -->
-
-            <div class="radar-control-row">
-
-
-              <button
-                id="radarCenterBtn"
-                class="radar-tool-btn"
-                type="button">
-
-                RECENTER
-
-              </button>
-
-
-              <button
-                id="radarWarningsBtn"
-                class="radar-tool-btn active"
-                type="button">
-
-                WARNINGS ON
-
-              </button>
-
-
-              <button
-                id="radarRefreshBtn"
-                class="radar-tool-btn"
-                type="button">
-
-                REFRESH
-
-              </button>
-
-            </div>
-
-
-            <!-- RADAR STATUS -->
-
-            <div class="radar-footer">
-
-              <span id="radarStatus">
-
-                Radar waiting for location
-
-              </span>
-
-
-              <span id="radarTimestamp">
-
-                --
-
-              </span>
 
             </div>
 
@@ -1083,12 +1183,10 @@
               id="graphicForecastText"
               class="graphic-forecast-text">
 
-              Forecast will appear after the broadcast starts.
+              Forecast will appear after Vector starts.
 
             </div>
 
-
-            <!-- HOURLY TIMELINE -->
 
             <div
               id="forecastTimeline"
@@ -1107,7 +1205,7 @@
 
 
           <!-- ═══════════════════════════════
-               SEVERE / SPC
+               SEVERE WEATHER
           ════════════════════════════════ -->
 
           <div
@@ -1163,7 +1261,7 @@
 
 
           <!-- ═══════════════════════════════
-               CHANGES
+               WHAT CHANGED
           ════════════════════════════════ -->
 
           <div
@@ -1183,9 +1281,10 @@
               id="graphicChangesList"
               class="graphic-changes-list">
 
+
               <div class="graphic-change-item">
 
-                StormVector will begin tracking changes
+                Vector will begin tracking changes
                 after the first weather update.
 
               </div>
@@ -1196,9 +1295,7 @@
 
 
           <!-- ═══════════════════════════════
-               ALERT TAKEOVER VIEW
-
-               Hidden during normal operation.
+               ALERT DISPLAY
           ════════════════════════════════ -->
 
           <div
@@ -1227,7 +1324,7 @@
               id="graphicAlertArea"
               class="graphic-alert-area">
 
-              Selected location
+              Current location
 
             </span>
 
@@ -1248,7 +1345,7 @@
 
 
       <!-- ═════════════════════════════════════
-           CAPTIONS
+           CAPTION
       ══════════════════════════════════════ -->
 
       <div
@@ -1281,7 +1378,7 @@
           id="liveCaptionText"
           class="live-caption-text">
 
-          Choose a location to begin the StormVector broadcast.
+          Choose a location to begin.
 
         </div>
 
@@ -1289,18 +1386,17 @@
 
 
       <!-- ═════════════════════════════════════
-           CURRENT CONDITIONS CHIPS
+           CONDITIONS
       ══════════════════════════════════════ -->
 
       <div
         id="liveConditionsRow"
-        class="live-conditions-row"
-        aria-label="Current weather conditions">
+        class="live-conditions-row">
       </div>
 
 
       <!-- ═════════════════════════════════════
-           OBSERVATION SOURCE / FRESHNESS
+           OBSERVATION
       ══════════════════════════════════════ -->
 
       <div
@@ -1317,8 +1413,7 @@
 
 
         <span
-          id="liveObservationStation"
-          class="observation-station">
+          id="liveObservationStation">
 
           --
 
@@ -1326,8 +1421,7 @@
 
 
         <span
-          id="liveObservationAge"
-          class="observation-age">
+          id="liveObservationAge">
 
           --
 
@@ -1337,7 +1431,7 @@
 
 
       <!-- ═════════════════════════════════════
-           DATA FRESHNESS
+           DATA STATUS
       ══════════════════════════════════════ -->
 
       <div
@@ -1348,11 +1442,15 @@
         <div class="freshness-item">
 
           <span class="freshness-label">
+
             OBSERVATION
+
           </span>
 
           <strong id="freshnessObservation">
+
             WAITING
+
           </strong>
 
         </div>
@@ -1361,11 +1459,15 @@
         <div class="freshness-item">
 
           <span class="freshness-label">
+
             RADAR
+
           </span>
 
           <strong id="freshnessRadar">
+
             WAITING
+
           </strong>
 
         </div>
@@ -1374,11 +1476,15 @@
         <div class="freshness-item">
 
           <span class="freshness-label">
+
             FORECAST
+
           </span>
 
           <strong id="freshnessForecast">
+
             WAITING
+
           </strong>
 
         </div>
@@ -1387,11 +1493,15 @@
         <div class="freshness-item">
 
           <span class="freshness-label">
+
             ALERTS
+
           </span>
 
           <strong id="freshnessAlerts">
+
             WAITING
+
           </strong>
 
         </div>
@@ -1400,9 +1510,7 @@
 
 
       <!-- ═════════════════════════════════════
-           BROADCAST CONTROLS
-
-           NO GO LIVE BUTTON HERE.
+           CONTROLS
       ══════════════════════════════════════ -->
 
       <div
@@ -1454,7 +1562,7 @@
 
           <span class="ask-vector-kicker">
 
-            STORMVECTOR WEATHER ASSISTANT
+            WEATHER ASSISTANT
 
           </span>
 
@@ -1481,13 +1589,11 @@
 
       <p class="ask-vector-description">
 
-        Ask about the weather currently loaded into StormVector.
-        Vector will answer using the active location and weather data.
+        Ask Vector about the weather at your current
+        StormVector location.
 
       </p>
 
-
-      <!-- QUICK QUESTIONS -->
 
       <div class="ask-vector-quick-row">
 
@@ -1544,8 +1650,6 @@
       </div>
 
 
-      <!-- ASK FORM -->
-
       <form
         id="askVectorForm"
         class="ask-vector-form">
@@ -1556,7 +1660,7 @@
           class="ask-vector-input"
           type="text"
           autocomplete="off"
-          placeholder="Ask Vector about this location"
+          placeholder="Ask Vector"
         >
 
 
@@ -1564,7 +1668,7 @@
           class="ask-vector-submit"
           type="submit">
 
-          ASK VECTOR
+          ASK
 
         </button>
 
@@ -1586,7 +1690,7 @@
 
 
   <!-- ═══════════════════════════════════════════
-       WHAT CHANGED
+       CHANGES
   ════════════════════════════════════════════ -->
 
   <section class="section">
@@ -1595,7 +1699,6 @@
 
 
       <div class="weather-changes-heading">
-
 
         <span>
 
@@ -1622,8 +1725,8 @@
 
         <div class="weather-change-item">
 
-          StormVector will compare each weather update
-          with the previous one.
+          Vector will compare each weather update
+          with the previous update.
 
         </div>
 
@@ -1635,7 +1738,7 @@
 
 
   <!-- ═══════════════════════════════════════════
-       BROADCAST HISTORY
+       HISTORY
   ════════════════════════════════════════════ -->
 
   <section class="section">
@@ -1687,14 +1790,29 @@
 
 
   <!-- ═══════════════════════════════════════════
+       CREATOR BRANDING
+  ════════════════════════════════════════════ -->
+
+  <div class="bottom-logo-wrap">
+
+    <img
+      src="./bottom-logo.png"
+      alt="StormVector design branding"
+      class="bottom-logo"
+    >
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════
        FOOTER
   ════════════════════════════════════════════ -->
 
   <footer>
 
-    StormVector weather information is designed to
-    supplement, not replace, official National Weather
-    Service warnings and emergency instructions.
+    StormVector supplements, but does not replace,
+    official National Weather Service warnings
+    and emergency instructions.
 
   </footer>
 
@@ -1702,10 +1820,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     THEME MUSIC
-
-     This stays on the page so Safari can unlock it
-     directly from the user's initial button press.
+     AUDIO
 ════════════════════════════════════════════════ -->
 
 <audio
@@ -1728,20 +1843,14 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     EXISTING STORMVECTOR SHARED SCRIPT
-
-     Keep this ONLY if your current Watch Live page
-     already uses script.js for background/menu helpers.
-
-     If your current site already has this line,
-     leave it exactly as below.
+     SHARED WEATHER BACKGROUND
 ════════════════════════════════════════════════ -->
 
 <script src="script.js"></script>
 
 
 <!-- ═══════════════════════════════════════════════
-     WATCH LIVE ENGINE
+     VECTOR ENGINE
 ════════════════════════════════════════════════ -->
 
 <script src="watch-live.js"></script>
