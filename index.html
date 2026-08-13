@@ -5,9 +5,7 @@
 
   <meta charset="UTF-8">
 
-  <title>
-    StormVector — Vector
-  </title>
+  <title>StormVector</title>
 
   <meta
     name="viewport"
@@ -35,9 +33,7 @@
   >
 
 
-  <!-- ═══════════════════════════════════════
-       FONTS
-  ════════════════════════════════════════ -->
+  <!-- FONTS -->
 
   <link
     rel="preconnect"
@@ -56,9 +52,7 @@
   >
 
 
-  <!-- ═══════════════════════════════════════
-       LEAFLET
-  ════════════════════════════════════════ -->
+  <!-- LEAFLET -->
 
   <link
     rel="stylesheet"
@@ -67,9 +61,7 @@
   >
 
 
-  <!-- ═══════════════════════════════════════
-       STORMVECTOR
-  ════════════════════════════════════════ -->
+  <!-- STORMVECTOR -->
 
   <link
     rel="stylesheet"
@@ -83,7 +75,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     WEATHER BACKGROUND
+     BACKGROUND
 ════════════════════════════════════════════════ -->
 
 <canvas
@@ -105,7 +97,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     BREAKING WEATHER BANNER
+     BREAKING WEATHER
 ════════════════════════════════════════════════ -->
 
 <div
@@ -120,7 +112,7 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     SEVERE TAKEOVER
+     SEVERE WEATHER TAKEOVER
 ════════════════════════════════════════════════ -->
 
 <div
@@ -128,13 +120,11 @@
   class="severe-takeover"
   hidden>
 
-  <div class="severe-takeover-inner">
+  <div class="severe-takeover-header">
 
-    <div class="severe-takeover-kicker">
-
+    <span class="severe-takeover-kicker">
       STORMVECTOR WEATHER ALERT
-
-    </div>
+    </span>
 
     <strong
       id="severeTakeoverTitle"
@@ -144,19 +134,20 @@
 
     </strong>
 
-    <div
+    <span
       id="severeTakeoverArea"
       class="severe-takeover-area">
 
       Current location
 
-    </div>
+    </span>
+
 
     <div
       id="severeTakeoverSafety"
       class="severe-takeover-safety">
 
-      Follow National Weather Service instructions.
+      Follow National Weather Service safety instructions.
 
     </div>
 
@@ -180,6 +171,8 @@
     aria-labelledby="liveStartTitle">
 
 
+    <!-- BRAND -->
+
     <img
       src="./Vector-logo.PNG"
       alt="StormVector"
@@ -188,9 +181,7 @@
 
 
     <div class="live-start-network">
-
       STORMVECTOR WEATHER NETWORK
-
     </div>
 
 
@@ -205,14 +196,10 @@
 
     <p class="live-start-sub">
 
-      Your automated weather broadcast.
-      Use your current location or search anywhere
-      in the United States.
+      Continuous AI weather coverage for your location.
 
     </p>
 
-
-    <!-- CURRENT LOCATION -->
 
     <button
       id="liveStartBtn"
@@ -228,13 +215,11 @@
     <div class="live-start-divider">
 
       <span>
-        OR
+        OR SEARCH A LOCATION
       </span>
 
     </div>
 
-
-    <!-- SEARCH LOCATION -->
 
     <div class="live-popup-search-wrap">
 
@@ -242,7 +227,7 @@
         for="livePopupLocationSearch"
         class="live-popup-search-label">
 
-        SEARCH LOCATION
+        CITY OR LOCATION
 
       </label>
 
@@ -257,7 +242,7 @@
           autocomplete="off"
           autocapitalize="words"
           spellcheck="false"
-          placeholder="City, town, or place"
+          placeholder="Search city, town, or place"
           aria-autocomplete="list"
           aria-controls="livePopupSearchSuggestions"
           aria-expanded="false"
@@ -286,7 +271,7 @@
 
       <div
         id="livePopupSearchSuggestions"
-        class="live-search-suggestions"
+        class="live-search-suggestions live-popup-suggestions"
         role="listbox"
         hidden>
       </div>
@@ -296,9 +281,8 @@
 
     <p class="live-start-note">
 
-      When current location is enabled, Vector can
-      continue updating weather information as your
-      location changes.
+      StormVector can continuously update weather coverage
+      while your device location changes.
 
     </p>
 
@@ -309,32 +293,43 @@
 
 <!-- ═══════════════════════════════════════════════
      HEADER
-
-     NO HAMBURGER MENU
-     NO OUTLOOKS PAGE
-     NO WATCH LIVE LINK
 ════════════════════════════════════════════════ -->
 
 <header
   id="headerBar"
-  class="vector-header">
+  class="vector-main-header">
 
-  <img
-    id="vectorHeaderLogo"
-    class="vector-header-logo"
-    src="./Vector-logo.PNG"
-    alt="StormVector"
-  >
 
-  <div class="vector-header-right">
+  <div class="vector-header-brand">
 
-    <span
-      id="vectorHeaderStatus"
-      class="vector-header-status">
+    <img
+      id="vectorHeaderLogo"
+      src="./Vector-logo.PNG"
+      alt="StormVector"
+      class="vector-header-logo"
+    >
 
-      STANDBY
 
-    </span>
+    <div class="vector-header-text">
+
+      <strong>
+        STORMVECTOR
+      </strong>
+
+      <span>
+        VECTOR WEATHER NETWORK
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <div
+    id="vectorHeaderStatus"
+    class="vector-header-status">
+
+    STANDBY
 
   </div>
 
@@ -342,282 +337,478 @@
 
 
 <!-- ═══════════════════════════════════════════════
-     MAIN CONTENT
+     MAIN
 ════════════════════════════════════════════════ -->
 
 <main id="mainContent">
 
 
-  <!-- ═══════════════════════════════════════════
-       LOCATION
-  ════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════
+     LOCATION
+════════════════════════════════════════════════ -->
 
-  <section class="section">
+<section class="section live-location-section">
 
-    <div
-      id="liveLocationCard"
-      class="location-card live-location-card"
-      aria-live="polite">
-
-
-      <div class="live-location-main">
-
-        <span
-          id="liveLocationText"
-          class="live-location-text">
-
-          Location not selected
-
-        </span>
+  <div
+    id="liveLocationCard"
+    class="location-card live-location-card"
+    aria-live="polite">
 
 
-        <span
-          id="liveLocationSource"
-          class="live-location-source">
+    <div class="live-location-main">
 
-          StormVector
+      <span
+        id="liveLocationText"
+        class="live-location-text">
 
-        </span>
+        Location not selected
 
-      </div>
-
-
-      <div class="location-status-group">
-
-        <span
-          id="vectorTravelStatus"
-          class="vector-status-pill">
-
-          LOCATION OFF
-
-        </span>
+      </span>
 
 
-        <span
-          id="vectorThreatStatus"
-          class="vector-status-pill vector-threat-normal">
+      <span
+        id="liveLocationSource"
+        class="live-location-source">
 
-          NORMAL
+        StormVector
 
-        </span>
+      </span>
 
-      </div>
+    </div>
+
+
+    <button
+      id="returnToMyLocationBtn"
+      class="live-return-btn"
+      type="button"
+      onclick="returnToMyLocation()"
+      hidden>
+
+      RETURN TO MY LOCATION
+
+    </button>
+
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     LOCATION SEARCH
+════════════════════════════════════════════════ -->
+
+<section class="section">
+
+  <div class="live-search-wrap">
+
+    <label
+      for="liveLocationSearch"
+      class="live-search-label">
+
+      CHANGE COVERAGE LOCATION
+
+    </label>
+
+
+    <div class="live-search-field">
+
+      <input
+        id="liveLocationSearch"
+        class="live-location-search"
+        type="search"
+        inputmode="search"
+        autocomplete="off"
+        autocapitalize="words"
+        spellcheck="false"
+        placeholder="Search another U.S. location"
+        aria-autocomplete="list"
+        aria-controls="liveSearchSuggestions"
+        aria-expanded="false"
+      >
 
 
       <button
-        id="returnToMyLocationBtn"
-        class="live-return-btn"
+        id="liveSearchClearBtn"
+        class="live-search-clear"
         type="button"
-        onclick="returnToMyLocation()"
         hidden>
 
-        USE MY LOCATION
+        CLEAR
 
       </button>
 
     </div>
 
-  </section>
+
+    <div
+      id="liveSearchStatus"
+      class="live-search-status"
+      aria-live="polite">
+    </div>
 
 
-  <!-- ═══════════════════════════════════════════
-       LOCATION SEARCH
-  ════════════════════════════════════════════ -->
+    <div
+      id="liveSearchSuggestions"
+      class="live-search-suggestions"
+      role="listbox"
+      hidden>
+    </div>
 
-  <section class="section">
+  </div>
 
-    <div class="live-search-wrap">
-
-      <label
-        for="liveLocationSearch"
-        class="live-search-label">
-
-        CHANGE COVERAGE LOCATION
-
-      </label>
+</section>
 
 
-      <div class="live-search-field">
+<!-- ═══════════════════════════════════════════════
+     VECTOR STATUS
+════════════════════════════════════════════════ -->
 
-        <input
-          id="liveLocationSearch"
-          class="live-location-search"
-          type="search"
-          inputmode="search"
-          autocomplete="off"
-          autocapitalize="words"
-          spellcheck="false"
-          placeholder="Search another U.S. location"
-          aria-autocomplete="list"
-          aria-controls="liveSearchSuggestions"
-          aria-expanded="false"
-        >
+<section class="section">
+
+  <div class="vector-status-row">
 
 
-        <button
-          id="liveSearchClearBtn"
-          class="live-search-clear"
-          type="button"
-          hidden>
+    <div class="vector-status-pill">
 
-          CLEAR
+      <span>
+        LOCATION
+      </span>
 
-        </button>
+      <strong id="vectorTravelStatus">
+        LOCATION OFF
+      </strong>
+
+    </div>
+
+
+    <div class="vector-status-pill">
+
+      <span>
+        WEATHER THREAT
+      </span>
+
+      <strong
+        id="vectorThreatStatus"
+        class="vector-threat-normal">
+
+        NORMAL
+
+      </strong>
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     LIVE BROADCAST STAGE
+════════════════════════════════════════════════ -->
+
+<section class="section">
+
+  <div
+    id="liveStage"
+    class="live-stage">
+
+
+    <!-- TOP BAR -->
+
+    <div class="live-topbar">
+
+
+      <div
+        id="liveBadge"
+        class="live-badge">
+
+        <span class="live-dot"></span>
+
+        <span class="live-badge-text">
+          STANDBY
+        </span>
 
       </div>
 
 
-      <div
-        id="liveSearchStatus"
-        class="live-search-status"
-        aria-live="polite">
-      </div>
-
-
-      <div
-        id="liveSearchSuggestions"
-        class="live-search-suggestions"
-        role="listbox"
-        hidden>
+      <div class="live-network-label">
+        STORMVECTOR WEATHER NETWORK
       </div>
 
     </div>
 
-  </section>
+
+    <!-- BROADCAST GRID -->
+
+    <div class="live-broadcast-grid">
 
 
-  <!-- ═══════════════════════════════════════════
-       VECTOR LIVE
-  ════════════════════════════════════════════ -->
+      <!-- VECTOR -->
 
-  <section class="section">
-
-    <div
-      id="liveStage"
-      class="live-stage">
-
-
-      <!-- STATUS -->
-
-      <div class="live-topbar">
+      <div class="live-presenter-column">
 
 
         <div
-          id="liveBadge"
-          class="live-badge">
+          class="live-avatar"
+          id="liveAvatar"
+          role="img"
+          aria-label="Vector, StormVector AI meteorologist">
 
-          <span class="live-dot"></span>
 
-          <span class="live-badge-text">
+          <div
+            class="live-avatar-ring"
+            aria-hidden="true">
+          </div>
 
-            STANDBY
 
+          <div
+            class="live-avatar-core"
+            aria-hidden="true">
+
+
+            <span class="vector-core-letter">
+              V
+            </span>
+
+
+            <div class="vector-mouth">
+
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="live-name">
+
+          VECTOR
+
+          <span class="live-name-sub">
+            AI METEOROLOGIST
           </span>
 
         </div>
 
 
-        <div class="live-network-label">
+        <div class="live-crew-row">
 
-          VECTOR AUTOMATED WEATHER
+
+          <div class="live-crew-card">
+
+            <span class="live-crew-label">
+              WEATHER ENGINE
+            </span>
+
+            NWS + NOAA + SPC weather data
+
+          </div>
+
+
+          <div class="live-crew-card">
+
+            <span class="live-crew-label">
+              LIVE COVERAGE
+            </span>
+
+            Continuous location-aware weather monitoring
+
+          </div>
 
         </div>
 
       </div>
 
 
-      <!-- ═════════════════════════════════════
-           BROADCAST
-      ══════════════════════════════════════ -->
+      <!-- ═══════════════════════════════════════
+           GRAPHICS
+      ═════════════════════════════════════════ -->
 
-      <div class="live-broadcast-grid">
+      <div class="vector-graphics-panel">
 
 
-        <!-- VECTOR -->
+        <div class="vector-graphics-header">
 
-        <div class="live-presenter-column">
+
+          <div>
+
+            <span class="vector-graphic-kicker">
+              STORMVECTOR DISPLAY
+            </span>
+
+
+            <strong
+              id="vectorGraphicTitle"
+              class="vector-graphic-title">
+
+              CURRENT CONDITIONS
+
+            </strong>
+
+          </div>
 
 
           <div
-            class="live-avatar"
-            id="liveAvatar"
-            role="img"
-            aria-label="Vector, StormVector AI meteorologist">
+            id="vectorGraphicStatus"
+            class="vector-graphic-status">
 
-
-            <div
-              class="live-avatar-ring"
-              aria-hidden="true">
-            </div>
-
-
-            <div
-              class="live-avatar-core"
-              aria-hidden="true">
-
-
-              <span class="vector-core-letter">
-
-                V
-
-              </span>
-
-
-              <div class="vector-mouth">
-
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-
-              </div>
-
-            </div>
+            READY
 
           </div>
 
+        </div>
 
-          <div class="live-name">
 
-            VECTOR
+        <!-- MAIN TABS -->
 
-            <span class="live-name-sub">
+        <div
+          id="liveViewSelector"
+          class="live-view-selector"
+          role="tablist">
 
-              AI METEOROLOGIST
 
+          <button
+            class="live-view-btn active"
+            type="button"
+            data-view="conditions"
+            aria-selected="true">
+
+            NOW
+
+          </button>
+
+
+          <button
+            class="live-view-btn"
+            type="button"
+            data-view="radar"
+            aria-selected="false">
+
+            RADAR
+
+          </button>
+
+
+          <button
+            class="live-view-btn"
+            type="button"
+            data-view="forecast"
+            aria-selected="false">
+
+            FORECAST
+
+          </button>
+
+
+          <button
+            class="live-view-btn"
+            type="button"
+            data-view="spc"
+            aria-selected="false">
+
+            SEVERE
+
+          </button>
+
+
+          <button
+            class="live-view-btn"
+            type="button"
+            data-view="changes"
+            aria-selected="false">
+
+            CHANGES
+
+          </button>
+
+        </div>
+
+
+        <!-- ═══════════════════════════════════════
+             CONDITIONS
+        ═════════════════════════════════════════ -->
+
+        <div
+          id="graphicConditions"
+          class="vector-graphic-view active"
+          data-graphic="conditions">
+
+
+          <div class="graphic-temp-block">
+
+            <span class="graphic-label">
+              CURRENT TEMPERATURE
             </span>
 
+
+            <strong
+              id="graphicTemp"
+              class="graphic-temp">
+
+              --
+
+            </strong>
+
           </div>
 
 
-          <div class="live-crew-row">
+          <div class="graphic-condition-details">
 
 
-            <div class="live-crew-card">
+            <div class="graphic-detail">
 
-              <span class="live-crew-label">
-
-                WEATHER DATA
-
+              <span class="graphic-detail-label">
+                FEELS LIKE
               </span>
 
-              National Weather Service,
-              SPC and live observations
+              <strong id="graphicFeels">
+                --
+              </strong>
 
             </div>
 
 
-            <div class="live-crew-card">
+            <div class="graphic-detail">
 
-              <span class="live-crew-label">
-
-                LIVE LOCATION
-
+              <span class="graphic-detail-label">
+                DEW POINT
               </span>
 
-              Weather follows you when
-              device location is active
+              <strong id="graphicDew">
+                --
+              </strong>
+
+            </div>
+
+
+            <div class="graphic-detail">
+
+              <span class="graphic-detail-label">
+                HUMIDITY
+              </span>
+
+              <strong id="graphicHumidity">
+                --
+              </strong>
+
+            </div>
+
+
+            <div class="graphic-detail">
+
+              <span class="graphic-detail-label">
+                WIND
+              </span>
+
+              <strong id="graphicWind">
+                --
+              </strong>
 
             </div>
 
@@ -626,75 +817,25 @@
         </div>
 
 
-        <!-- ═════════════════════════════════
-             WEATHER DISPLAY
-        ══════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════
+             RADAR
+        ═════════════════════════════════════════ -->
 
-        <div class="vector-graphics-panel">
-
-
-          <!-- DISPLAY HEADER -->
-
-          <div class="vector-graphics-header">
+        <div
+          id="graphicRadar"
+          class="vector-graphic-view vector-radar-view"
+          data-graphic="radar">
 
 
-            <div>
+          <!-- RADAR PRODUCT SELECTOR -->
 
-              <span class="vector-graphic-kicker">
-
-                STORMVECTOR DISPLAY
-
-              </span>
-
-
-              <strong
-                id="vectorGraphicTitle"
-                class="vector-graphic-title">
-
-                CURRENT CONDITIONS
-
-              </strong>
-
-            </div>
-
-
-            <div
-              id="vectorGraphicStatus"
-              class="vector-graphic-status">
-
-              READY
-
-            </div>
-
-          </div>
-
-
-          <!-- MAIN DISPLAY TABS -->
-
-          <div
-            id="liveViewSelector"
-            class="live-view-selector"
-            role="tablist">
+          <div class="radar-product-selector">
 
 
             <button
-              class="live-view-btn active"
+              class="radar-product-btn active"
               type="button"
-              data-view="conditions"
-              role="tab"
-              aria-selected="true">
-
-              NOW
-
-            </button>
-
-
-            <button
-              class="live-view-btn"
-              type="button"
-              data-view="radar"
-              role="tab"
-              aria-selected="false">
+              data-radar-product="radar">
 
               RADAR
 
@@ -702,363 +843,126 @@
 
 
             <button
-              class="live-view-btn"
+              class="radar-product-btn"
               type="button"
-              data-view="forecast"
-              role="tab"
-              aria-selected="false">
+              data-radar-product="spc">
 
-              FORECAST
+              SPC OUTLOOK
 
             </button>
 
 
             <button
-              class="live-view-btn"
+              class="radar-product-btn"
               type="button"
-              data-view="spc"
-              role="tab"
-              aria-selected="false">
+              data-radar-product="tornado">
 
-              SEVERE
-
-            </button>
-
-
-            <button
-              class="live-view-btn"
-              type="button"
-              data-view="changes"
-              role="tab"
-              aria-selected="false">
-
-              CHANGES
+              TORNADO
 
             </button>
 
           </div>
 
 
-          <!-- ═══════════════════════════════
-               CURRENT CONDITIONS
-          ════════════════════════════════ -->
+          <!-- RADAR PRODUCT -->
 
           <div
-            id="graphicConditions"
-            class="vector-graphic-view active"
-            data-graphic="conditions">
+            id="radarProductRadar"
+            class="radar-product-panel active">
 
 
-            <div class="graphic-temp-block">
-
-              <span class="graphic-label">
-
-                CURRENT TEMPERATURE
-
-              </span>
+            <div class="radar-toolbar">
 
 
-              <strong
-                id="graphicTemp"
-                class="graphic-temp">
+              <div>
 
-                --
-
-              </strong>
-
-            </div>
+                <span class="graphic-label">
+                  LIVE NOAA RADAR
+                </span>
 
 
-            <div class="graphic-condition-details">
+                <span
+                  id="radarLocationLabel"
+                  class="radar-location-label">
 
-
-              <div class="graphic-detail">
-
-                <span class="graphic-detail-label">
-
-                  FEELS LIKE
+                  Selected location
 
                 </span>
 
-                <strong id="graphicFeels">
-
-                  --
-
-                </strong>
-
               </div>
 
 
-              <div class="graphic-detail">
-
-                <span class="graphic-detail-label">
-
-                  DEW POINT
-
-                </span>
-
-                <strong id="graphicDew">
-
-                  --
-
-                </strong>
-
-              </div>
-
-
-              <div class="graphic-detail">
-
-                <span class="graphic-detail-label">
-
-                  HUMIDITY
-
-                </span>
-
-                <strong id="graphicHumidity">
-
-                  --
-
-                </strong>
-
-              </div>
-
-
-              <div class="graphic-detail">
-
-                <span class="graphic-detail-label">
-
-                  WIND
-
-                </span>
-
-                <strong id="graphicWind">
-
-                  --
-
-                </strong>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- ═══════════════════════════════
-               RADAR
-          ════════════════════════════════ -->
-
-          <div
-            id="graphicRadar"
-            class="vector-graphic-view vector-radar-view"
-            data-graphic="radar">
-
-
-            <!-- RADAR PRODUCT TABS -->
-
-            <div
-              id="radarProductTabs"
-              class="radar-product-tabs">
-
-
-              <button
-                class="radar-product-btn active"
-                type="button"
-                data-radar-product="radar">
-
-                RADAR
-
-              </button>
-
-
-              <button
-                class="radar-product-btn"
-                type="button"
-                data-radar-product="spc">
-
-                SPC OUTLOOK
-
-              </button>
-
-
-              <button
-                class="radar-product-btn"
-                type="button"
-                data-radar-product="tornado">
-
-                TORNADO OUTLOOK
-
-              </button>
-
-            </div>
-
-
-            <!-- LIVE RADAR PANEL -->
-
-            <div
-              id="radarProductRadar"
-              class="radar-product-panel active">
-
-
-              <div class="radar-toolbar">
-
-
-                <div>
-
-                  <span class="graphic-label">
-
-                    LIVE NOAA RADAR
-
-                  </span>
-
-
-                  <span
-                    id="radarLocationLabel"
-                    class="radar-location-label">
-
-                    Selected location
-
-                  </span>
-
-                </div>
-
-
-                <div class="radar-toolbar-actions">
-
-
-                  <button
-                    id="radarLocalBtn"
-                    class="radar-tool-btn active"
-                    type="button">
-
-                    LOCAL
-
-                  </button>
-
-
-                  <button
-                    id="radarRegionalBtn"
-                    class="radar-tool-btn"
-                    type="button">
-
-                    REGIONAL
-
-                  </button>
-
-
-                  <button
-                    id="radarStateBtn"
-                    class="radar-tool-btn"
-                    type="button">
-
-                    STATE
-
-                  </button>
-
-                </div>
-
-              </div>
-
-
-              <div
-                id="stormVectorRadar"
-                class="stormvector-radar"
-                aria-label="StormVector weather radar">
-              </div>
-
-
-              <div
-                id="radarLegend"
-                class="radar-legend">
-
-
-                <div class="radar-legend-title">
-
-                  REFLECTIVITY
-
-                </div>
-
-
-                <div class="radar-legend-scale">
-
-                  <span class="radar-db-1"></span>
-
-                  <span class="radar-db-2"></span>
-
-                  <span class="radar-db-3"></span>
-
-                  <span class="radar-db-4"></span>
-
-                  <span class="radar-db-5"></span>
-
-                  <span class="radar-db-6"></span>
-
-                </div>
-
-
-                <div class="radar-legend-labels">
-
-                  <span>
-                    LIGHT
-                  </span>
-
-                  <span>
-                    HEAVY
-                  </span>
-
-                </div>
-
-              </div>
-
-
-              <div class="radar-control-row">
+              <div class="radar-toolbar-actions">
 
 
                 <button
-                  id="radarCenterBtn"
-                  class="radar-tool-btn"
-                  type="button">
-
-                  RECENTER
-
-                </button>
-
-
-                <button
-                  id="radarWarningsBtn"
+                  id="radarLocalBtn"
                   class="radar-tool-btn active"
                   type="button">
 
-                  WARNINGS ON
+                  LOCAL
 
                 </button>
 
 
                 <button
-                  id="radarRefreshBtn"
+                  id="radarRegionalBtn"
                   class="radar-tool-btn"
                   type="button">
 
-                  REFRESH
+                  REGIONAL
+
+                </button>
+
+
+                <button
+                  id="radarStateBtn"
+                  class="radar-tool-btn"
+                  type="button">
+
+                  STATE
 
                 </button>
 
               </div>
 
+            </div>
 
-              <div class="radar-footer">
 
-                <span id="radarStatus">
+            <div
+              id="stormVectorRadar"
+              class="stormvector-radar"
+              aria-label="StormVector NOAA weather radar">
+            </div>
 
-                  Radar waiting for location
 
+            <div class="radar-legend">
+
+              <div class="radar-legend-title">
+                REFLECTIVITY
+              </div>
+
+
+              <div class="radar-legend-scale">
+
+                <span class="radar-db-1"></span>
+                <span class="radar-db-2"></span>
+                <span class="radar-db-3"></span>
+                <span class="radar-db-4"></span>
+                <span class="radar-db-5"></span>
+                <span class="radar-db-6"></span>
+
+              </div>
+
+
+              <div class="radar-legend-labels">
+
+                <span>
+                  LIGHT
                 </span>
 
-
-                <span id="radarTimestamp">
-
-                  --
-
+                <span>
+                  HEAVY
                 </span>
 
               </div>
@@ -1066,142 +970,171 @@
             </div>
 
 
-            <!-- SPC OUTLOOK -->
-
-            <div
-              id="radarProductSpc"
-              class="radar-product-panel">
+            <div class="radar-control-row">
 
 
-              <div class="official-product-card">
+              <button
+                id="radarCenterBtn"
+                class="radar-tool-btn"
+                type="button">
+
+                RECENTER
+
+              </button>
 
 
-                <div class="official-product-header">
+              <button
+                id="radarWarningsBtn"
+                class="radar-tool-btn active"
+                type="button">
+
+                WARNINGS ON
+
+              </button>
+
+
+              <button
+                id="radarRefreshBtn"
+                class="radar-tool-btn"
+                type="button">
+
+                REFRESH
+
+              </button>
+
+            </div>
+
+
+            <div class="radar-footer">
+
+              <span id="radarStatus">
+                Radar waiting for location
+              </span>
+
+              <span id="radarTimestamp">
+                --
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- ═══════════════════════════════════════
+               SPC OUTLOOK
+          ═════════════════════════════════════════ -->
+
+          <div
+            id="radarProductSpc"
+            class="radar-product-panel">
+
+
+            <div class="sv-severe-desk">
+
+
+              <div class="sv-severe-desk-head">
+
+                <span>
+                  STORM PREDICTION CENTER
+                </span>
+
+                <strong>
+                  DAY 1 OUTLOOK
+                </strong>
+
+              </div>
+
+
+              <div class="sv-severe-hero">
+
+                <span class="sv-severe-label">
+                  CURRENT LOCATION
+                </span>
+
+
+                <strong
+                  id="spcPanelRisk"
+                  class="sv-severe-risk">
+
+                  LOADING
+
+                </strong>
+
+
+                <p
+                  id="spcPanelDescription"
+                  class="sv-severe-description">
+
+                  Vector is checking the severe weather outlook.
+
+                </p>
+
+              </div>
+
+
+              <div class="sv-severe-grid">
+
+
+                <div class="sv-severe-stat">
 
                   <span>
-
-                    NOAA / NWS
-
+                    LOCATION
                   </span>
 
-                  <strong>
-
-                    SPC DAY 1 OUTLOOK
-
+                  <strong id="spcPanelLocation">
+                    --
                   </strong>
 
                 </div>
 
 
-                <a
-  class="spc-official-link"
-  href="https://www.spc.noaa.gov/products/outlook/day1otlk.html"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  OPEN OFFICIAL SPC DAY 1 OUTLOOK
-</a>
-
-
-                <div
-                  id="spcOutlookStatus"
-                  class="official-product-status">
-
-                  Waiting for SPC outlook.
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <!-- TORNADO OUTLOOK -->
-
-            <div
-              id="radarProductTornado"
-              class="radar-product-panel">
-
-
-              <div class="official-product-card">
-
-
-                <div class="official-product-header">
+                <div class="sv-severe-stat">
 
                   <span>
-
-                    NOAA / NWS
-
+                    ACTIVE ALERTS
                   </span>
 
-                  <strong>
-
-                    SPC TORNADO OUTLOOK
-
+                  <strong id="spcPanelAlerts">
+                    --
                   </strong>
 
                 </div>
 
 
-                <a
-  class="spc-official-link"
-  href="https://www.spc.noaa.gov/products/outlook/day1otlk.html"
-  target="_blank"
-  rel="noopener noreferrer"
->
-  OPEN OFFICIAL SPC TORNADO OUTLOOK
-</a>
+                <div class="sv-severe-stat">
+
+                  <span>
+                    WIND
+                  </span>
+
+                  <strong id="spcPanelWind">
+                    --
+                  </strong>
+
+                </div>
 
 
-                <div
-                  id="spcTornadoStatus"
-                  class="official-product-status">
+                <div class="sv-severe-stat">
 
-                  Waiting for tornado outlook.
+                  <span>
+                    STATUS
+                  </span>
+
+                  <strong id="spcPanelStatus">
+                    CHECKING
+                  </strong>
 
                 </div>
 
               </div>
 
-            </div>
 
-          </div>
+              <div
+                id="spcPanelMessage"
+                class="sv-severe-message">
 
-
-          <!-- ═══════════════════════════════
-               FORECAST
-          ════════════════════════════════ -->
-
-          <div
-            id="graphicForecast"
-            class="vector-graphic-view"
-            data-graphic="forecast">
-
-
-            <span class="graphic-label">
-
-              LOCAL FORECAST
-
-            </span>
-
-
-            <div
-              id="graphicForecastText"
-              class="graphic-forecast-text">
-
-              Forecast will appear after Vector starts.
-
-            </div>
-
-
-            <div
-              id="forecastTimeline"
-              class="forecast-timeline">
-
-
-              <div class="forecast-timeline-empty">
-
-                Hourly forecast waiting for weather data.
+                Vector will interpret the SPC outlook
+                for your current location.
 
               </div>
 
@@ -1210,514 +1143,267 @@
           </div>
 
 
-          <!-- ═══════════════════════════════
-               SEVERE WEATHER
-          ════════════════════════════════ -->
+          <!-- ═══════════════════════════════════════
+               TORNADO STATUS
+          ═════════════════════════════════════════ -->
 
           <div
-            id="graphicSpc"
-            class="vector-graphic-view"
-            data-graphic="spc">
+            id="radarProductTornado"
+            class="radar-product-panel">
 
 
-            <span class="graphic-label">
-
-              STORM PREDICTION CENTER
-
-            </span>
+            <div class="sv-severe-desk sv-tornado-desk">
 
 
-            <strong
-              id="graphicSpcRisk"
-              class="graphic-spc-risk">
+              <div class="sv-severe-desk-head">
 
-              NO ORGANIZED RISK
+                <span>
+                  STORMVECTOR
+                </span>
 
-            </strong>
+                <strong>
+                  TORNADO STATUS
+                </strong>
 
-
-            <p
-              id="graphicSpcDescription"
-              class="graphic-spc-description">
-
-              Severe weather information will appear here.
-
-            </p>
+              </div>
 
 
-            <div
-              id="severeAlertSummary"
-              class="severe-alert-summary">
+              <div class="sv-tornado-status">
 
-              No active severe weather alerts loaded.
-
-            </div>
+                <span class="sv-severe-label">
+                  CURRENT LOCATION
+                </span>
 
 
-            <button
-              id="severeOpenRadarBtn"
-              class="severe-open-radar-btn"
-              type="button">
+                <strong
+                  id="tornadoPanelStatus"
+                  class="sv-tornado-risk">
 
-              OPEN RADAR
+                  NO ACTIVE TORNADO WARNING
 
-            </button>
-
-          </div>
+                </strong>
 
 
-          <!-- ═══════════════════════════════
-               WHAT CHANGED
-          ════════════════════════════════ -->
+                <p id="tornadoPanelDescription">
 
-          <div
-            id="graphicChanges"
-            class="vector-graphic-view"
-            data-graphic="changes">
+                  Vector is monitoring National Weather
+                  Service tornado alerts affecting your location.
 
+                </p>
 
-            <span class="graphic-label">
-
-              SINCE THE LAST UPDATE
-
-            </span>
+              </div>
 
 
-            <div
-              id="graphicChangesList"
-              class="graphic-changes-list">
+              <div
+                id="tornadoPanelAlert"
+                class="sv-severe-message">
 
-
-              <div class="graphic-change-item">
-
-                Vector will begin tracking changes
-                after the first weather update.
+                No tornado warning or tornado watch
+                is currently affecting this location.
 
               </div>
 
             </div>
-
-          </div>
-
-
-          <!-- ═══════════════════════════════
-               ALERT DISPLAY
-          ════════════════════════════════ -->
-
-          <div
-            id="graphicAlert"
-            class="vector-graphic-view graphic-alert-view"
-            data-graphic="alert">
-
-
-            <span class="graphic-alert-kicker">
-
-              STORMVECTOR WEATHER ALERT
-
-            </span>
-
-
-            <strong
-              id="graphicAlertTitle"
-              class="graphic-alert-title">
-
-              WEATHER ALERT
-
-            </strong>
-
-
-            <span
-              id="graphicAlertArea"
-              class="graphic-alert-area">
-
-              Current location
-
-            </span>
-
-
-            <p
-              id="graphicAlertInstruction"
-              class="graphic-alert-instruction">
-
-              Follow official National Weather Service instructions.
-
-            </p>
 
           </div>
 
         </div>
 
-      </div>
+
+        <!-- ═══════════════════════════════════════
+             FORECAST
+        ═════════════════════════════════════════ -->
+
+        <div
+          id="graphicForecast"
+          class="vector-graphic-view"
+          data-graphic="forecast">
 
 
-      <!-- ═════════════════════════════════════
-           CAPTION
-      ══════════════════════════════════════ -->
-
-      <div
-        class="live-caption-box"
-        id="liveCaptionBox"
-        aria-live="polite">
-
-
-        <div class="live-caption-head">
-
-          <span>
-
-            VECTOR
-
+          <span class="graphic-label">
+            LOCAL FORECAST
           </span>
+
+
+          <div
+            id="graphicForecastText"
+            class="graphic-forecast-text">
+
+            Forecast will appear after Vector starts.
+
+          </div>
+
+
+          <div
+            id="forecastTimeline"
+            class="forecast-timeline">
+
+
+            <div class="forecast-timeline-empty">
+
+              Hourly forecast waiting for weather data.
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ═══════════════════════════════════════
+             SEVERE
+        ═════════════════════════════════════════ -->
+
+        <div
+          id="graphicSpc"
+          class="vector-graphic-view"
+          data-graphic="spc">
+
+
+          <span class="graphic-label">
+            STORM PREDICTION CENTER
+          </span>
+
+
+          <strong
+            id="graphicSpcRisk"
+            class="graphic-spc-risk">
+
+            NO ORGANIZED RISK
+
+          </strong>
+
+
+          <p
+            id="graphicSpcDescription"
+            class="graphic-spc-description">
+
+            Severe weather information will appear here.
+
+          </p>
+
+
+          <div
+            id="severeAlertSummary"
+            class="severe-alert-summary">
+
+            No active severe weather alerts loaded.
+
+          </div>
+
+
+          <button
+            id="severeOpenRadarBtn"
+            class="severe-open-radar-btn"
+            type="button">
+
+            OPEN RADAR
+
+          </button>
+
+        </div>
+
+
+        <!-- ═══════════════════════════════════════
+             CHANGES
+        ═════════════════════════════════════════ -->
+
+        <div
+          id="graphicChanges"
+          class="vector-graphic-view"
+          data-graphic="changes">
+
+
+          <span class="graphic-label">
+            SINCE THE LAST UPDATE
+          </span>
+
+
+          <div
+            id="graphicChangesList"
+            class="graphic-changes-list">
+
+
+            <div class="graphic-change-item">
+
+              StormVector will begin tracking weather
+              changes after the first update.
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <!-- ALERT VIEW -->
+
+        <div
+          id="graphicAlert"
+          class="vector-graphic-view graphic-alert-view"
+          data-graphic="alert">
+
+
+          <span class="graphic-alert-kicker">
+            STORMVECTOR WEATHER ALERT
+          </span>
+
+
+          <strong
+            id="graphicAlertTitle"
+            class="graphic-alert-title">
+
+            WEATHER ALERT
+
+          </strong>
 
 
           <span
-            id="liveCaptionTopic"
-            class="live-caption-topic">
+            id="graphicAlertArea"
+            class="graphic-alert-area">
 
-            STANDBY
-
-          </span>
-
-        </div>
-
-
-        <div
-          id="liveCaptionText"
-          class="live-caption-text">
-
-          Choose a location to begin.
-
-        </div>
-
-      </div>
-
-
-      <!-- ═════════════════════════════════════
-           CONDITIONS
-      ══════════════════════════════════════ -->
-
-      <div
-        id="liveConditionsRow"
-        class="live-conditions-row">
-      </div>
-
-
-      <!-- ═════════════════════════════════════
-           OBSERVATION
-      ══════════════════════════════════════ -->
-
-      <div
-        id="liveObservationInfo"
-        class="live-observation-info"
-        hidden>
-
-
-        <span class="observation-label">
-
-          OBSERVATION
-
-        </span>
-
-
-        <span
-          id="liveObservationStation">
-
-          --
-
-        </span>
-
-
-        <span
-          id="liveObservationAge">
-
-          --
-
-        </span>
-
-      </div>
-
-
-      <!-- ═════════════════════════════════════
-           DATA STATUS
-      ══════════════════════════════════════ -->
-
-      <div
-        id="liveFreshnessBar"
-        class="live-freshness-bar">
-
-
-        <div class="freshness-item">
-
-          <span class="freshness-label">
-
-            OBSERVATION
+            Current location
 
           </span>
 
-          <strong id="freshnessObservation">
 
-            WAITING
+          <p
+            id="graphicAlertInstruction"
+            class="graphic-alert-instruction">
 
-          </strong>
+            Follow official National Weather Service instructions.
 
-        </div>
-
-
-        <div class="freshness-item">
-
-          <span class="freshness-label">
-
-            RADAR
-
-          </span>
-
-          <strong id="freshnessRadar">
-
-            WAITING
-
-          </strong>
+          </p>
 
         </div>
-
-
-        <div class="freshness-item">
-
-          <span class="freshness-label">
-
-            FORECAST
-
-          </span>
-
-          <strong id="freshnessForecast">
-
-            WAITING
-
-          </strong>
-
-        </div>
-
-
-        <div class="freshness-item">
-
-          <span class="freshness-label">
-
-            ALERTS
-
-          </span>
-
-          <strong id="freshnessAlerts">
-
-            WAITING
-
-          </strong>
-
-        </div>
-
-      </div>
-
-
-      <!-- ═════════════════════════════════════
-           CONTROLS
-      ══════════════════════════════════════ -->
-
-      <div
-        class="live-controls"
-        id="liveControls">
-
-
-        <button
-          id="liveReplayBtn"
-          class="live-ctrl-btn"
-          type="button"
-          onclick="replaySegment()">
-
-          REPLAY LAST
-
-        </button>
-
-
-        <button
-          id="liveMuteBtn"
-          class="live-ctrl-btn"
-          type="button"
-          onclick="toggleMute()">
-
-          STOP
-
-        </button>
 
       </div>
 
     </div>
 
-  </section>
 
+    <!-- ═══════════════════════════════════════
+         CAPTIONS
+    ═════════════════════════════════════════ -->
 
-  <!-- ═══════════════════════════════════════════
-       ASK VECTOR
-  ════════════════════════════════════════════ -->
+    <div
+      class="live-caption-box"
+      id="liveCaptionBox"
+      aria-live="polite">
 
-  <section class="section">
 
-    <div class="ask-vector-card">
-
-
-      <div class="ask-vector-heading">
-
-
-        <div>
-
-          <span class="ask-vector-kicker">
-
-            WEATHER ASSISTANT
-
-          </span>
-
-
-          <h2>
-
-            ASK VECTOR
-
-          </h2>
-
-        </div>
-
-
-        <span
-          id="askVectorLocation"
-          class="ask-vector-location">
-
-          No location selected
-
-        </span>
-
-      </div>
-
-
-      <p class="ask-vector-description">
-
-        Ask Vector about the weather at your current
-        StormVector location.
-
-      </p>
-
-
-      <div class="ask-vector-quick-row">
-
-
-        <button
-          class="ask-vector-quick"
-          type="button"
-          data-question="Will it rain tonight?">
-
-          RAIN TONIGHT?
-
-        </button>
-
-
-        <button
-          class="ask-vector-quick"
-          type="button"
-          data-question="How windy will it be?">
-
-          HOW WINDY?
-
-        </button>
-
-
-        <button
-          class="ask-vector-quick"
-          type="button"
-          data-question="What is the severe weather threat?">
-
-          SEVERE THREAT?
-
-        </button>
-
-
-        <button
-          class="ask-vector-quick"
-          type="button"
-          data-question="What changed since the last update?">
-
-          WHAT CHANGED?
-
-        </button>
-
-
-        <button
-          class="ask-vector-quick"
-          type="button"
-          data-question="What does the radar show?">
-
-          RADAR?
-
-        </button>
-
-      </div>
-
-
-      <form
-        id="askVectorForm"
-        class="ask-vector-form">
-
-
-        <input
-          id="askVectorInput"
-          class="ask-vector-input"
-          type="text"
-          autocomplete="off"
-          placeholder="Ask Vector"
-        >
-
-
-        <button
-          class="ask-vector-submit"
-          type="submit">
-
-          ASK
-
-        </button>
-
-      </form>
-
-
-      <div
-        id="askVectorAnswer"
-        class="ask-vector-answer"
-        aria-live="polite">
-
-        Vector's answer will appear here.
-
-      </div>
-
-    </div>
-
-  </section>
-
-
-  <!-- ═══════════════════════════════════════════
-       CHANGES
-  ════════════════════════════════════════════ -->
-
-  <section class="section">
-
-    <div class="weather-changes-card">
-
-
-      <div class="weather-changes-heading">
+      <div class="live-caption-head">
 
         <span>
-
-          WHAT CHANGED
-
+          VECTOR
         </span>
 
 
         <span
-          id="weatherChangesTime"
-          class="weather-changes-time">
+          id="liveCaptionTopic"
+          class="live-caption-topic">
 
-          Waiting for first update
+          STANDBY
 
         </span>
 
@@ -1725,109 +1411,413 @@
 
 
       <div
-        id="weatherChangesList"
-        class="weather-changes-list">
+        id="liveCaptionText"
+        class="live-caption-text">
 
-
-        <div class="weather-change-item">
-
-          Vector will compare each weather update
-          with the previous update.
-
-        </div>
+        Choose a location to begin StormVector.
 
       </div>
 
     </div>
 
-  </section>
+
+    <!-- CURRENT CONDITIONS -->
+
+    <div
+      id="liveConditionsRow"
+      class="live-conditions-row">
+    </div>
 
 
-  <!-- ═══════════════════════════════════════════
-       HISTORY
-  ════════════════════════════════════════════ -->
+    <!-- OBSERVATION -->
 
-  <section class="section">
+    <div
+      id="liveObservationInfo"
+      class="live-observation-info"
+      hidden>
 
-    <div class="broadcast-history-card">
+
+      <span class="observation-label">
+        OBSERVATION
+      </span>
+
+
+      <span
+        id="liveObservationStation"
+        class="observation-station">
+
+        --
+
+      </span>
+
+
+      <span
+        id="liveObservationAge"
+        class="observation-age">
+
+        --
+
+      </span>
+
+    </div>
+
+
+    <!-- FRESHNESS -->
+
+    <div
+      id="liveFreshnessBar"
+      class="live-freshness-bar">
+
+
+      <div class="freshness-item">
+
+        <span class="freshness-label">
+          OBSERVATION
+        </span>
+
+        <strong id="freshnessObservation">
+          WAITING
+        </strong>
+
+      </div>
+
+
+      <div class="freshness-item">
+
+        <span class="freshness-label">
+          RADAR
+        </span>
+
+        <strong id="freshnessRadar">
+          WAITING
+        </strong>
+
+      </div>
+
+
+      <div class="freshness-item">
+
+        <span class="freshness-label">
+          FORECAST
+        </span>
+
+        <strong id="freshnessForecast">
+          WAITING
+        </strong>
+
+      </div>
+
+
+      <div class="freshness-item">
+
+        <span class="freshness-label">
+          ALERTS
+        </span>
+
+        <strong id="freshnessAlerts">
+          WAITING
+        </strong>
+
+      </div>
+
+    </div>
+
+
+    <!-- CONTROLS -->
+
+    <div
+      class="live-controls"
+      id="liveControls">
 
 
       <button
-        id="broadcastHistoryToggle"
-        class="broadcast-history-toggle"
-        type="button">
+        id="liveReplayBtn"
+        class="live-ctrl-btn"
+        type="button"
+        onclick="replaySegment()">
 
-        <span>
-
-          BROADCAST HISTORY
-
-        </span>
-
-
-        <span
-          id="broadcastHistoryChevron">
-
-          +
-
-        </span>
+        REPLAY LAST
 
       </button>
 
 
-      <div
-        id="broadcastHistoryBody"
-        class="broadcast-history-body"
-        hidden>
+      <button
+        id="liveMuteBtn"
+        class="live-ctrl-btn"
+        type="button"
+        onclick="toggleMute()">
+
+        STOP
+
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
 
 
-        <div
-          id="broadcastHistoryList"
-          class="broadcast-history-list">
+<!-- ═══════════════════════════════════════════════
+     ASK VECTOR
+════════════════════════════════════════════════ -->
 
-          No broadcast history yet.
+<section class="section">
 
-        </div>
+  <div class="ask-vector-card">
+
+
+    <div class="ask-vector-heading">
+
+
+      <div>
+
+        <span class="ask-vector-kicker">
+          STORMVECTOR WEATHER ASSISTANT
+        </span>
+
+        <h2>
+          ASK VECTOR
+        </h2>
+
+      </div>
+
+
+      <span
+        id="askVectorLocation"
+        class="ask-vector-location">
+
+        No location selected
+
+      </span>
+
+    </div>
+
+
+    <p class="ask-vector-description">
+
+      Ask Vector about the weather currently loaded
+      for your location.
+
+    </p>
+
+
+    <div class="ask-vector-quick-row">
+
+
+      <button
+        class="ask-vector-quick"
+        type="button"
+        data-question="Will it rain tonight?">
+
+        RAIN TONIGHT?
+
+      </button>
+
+
+      <button
+        class="ask-vector-quick"
+        type="button"
+        data-question="How windy will it be?">
+
+        HOW WINDY?
+
+      </button>
+
+
+      <button
+        class="ask-vector-quick"
+        type="button"
+        data-question="What is the severe weather threat?">
+
+        SEVERE THREAT?
+
+      </button>
+
+
+      <button
+        class="ask-vector-quick"
+        type="button"
+        data-question="What changed since the last update?">
+
+        WHAT CHANGED?
+
+      </button>
+
+
+      <button
+        class="ask-vector-quick"
+        type="button"
+        data-question="What does the radar show?">
+
+        RADAR?
+
+      </button>
+
+    </div>
+
+
+    <form
+      id="askVectorForm"
+      class="ask-vector-form">
+
+
+      <input
+        id="askVectorInput"
+        class="ask-vector-input"
+        type="text"
+        autocomplete="off"
+        placeholder="Ask Vector about this location"
+      >
+
+
+      <button
+        class="ask-vector-submit"
+        type="submit">
+
+        ASK VECTOR
+
+      </button>
+
+    </form>
+
+
+    <div
+      id="askVectorAnswer"
+      class="ask-vector-answer"
+      aria-live="polite">
+
+      Vector's answer will appear here.
+
+    </div>
+
+  </div>
+
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
+     WHAT CHANGED
+════════════════════════════════════════════════ -->
+
+<section class="section">
+
+  <div class="weather-changes-card">
+
+
+    <div class="weather-changes-heading">
+
+      <span>
+        WHAT CHANGED
+      </span>
+
+
+      <span
+        id="weatherChangesTime"
+        class="weather-changes-time">
+
+        Waiting for first update
+
+      </span>
+
+    </div>
+
+
+    <div
+      id="weatherChangesList"
+      class="weather-changes-list">
+
+
+      <div class="weather-change-item">
+
+        StormVector will compare each weather update
+        with the previous one.
 
       </div>
 
     </div>
 
-  </section>
+  </div>
+
+</section>
 
 
-  <!-- ═══════════════════════════════════════════
-       CREATOR BRANDING
-  ════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════
+     HISTORY
+════════════════════════════════════════════════ -->
 
-  <div class="bottom-logo-wrap">
+<section class="section">
 
-    <img
-      src="./bottom-logo.PNG"
-      alt="StormVector design branding"
-      class="bottom-logo"
-    >
+  <div class="broadcast-history-card">
+
+
+    <button
+      id="broadcastHistoryToggle"
+      class="broadcast-history-toggle"
+      type="button">
+
+
+      <span>
+        BROADCAST HISTORY
+      </span>
+
+
+      <span id="broadcastHistoryChevron">
+        +
+      </span>
+
+    </button>
+
+
+    <div
+      id="broadcastHistoryBody"
+      class="broadcast-history-body"
+      hidden>
+
+
+      <div
+        id="broadcastHistoryList"
+        class="broadcast-history-list">
+
+        No broadcast history yet.
+
+      </div>
+
+    </div>
 
   </div>
 
+</section>
 
-  <!-- ═══════════════════════════════════════════
-       FOOTER
-  ════════════════════════════════════════════ -->
 
-  <footer>
+<!-- ═══════════════════════════════════════════════
+     BRANDING
+════════════════════════════════════════════════ -->
 
-    StormVector supplements, but does not replace,
-    official National Weather Service warnings
-    and emergency instructions.
+<div class="bottom-logo-wrap">
 
-  </footer>
+  <img
+    src="./bottom-logo.PNG"
+    alt="StormVector design branding"
+    class="bottom-logo"
+  >
+
+</div>
+
+
+<footer>
+
+  StormVector supplements, but does not replace,
+  official National Weather Service warnings
+  and emergency instructions.
+
+</footer>
+
 
 </main>
 
 
-<!-- ═══════════════════════════════════════════════
-     AUDIO
-════════════════════════════════════════════════ -->
+<!-- MUSIC -->
 
 <audio
   id="liveMusic"
@@ -1838,9 +1828,7 @@
 </audio>
 
 
-<!-- ═══════════════════════════════════════════════
-     LEAFLET
-════════════════════════════════════════════════ -->
+<!-- LEAFLET -->
 
 <script
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
@@ -1848,16 +1836,7 @@
 </script>
 
 
-<!-- ═══════════════════════════════════════════════
-     SHARED WEATHER BACKGROUND
-════════════════════════════════════════════════ -->
-
-<script src="script.js"></script>
-
-
-<!-- ═══════════════════════════════════════════════
-     VECTOR ENGINE
-════════════════════════════════════════════════ -->
+<!-- STORMVECTOR ENGINE -->
 
 <script src="watch-live.js"></script>
 
