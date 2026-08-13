@@ -7158,4 +7158,48 @@ body.weather-theme-critical
 
   }
 
+/* ══════════════════════════════════════════════
+   OFFICIAL SPC LINKS
+══════════════════════════════════════════════ */
+
+body.watch-live-page .spc-official-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 64px;
+  width: 100%;
+
+  margin-top: 14px;
+  padding: 14px 18px;
+
+  border: 1px solid rgba(0,207,255,.28);
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(0,207,255,.10),
+      rgba(5,18,38,.82)
+    );
+
+  color: #bfefff;
+
+  text-decoration: none;
+
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 1px;
+
+  cursor: pointer;
+
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+body.watch-live-page .spc-official-link:active {
+  transform: scale(.98);
+
+  background:
+    rgba(0,207,255,.16);
 }
