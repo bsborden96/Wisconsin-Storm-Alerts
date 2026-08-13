@@ -7839,3 +7839,73 @@ body.watch-live-page.weather-theme-critical .live-avatar.speaking::before {
   }
 
 }
+/* ══════════════════════════════════════════════
+   HOMEPAGE BUTTON CLICK FIX
+   Keeps decorative layers from blocking taps
+══════════════════════════════════════════════ */
+
+
+/* Background canvas must never catch clicks */
+#bgCanvas {
+  pointer-events: none !important;
+}
+
+
+/* Decorative ticker fades must never catch clicks */
+.ticker-wrap::before,
+.ticker-wrap::after {
+  pointer-events: none !important;
+}
+
+
+/* Closed ticker overflow must not block the page */
+#tickerOverflowPortal {
+  pointer-events: none;
+}
+
+
+/* Only allow clicks when the ticker overflow is actually open */
+#tickerOverflowPortal.open {
+  pointer-events: auto;
+}
+
+
+/* Make main interactive elements explicitly clickable */
+.menu-btn,
+.menu-panel,
+.menu-panel a,
+.search-input,
+.search-clear-btn,
+.search-suggestions,
+.search-suggestions div,
+.risk-box,
+.weather-card,
+.alert-card,
+.area-link,
+button,
+a {
+  pointer-events: auto;
+}
+
+
+/* Keep homepage content above background effects */
+#mainContent,
+.section,
+.search-wrap,
+.location-card,
+.risk-box,
+.weather-grid,
+.alerts-container {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* Ensure menu always sits above normal page content */
+.menu-btn {
+  z-index: 1001;
+}
+
+.menu-panel {
+  z-index: 1002;
+}
