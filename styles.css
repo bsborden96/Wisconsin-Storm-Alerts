@@ -847,10 +847,10 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 
 .ticker-wrap {
   position:
-    sticky;
+    relative;
 
   top:
-    var(--header-h);
+    auto;
 
   width:
     100%;
@@ -1160,12 +1160,10 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
     rgba(5,10,22,.99);
 
   border:
-    1px solid
-    rgba(255,80,80,.35);
+  0;
 
-  border-top:
-    2px solid
-    rgba(255,80,80,.5);
+visibility:
+  hidden;
 
   border-radius:
     0 0 var(--radius-md) var(--radius-md);
@@ -1201,6 +1199,17 @@ body > *:not(#bgCanvas):not(#popup):not(#sirenBanner) {
 
   pointer-events:
     auto;
+
+  visibility:
+    visible;
+
+  border:
+    1px solid
+    rgba(255,80,80,.35);
+
+  border-top:
+    2px solid
+    rgba(255,80,80,.5);
 }
 
 .ticker-overflow-inner {
