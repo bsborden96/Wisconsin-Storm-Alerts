@@ -3519,10 +3519,10 @@ function installStormVectorUiStyles() {
       align-items: center;
       justify-content: center;
       gap: 14px;
-      border: 1px solid rgba(0,207,255,.24);
+      border: 1px solid rgba(215,92,255,.30);
       border-radius: 18px;
       background:
-        radial-gradient(circle at 50% 0, rgba(0,207,255,.12), transparent 55%),
+        radial-gradient(circle at 50% 0, rgba(215,92,255,.15), transparent 55%),
         rgba(3,12,26,.78);
       box-shadow:
         0 12px 38px rgba(0,0,0,.28),
@@ -3536,8 +3536,8 @@ function installStormVectorUiStyles() {
       width: clamp(92px, 24vw, 155px);
       height: auto;
       filter:
-        drop-shadow(0 0 14px rgba(0,207,255,.48))
-        drop-shadow(0 0 28px rgba(0,100,255,.16));
+        drop-shadow(0 0 14px rgba(215,92,255,.48))
+        drop-shadow(0 0 28px rgba(126,72,255,.18));
     }
 
     .sv-persistent-brand-copy {
@@ -3551,14 +3551,14 @@ function installStormVectorUiStyles() {
       font-size: clamp(24px, 6vw, 40px);
       line-height: .95;
       letter-spacing: 2px;
-      color: #eafaff;
+      color: #fff4ff;
       text-shadow: 0 0 18px rgba(0,207,255,.28);
     }
 
     .sv-persistent-brand-copy span {
       display: block;
       margin-top: 5px;
-      color: #7ecfff;
+      color: #ef8cff;
       font-size: clamp(8px, 2.4vw, 11px);
       letter-spacing: 1.6px;
     }
@@ -3568,7 +3568,7 @@ function installStormVectorUiStyles() {
       text-align: left;
       background:
         linear-gradient(150deg, rgba(4,14,30,.97), rgba(4,9,20,.94));
-      border: 1px solid rgba(0,207,255,.18);
+      border: 1px solid rgba(215,92,255,.22);
       border-radius: 14px;
     }
 
@@ -3583,7 +3583,7 @@ function installStormVectorUiStyles() {
     .sv-spc-map-head strong {
       display: block;
       margin-top: 2px;
-      color: #eafaff;
+      color: #fff4ff;
       font-family: var(--font-display, sans-serif);
       font-size: clamp(18px, 4.5vw, 26px);
       letter-spacing: 1px;
@@ -3610,8 +3610,8 @@ function installStormVectorUiStyles() {
       height: clamp(360px, 58vw, 590px);
       overflow: hidden;
       border-radius: 10px;
-      border: 1px solid rgba(0,207,255,.18);
-      background: #06101a;
+      border: 1px solid rgba(215,92,255,.22);
+      background: #100617;
     }
 
     .sv-spc-location-readout {
@@ -3622,8 +3622,8 @@ function installStormVectorUiStyles() {
       margin-top: 8px;
       padding: 10px 11px;
       border-radius: 9px;
-      border: 1px solid rgba(0,207,255,.12);
-      background: rgba(0,207,255,.04);
+      border: 1px solid rgba(215,92,255,.15);
+      background: rgba(215,92,255,.05);
     }
 
     .sv-spc-location-readout span {
@@ -3718,7 +3718,7 @@ function installPersistentBranding() {
 
     <div class="sv-persistent-brand-copy">
       <strong>STORMVECTOR</strong>
-      <span>VECTOR AI WEATHER NETWORK</span>
+      <span>LIVE WEATHER INTELLIGENCE</span>
     </div>
   `;
 
