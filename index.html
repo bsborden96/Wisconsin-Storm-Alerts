@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20260924-6"
+    href="styles.css?v=20260924-7"
   >
 
 </head>
@@ -169,37 +169,6 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="liveStartTitle">
-
-
-    <!-- BRAND -->
-
-    <img
-      src="./Vector-logo.PNG"
-      alt="StormVector"
-      class="live-start-logo"
-    >
-
-
-    <div class="live-start-network">
-      STORMVECTOR // LIVE WEATHER
-    </div>
-
-
-    <h1
-      id="liveStartTitle"
-      class="live-start-title">
-
-      VECTOR
-
-    </h1>
-
-
-    <p class="live-start-sub">
-
-      Continuous weather intelligence for wherever you are.
-
-    </p>
-
 
     <button
       id="liveStartBtn"
@@ -377,81 +346,16 @@
     </div>
 
 
-    <button
-      id="returnToMyLocationBtn"
-      class="live-return-btn"
-      type="button"
-      onclick="returnToMyLocation()"
-      hidden>
-
-      RETURN TO MY LOCATION
-
-    </button>
-
-  </div>
-
-</section>
-
-
-<!-- ═══════════════════════════════════════════════
-     LOCATION SEARCH
-════════════════════════════════════════════════ -->
-
-<section class="section">
-
-  <div class="live-search-wrap">
-
-    <label
-      for="liveLocationSearch"
-      class="live-search-label">
-
-      CHANGE COVERAGE LOCATION
-
-    </label>
-
-
-    <div class="live-search-field">
-
-      <input
-        id="liveLocationSearch"
-        class="live-location-search"
-        type="search"
-        inputmode="search"
-        autocomplete="off"
-        autocapitalize="words"
-        spellcheck="false"
-        placeholder="Search another U.S. location"
-        aria-autocomplete="list"
-        aria-controls="liveSearchSuggestions"
-        aria-expanded="false"
-      >
-
-
+    <div class="live-location-actions">
+      <button id="changeLocationBtn" class="live-return-btn" type="button">CHANGE LOCATION</button>
       <button
-        id="liveSearchClearBtn"
-        class="live-search-clear"
+        id="returnToMyLocationBtn"
+        class="live-return-btn"
         type="button"
+        onclick="returnToMyLocation()"
         hidden>
-
-        CLEAR
-
+        RETURN TO MY LOCATION
       </button>
-
-    </div>
-
-
-    <div
-      id="liveSearchStatus"
-      class="live-search-status"
-      aria-live="polite">
-    </div>
-
-
-    <div
-      id="liveSearchSuggestions"
-      class="live-search-suggestions"
-      role="listbox"
-      hidden>
     </div>
 
   </div>
@@ -1743,7 +1647,7 @@
 
 <!-- STORMVECTOR ENGINE -->
 
-<script src="watch-live.js?v=20260924-6"></script>
+<script src="watch-live.js?v=20260924-7"></script>
 
 
 </body>
