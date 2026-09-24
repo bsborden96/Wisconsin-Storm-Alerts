@@ -7324,3 +7324,38 @@ body.sv-radar-open{overflow:hidden}
 .sv-radar-fullscreen .stormvector-radar{height:calc(100dvh - 220px)!important;min-height:420px!important;border-radius:12px}
 .sv-radar-close{display:block;width:100%;min-height:44px;margin:0 0 10px;border:1px solid rgba(126,87,194,.28);border-radius:10px;background:#171820;color:#d7cbea;font-family:var(--font-display);font-size:14px;letter-spacing:.08em}
 @media(max-width:600px){.sv-feature-card{padding:13px}.sv-storm-timeline{grid-template-columns:repeat(2,1fr)}.sv-severe-center-grid{grid-template-columns:1fr}.sv-feature-head{align-items:flex-start}.sv-feature-status{font-size:6px}.sv-radar-fullscreen .stormvector-radar{height:calc(100dvh - 250px)!important;min-height:360px!important}}
+
+
+/* ═══ STORMVECTOR // MOBILE POLISH v7 ═══ */
+.live-start-overlay{padding:max(18px,env(safe-area-inset-top)) 18px max(18px,env(safe-area-inset-bottom))!important;background:rgba(5,5,9,.72)!important;backdrop-filter:blur(18px)!important;-webkit-backdrop-filter:blur(18px)!important;transition:opacity .18s ease,visibility .18s ease!important}
+.live-start-overlay.is-hidden{opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.live-start-inner{width:min(430px,calc(100vw - 36px))!important;padding:24px 20px!important;border:1px solid rgba(91,33,182,.42)!important;border-radius:20px!important;background:linear-gradient(160deg,#15131c,#0b0b10)!important;box-shadow:0 28px 90px rgba(0,0,0,.68),0 0 45px rgba(91,33,182,.10)!important}
+.live-start-btn{margin-top:0!important}
+.live-start-divider{margin:18px 0!important}
+.live-start-divider span{background:#111018!important;color:#8d909b!important}
+.live-start-note{margin:15px 4px 0!important;color:#777985!important}
+.live-popup-search-label{color:#9b83d1!important}
+.live-popup-search-wrap .live-location-search{border-color:rgba(91,33,182,.30)!important;background:#09090d!important;color:#f5f5f7!important}
+.vector-main-header{height:64px!important;padding:0 14px!important;background:rgba(8,8,12,.96)!important;border-bottom:1px solid rgba(91,33,182,.18)!important}
+.vector-header-brand{min-width:0!important;gap:10px!important}
+.vector-header-logo{width:42px!important;height:42px!important;max-width:42px!important;object-fit:contain!important;border-radius:8px!important}
+.vector-header-text{min-width:0!important}
+.vector-header-text strong{font-size:18px!important;letter-spacing:.10em!important;white-space:nowrap!important}
+.vector-header-text span{display:block!important;margin-top:2px!important;font-size:6px!important;letter-spacing:.12em!important;color:#8d909b!important}
+.vector-header-status{min-height:26px!important;padding:5px 8px!important;font-size:7px!important}
+#mainContent{padding-top:74px!important}
+#stormVectorPersistentBrand{display:none!important}
+.live-location-card{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important}
+.live-location-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.live-location-actions .live-return-btn{margin:0!important;white-space:nowrap!important}
+@media(max-width:600px){
+ .vector-main-header{height:58px!important;padding:0 10px!important}
+ .vector-header-logo{width:36px!important;height:36px!important;max-width:36px!important}
+ .vector-header-text strong{font-size:14px!important;letter-spacing:.08em!important}
+ .vector-header-text span{font-size:5px!important}
+ .vector-header-status{font-size:6px!important;padding:4px 7px!important}
+ #mainContent{padding-top:68px!important}
+ .live-location-card{align-items:flex-start!important}
+ .live-location-actions{max-width:46%}
+ .live-location-actions .live-return-btn{font-size:7px!important;padding:7px 8px!important}
+}
