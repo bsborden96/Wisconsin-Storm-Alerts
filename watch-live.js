@@ -1177,10 +1177,10 @@ async function selectSearchedLocation(result) {
 
     if (!liveStarted) {
       liveStarted = true;
-      hideStartOverlay();
       startMusic();
       startTimers();
     }
+    hideStartOverlay();
 
     if (!liveMuted) {
       await speakStandalone(`Switching StormVector coverage to ${liveCityState}.`);
@@ -3899,7 +3899,7 @@ document.addEventListener('DOMContentLoaded',() => {
   bindRadarProductTabs();
   bindRadarControls();
   bindStormVectorFeatureControls();
-  document.getElementById('changeLocationBtn')?.addEventListener('click',showLocationOverlay);
+
   bindHistory();
 
   const startButton = document.getElementById('liveStartBtn');
