@@ -3313,15 +3313,16 @@ function toggleMute() {
 
 function hideStartOverlay() {
   const overlay = document.getElementById('liveStartOverlay');
-  if (overlay) {
-    overlay.classList.add('is-hidden');
-    overlay.setAttribute('aria-hidden','true');
-  }
+  if (!overlay) return;
+  overlay.classList.add('is-hidden');
+  overlay.setAttribute('aria-hidden','true');
+  overlay.hidden = true;
 }
 
 function showLocationOverlay() {
   const overlay = document.getElementById('liveStartOverlay');
   if (!overlay) return;
+  overlay.hidden = false;
   overlay.classList.remove('is-hidden');
   overlay.removeAttribute('aria-hidden');
   setTimeout(() => document.getElementById('livePopupLocationSearch')?.focus(),120);
