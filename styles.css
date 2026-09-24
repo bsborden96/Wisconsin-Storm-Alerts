@@ -7566,3 +7566,30 @@ body.sv-radar-open{overflow:hidden}
  .vector-status-row{gap:6px!important}
  .vector-status-pill{padding:7px 9px!important}
 }
+
+
+/* ═══ STORMVECTOR // HEADER LOGO SCALE v11 ═══ */
+.vector-main-header{height:96px!important;padding:0 8px!important}
+.vector-header-brand{height:100%!important;overflow:visible!important}
+.vector-header-logo-crop{
+  width:310px!important;
+  height:92px!important;
+  flex:0 0 310px!important;
+  overflow:hidden!important;
+}
+.vector-header-logo{
+  width:310px!important;
+  max-width:none!important;
+  left:0!important;
+  top:50%!important;
+  transform:translateY(-50%) scale(1.82)!important;
+  transform-origin:left center!important;
+}
+#mainContent{padding-top:102px!important}
+@media(max-width:600px){
+ .vector-main-header{height:88px!important;padding:0 5px!important}
+ .vector-header-logo-crop{width:255px!important;height:84px!important;flex-basis:255px!important}
+ .vector-header-logo{width:255px!important;transform:translateY(-50%) scale(1.86)!important}
+ .vector-header-status{margin-right:6px!important}
+ #mainContent{padding-top:94px!important}
+}
