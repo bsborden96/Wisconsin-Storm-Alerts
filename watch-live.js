@@ -1127,14 +1127,14 @@ function bindLocationSearch(config) {
 }
 
 function closeSearchLists() {
-  ['liveSearchSuggestions','livePopupSearchSuggestions'].forEach(id => {
+  ['livePopupSearchSuggestions'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.hidden = true;
   });
 }
 
 function fillSearchInputs(value) {
-  ['liveLocationSearch','livePopupLocationSearch'].forEach(id => {
+  ['livePopupLocationSearch'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = value;
   });
@@ -3313,7 +3313,18 @@ function toggleMute() {
 
 function hideStartOverlay() {
   const overlay = document.getElementById('liveStartOverlay');
-  if (overlay) overlay.style.display = 'none';
+  if (overlay) {
+    overlay.classList.add('is-hidden');
+    overlay.setAttribute('aria-hidden','true');
+  }
+}
+
+function showLocationOverlay() {
+  const overlay = document.getElementById('liveStartOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('is-hidden');
+  overlay.removeAttribute('aria-hidden');
+  setTimeout(() => document.getElementById('livePopupLocationSearch')?.focus(),120);
 }
 
 async function startBroadcast() {
@@ -3854,7 +3865,6 @@ function installPersistentBranding() {
 ───────────────────────────────────────────── */
 
 document.addEventListener('DOMContentLoaded',() => {
-  installPersistentBranding();
   loadListenerMemory();
   runDiagnostics();
 
@@ -3879,13 +3889,6 @@ document.addEventListener('DOMContentLoaded',() => {
   selectView('conditions',true);
 
   bindLocationSearch({
-    inputId:'liveLocationSearch',
-    suggestionsId:'liveSearchSuggestions',
-    statusId:'liveSearchStatus',
-    clearId:'liveSearchClearBtn'
-  });
-
-  bindLocationSearch({
     inputId:'livePopupLocationSearch',
     suggestionsId:'livePopupSearchSuggestions',
     statusId:'livePopupSearchStatus',
@@ -3896,6 +3899,7 @@ document.addEventListener('DOMContentLoaded',() => {
   bindRadarProductTabs();
   bindRadarControls();
   bindStormVectorFeatureControls();
+  document.getElementById('changeLocationBtn')?.addEventListener('click',showLocationOverlay);
   bindHistory();
 
   const startButton = document.getElementById('liveStartBtn');
