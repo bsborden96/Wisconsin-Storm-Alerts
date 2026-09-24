@@ -22,26 +22,26 @@
 :root {
 
   --c-bg:
-    #0d0614;
+    #090a0e;
 
-  --c-surface: rgba(24,9,34,.86);
+  --c-surface: rgba(20,21,28,.88);
 
-  --c-surface-dark: rgba(14,5,22,.92);
+  --c-surface-dark: rgba(11,12,17,.94);
 
   --c-border:
-    rgba(215,92,255,.18);
+    rgba(139,92,246,.18);
 
   --c-cyan:
-    #d75cff;
+    #8b5cf6;
 
   --c-blue:
-    #ef8cff;
+    #a78bfa;
 
   --c-text:
-    #fff4ff;
+    #f4f4f7;
 
   --c-muted:
-    #a184ad;
+    #8d909b;
 
   --c-green:
     #6eff8a;
@@ -795,15 +795,10 @@ body > *:not(#bgCanvas) {
   border-radius:
     999px;
 
-  background:
-    linear-gradient(
-      90deg,
-      #d75cff,
-      #61f0b4
-    );
+  background:#8b5cf6;
 
   color:
-    #17041e;
+    #ffffff;
 
   font-family:
     var(--font-display);
@@ -1246,12 +1241,7 @@ body > *:not(#bgCanvas) {
 
   border:
     1px solid
-    rgba(
-      0,
-      207,
-      255,
-      .22
-    );
+    rgba(139,92,246,.18);
 
   border-radius:
     9px;
@@ -1333,7 +1323,7 @@ body > *:not(#bgCanvas) {
     7px;
 
   color:
-    #ef8cff;
+    #a78bfa;
 
   font-family:
     var(--font-display);
@@ -2655,12 +2645,7 @@ body > *:not(#bgCanvas) {
   background:
     linear-gradient(
       90deg,
-      #7effff 0%,
-      #d75cff 28%,
-      transparent 29%,
-      transparent 70%,
-      #d75cff 71%,
-      #7effff 100%
+      #c4b5fd 0%, #8b5cf6 28%, transparent 29%, transparent 70%, #8b5cf6 71%, #c4b5fd 100%
     );
 
   border-radius:
@@ -3216,7 +3201,7 @@ body > *:not(#bgCanvas) {
     3px;
 
   color:
-    #ef8cff;
+    #a78bfa;
 
   font-family:
     var(--font-display);
@@ -4029,16 +4014,11 @@ body > *:not(#bgCanvas) {
     50%;
 
   background:
-    #d75cff;
+    #8b5cf6;
 
   box-shadow:
     0 0 0 4px
-    rgba(
-      0,
-      207,
-      255,
-      .22
-    ),
+    rgba(139,92,246,.18),
     0 0 18px
     rgba(
       0,
@@ -4984,7 +4964,7 @@ body > *:not(#bgCanvas) {
     block;
 
   color:
-    #ef8cff;
+    #a78bfa;
 
   font-family:
     var(--font-display);
@@ -7171,17 +7151,17 @@ body.watch-live-page .spc-official-link {
   margin-top: 14px;
   padding: 14px 18px;
 
-  border: 1px solid rgba(215,92,255,.34);
+  border: 1px solid rgba(139,92,246,.28);
   border-radius: 12px;
 
   background:
     linear-gradient(
       145deg,
-      rgba(215,92,255,.12),
-      rgba(5,18,38,.82)
+      rgba(139,92,246,.08),
+      rgba(13,14,19,.92)
     );
 
-  color: #bfefff;
+  color: #d8d0ff;
 
   text-decoration: none;
 
@@ -7199,7 +7179,7 @@ body.watch-live-page .spc-official-link:active {
   transform: scale(.98);
 
   background:
-    rgba(215,92,255,.20);
+    rgba(139,92,246,.14);
 }
 
 
