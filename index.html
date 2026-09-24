@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20260924-5"
+    href="styles.css?v=20260924-6"
   >
 
 </head>
@@ -1002,6 +1002,15 @@
 
               </button>
 
+              <button
+                id="radarFullscreenBtn"
+                class="radar-tool-btn radar-fullscreen-btn"
+                type="button">
+
+                FULL SCREEN
+
+              </button>
+
             </div>
 
 
@@ -1559,6 +1568,40 @@
 
 
 <!-- ═══════════════════════════════════════════════
+     STORM TIMELINE
+════════════════════════════════════════════════ -->
+<section class="section">
+  <div class="sv-feature-card sv-timeline-card">
+    <div class="sv-feature-head">
+      <div><span class="sv-feature-kicker">WHAT HAPPENS NEXT</span><h2>STORM TIMELINE</h2></div>
+      <span id="stormTimelineStatus" class="sv-feature-status">WAITING FOR LOCATION</span>
+    </div>
+    <div id="stormTimeline" class="sv-storm-timeline">
+      <div class="sv-feature-empty">Start StormVector to build your next-hours timeline.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════
+     SEVERE WEATHER CENTER
+════════════════════════════════════════════════ -->
+<section class="section">
+  <div id="severeCenter" class="sv-feature-card sv-severe-center">
+    <div class="sv-feature-head">
+      <div><span class="sv-feature-kicker">OFFICIAL + LOCATION AWARE</span><h2>SEVERE WEATHER CENTER</h2></div>
+      <span id="severeCenterStatus" class="sv-feature-status">MONITORING</span>
+    </div>
+    <div class="sv-severe-center-grid">
+      <div class="sv-severe-metric"><span>NWS ALERTS</span><strong id="severeCenterAlerts">--</strong><small id="severeCenterAlertName">Waiting for weather data</small></div>
+      <div class="sv-severe-metric"><span>SPC DAY 1</span><strong id="severeCenterSpc">--</strong><small>Official categorical outlook at this location</small></div>
+      <div class="sv-severe-metric"><span>LOCAL THREAT</span><strong id="severeCenterThreat">--</strong><small id="severeCenterThreatDetail">StormVector monitoring</small></div>
+    </div>
+    <button id="severeCenterRadarBtn" class="sv-severe-radar-btn" type="button">OPEN FULL-SCREEN RADAR</button>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════════════
      WHAT CHANGED
 ════════════════════════════════════════════════ -->
 
@@ -1700,7 +1743,7 @@
 
 <!-- STORMVECTOR ENGINE -->
 
-<script src="watch-live.js?v=20260924-5"></script>
+<script src="watch-live.js?v=20260924-6"></script>
 
 
 </body>
