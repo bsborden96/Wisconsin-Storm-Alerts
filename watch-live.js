@@ -1175,12 +1175,12 @@ async function selectSearchedLocation(result) {
   try {
     await prepareBroadcast();
 
+    hideStartOverlay();
     if (!liveStarted) {
       liveStarted = true;
       startMusic();
       startTimers();
     }
-    hideStartOverlay();
 
     if (!liveMuted) {
       await speakStandalone(`Switching StormVector coverage to ${liveCityState}.`);
