@@ -1492,6 +1492,8 @@ async function prepareBroadcast(options = {}) {
   renderObservation(ctx.observation);
   renderForecast(ctx);
   renderSevere(ctx);
+  renderStormTimeline(ctx);
+  renderSevereCenter(ctx);
   renderChanges(detectChanges(ctx));
   updateRadarForLocation();
   updateRadarWarnings();
@@ -2233,6 +2235,124 @@ function updateSpcImagePanels() {
       );
     }
   }
+}
+
+
+/* ─────────────────────────────────────────────
+   STORM TIMELINE + SEVERE WEATHER CENTER
+───────────────────────────────────────────── */
+
+function timelineWeatherLabel(code) {
+  const c = Number(code);
+  if ([95,96,99].includes(c)) return 'THUNDERSTORMS';
+  if ([80,81,82].includes(c)) return 'SHOWERS';
+  if ([61,63,65,66,67].includes(c)) return 'RAIN';
+  if ([71,73,75,77,85,86].includes(c)) return 'SNOW';
+  if ([45,48].includes(c)) return 'FOG';
+  if ([1,2,3].includes(c)) return c === 1 ? 'MOSTLY CLEAR' : 'CLOUDS';
+  if (c === 0) return 'CLEAR';
+  return 'WEATHER';
+}
+
+function renderStormTimeline(ctx) {
+  const box = document.getElementById('stormTimeline');
+  if (!box) return;
+  const hourly = ctx?.hourly || {};
+  const times = hourly.time || [];
+  if (!times.length) {
+    box.innerHTML = '<div class="sv-feature-empty">Hourly timeline temporarily unavailable.</div>';
+    setText('stormTimelineStatus','DATA UNAVAILABLE');
+    return;
+  }
+  const now = Date.now();
+  let start = times.findIndex(t => new Date(t).getTime() >= now - 30 * 60000);
+  if (start < 0) start = 0;
+  const targets = [
+    {label:'NOW', offset:0},
+    {label:'+1 HR', offset:1},
+    {label:'+3 HR', offset:3},
+    {label:'+6 HR', offset:6}
+  ];
+  box.innerHTML = targets.map(({label,offset}) => {
+    const i = Math.min(start + offset, times.length - 1);
+    const temp = Math.round(hourly.temperature_2m?.[i] ?? ctx.tempF ?? 0);
+    const pop = Math.round(hourly.precipitation_probability?.[i] ?? 0);
+    const wind = Math.round(hourly.wind_speed_10m?.[i] ?? ctx.windSpd ?? 0);
+    const code = hourly.weather_code?.[i];
+    const clock = new Date(times[i]).toLocaleTimeString([],{hour:'numeric'});
+    return '<div class="sv-timeline-stop">' +
+      '<span class="sv-timeline-label">'+label+'</span>' +
+      '<small>'+clock+'</small>' +
+      '<strong>'+temp+'°</strong>' +
+      '<b>'+timelineWeatherLabel(code)+'</b>' +
+      '<span>'+pop+'% precip</span>' +
+      '<span>Wind '+wind+' mph</span>' +
+    '</div>';
+  }).join('');
+  setText('stormTimelineStatus','NEXT 6 HOURS');
+}
+
+function renderSevereCenter(ctx) {
+  const alerts = ctx?.alerts || [];
+  const urgent = alerts.filter(isUrgentWarning);
+  const watches = alerts.filter(isWatchAlert);
+  const top = urgent[0] || watches[0] || alerts[0];
+  setText('severeCenterAlerts', urgent.length ? String(urgent.length) : (alerts.length ? String(alerts.length) : 'NONE'));
+  setText('severeCenterAlertName', top?.properties?.event || 'No active NWS alert for this location');
+  setText('severeCenterSpc', ctx?.spc || 'NONE');
+  let threat = 'NORMAL';
+  let detail = 'No urgent NWS warning is active for this location.';
+  if (urgent.length) {
+    threat = 'WARNING';
+    detail = top?.properties?.event || 'Urgent warning active';
+  } else if (watches.length) {
+    threat = 'WATCH';
+    detail = watches[0]?.properties?.event || 'Watch active';
+  } else if (ctx?.spc && ctx.spc !== 'TSTM') {
+    threat = ctx.spc;
+    detail = 'SPC severe risk is active at this location.';
+  }
+  setText('severeCenterThreat',threat);
+  setText('severeCenterThreatDetail',detail);
+  setText('severeCenterStatus',urgent.length ? 'WARNING ACTIVE' : watches.length ? 'WATCH ACTIVE' : 'MONITORING');
+  document.getElementById('severeCenter')?.classList.toggle('warning-active',urgent.length > 0);
+}
+
+function openStormVectorRadarFullscreen() {
+  const radarView = document.getElementById('graphicRadar');
+  if (!radarView) return;
+  selectView('radar');
+  selectRadarProduct('radar');
+  radarView.classList.add('sv-radar-fullscreen');
+  document.body.classList.add('sv-radar-open');
+  let close = document.getElementById('svRadarCloseBtn');
+  if (!close) {
+    close = document.createElement('button');
+    close.id = 'svRadarCloseBtn';
+    close.className = 'sv-radar-close';
+    close.type = 'button';
+    close.textContent = 'CLOSE RADAR';
+    close.addEventListener('click',closeStormVectorRadarFullscreen);
+    radarView.prepend(close);
+  }
+  close.hidden = false;
+  setTimeout(() => radarMap?.invalidateSize(),150);
+}
+
+function closeStormVectorRadarFullscreen() {
+  document.getElementById('graphicRadar')?.classList.remove('sv-radar-fullscreen');
+  document.body.classList.remove('sv-radar-open');
+  const close = document.getElementById('svRadarCloseBtn');
+  if (close) close.hidden = true;
+  setTimeout(() => radarMap?.invalidateSize(),150);
+}
+
+function bindStormVectorFeatureControls() {
+  document.getElementById('radarFullscreenBtn')?.addEventListener('click',openStormVectorRadarFullscreen);
+  document.getElementById('severeCenterRadarBtn')?.addEventListener('click',openStormVectorRadarFullscreen);
+  document.addEventListener('keydown',e => {
+    if (e.key === 'Escape' && document.body.classList.contains('sv-radar-open')) closeStormVectorRadarFullscreen();
+  });
 }
 
 /* ─────────────────────────────────────────────
@@ -3775,7 +3895,7 @@ document.addEventListener('DOMContentLoaded',() => {
   bindMainViewTabs();
   bindRadarProductTabs();
   bindRadarControls();
-  bindAskVector();
+  bindStormVectorFeatureControls();
   bindHistory();
 
   const startButton = document.getElementById('liveStartBtn');
