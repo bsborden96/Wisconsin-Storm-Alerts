@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20260924-7"
+    href="styles.css?v=20260924-8"
   >
 
 </head>
@@ -168,7 +168,12 @@
     class="live-start-inner"
     role="dialog"
     aria-modal="true"
-    aria-labelledby="liveStartTitle">
+    aria-label="Choose weather location">
+
+    <div class="location-modal-head">
+      <strong>CHOOSE YOUR LOCATION</strong>
+      <span>StormVector will load weather for this location.</span>
+    </div>
 
     <button
       id="liveStartBtn"
@@ -310,57 +315,6 @@
 ════════════════════════════════════════════════ -->
 
 <main id="mainContent">
-
-
-<!-- ═══════════════════════════════════════════════
-     LOCATION
-════════════════════════════════════════════════ -->
-
-<section class="section live-location-section">
-
-  <div
-    id="liveLocationCard"
-    class="location-card live-location-card"
-    aria-live="polite">
-
-
-    <div class="live-location-main">
-
-      <span
-        id="liveLocationText"
-        class="live-location-text">
-
-        Location not selected
-
-      </span>
-
-
-      <span
-        id="liveLocationSource"
-        class="live-location-source">
-
-        StormVector
-
-      </span>
-
-    </div>
-
-
-    <div class="live-location-actions">
-      <button id="changeLocationBtn" class="live-return-btn" type="button">CHANGE LOCATION</button>
-      <button
-        id="returnToMyLocationBtn"
-        class="live-return-btn"
-        type="button"
-        onclick="returnToMyLocation()"
-        hidden>
-        RETURN TO MY LOCATION
-      </button>
-    </div>
-
-  </div>
-
-</section>
 
 
 <!-- ═══════════════════════════════════════════════
@@ -1647,7 +1601,7 @@
 
 <!-- STORMVECTOR ENGINE -->
 
-<script src="watch-live.js?v=20260924-7"></script>
+<script src="watch-live.js?v=20260924-8"></script>
 
 
 </body>
