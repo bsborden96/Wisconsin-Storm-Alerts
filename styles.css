@@ -7293,3 +7293,34 @@ body.watch-live-page::before{
   .live-stage{border-radius:16px!important}
   .sv-persistent-brand{border-radius:14px!important}
 }
+
+
+/* ═══ STORMVECTOR // NEXT-GEN WEATHER FEATURES ═══ */
+.sv-feature-card{padding:18px;border:1px solid rgba(126,87,194,.16);border-radius:16px;background:linear-gradient(160deg,rgba(20,21,28,.96),rgba(10,11,15,.98));box-shadow:0 18px 54px rgba(0,0,0,.24)}
+.sv-feature-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+.sv-feature-head h2{margin:3px 0 0;color:#f5f5f7;font-family:var(--font-display);font-size:clamp(25px,6vw,38px);letter-spacing:.04em;line-height:1}
+.sv-feature-kicker{color:#7e57c2;font-size:8px;letter-spacing:.14em}
+.sv-feature-status{padding:6px 8px;border:1px solid rgba(126,87,194,.20);border-radius:999px;background:rgba(91,33,182,.08);color:#a48bd8;font-size:7px;letter-spacing:.08em;white-space:nowrap}
+.sv-storm-timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sv-timeline-stop{position:relative;min-width:0;padding:13px 11px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#111218}
+.sv-timeline-stop::before{content:"";position:absolute;top:-1px;left:12px;right:12px;height:2px;border-radius:2px;background:#5b21b6;opacity:.75}
+.sv-timeline-stop .sv-timeline-label{display:block;color:#8f73cf;font-size:8px;letter-spacing:.10em}
+.sv-timeline-stop small{display:block;margin-top:3px;color:#777b87;font-size:8px}
+.sv-timeline-stop strong{display:block;margin:9px 0 3px;color:#fff;font-family:var(--font-display);font-size:32px;line-height:1}
+.sv-timeline-stop b{display:block;min-height:20px;color:#d5d6dc;font-size:8px;letter-spacing:.06em}
+.sv-timeline-stop>span:not(.sv-timeline-label){display:block;margin-top:4px;color:#8d909b;font-size:8px}
+.sv-feature-empty{grid-column:1/-1;padding:22px;color:#8d909b;text-align:center;font-size:10px}
+.sv-severe-center-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sv-severe-metric{padding:14px;border:1px solid rgba(255,255,255,.06);border-radius:12px;background:#111218}
+.sv-severe-metric>span{display:block;color:#8d909b;font-size:8px;letter-spacing:.10em}
+.sv-severe-metric strong{display:block;margin:7px 0 5px;color:#fff;font-family:var(--font-display);font-size:25px;letter-spacing:.03em}
+.sv-severe-metric small{color:#7f828d;font-size:8px;line-height:1.45}
+.sv-severe-center.warning-active{border-color:rgba(255,32,32,.38);box-shadow:0 18px 54px rgba(0,0,0,.28),inset 0 0 40px rgba(255,0,0,.035)}
+.sv-severe-center.warning-active .sv-feature-status{border-color:rgba(255,50,50,.35);background:rgba(255,0,0,.08);color:#ff8a8a}
+.sv-severe-radar-btn{width:100%;min-height:46px;margin-top:10px;border:1px solid rgba(126,87,194,.24);border-radius:10px;background:#171820;color:#b9a7e0;font-family:var(--font-display);font-size:14px;letter-spacing:.06em}
+.radar-fullscreen-btn{border-color:rgba(126,87,194,.26)!important;color:#b9a7e0!important}
+body.sv-radar-open{overflow:hidden}
+.vector-graphic-view.sv-radar-fullscreen{display:block!important;position:fixed!important;inset:0!important;z-index:10000!important;width:100vw!important;height:100dvh!important;max-width:none!important;min-height:0!important;margin:0!important;padding:max(14px,env(safe-area-inset-top)) 12px max(12px,env(safe-area-inset-bottom))!important;border-radius:0!important;background:#090a0e!important;overflow:auto!important}
+.sv-radar-fullscreen .stormvector-radar{height:calc(100dvh - 220px)!important;min-height:420px!important;border-radius:12px}
+.sv-radar-close{display:block;width:100%;min-height:44px;margin:0 0 10px;border:1px solid rgba(126,87,194,.28);border-radius:10px;background:#171820;color:#d7cbea;font-family:var(--font-display);font-size:14px;letter-spacing:.08em}
+@media(max-width:600px){.sv-feature-card{padding:13px}.sv-storm-timeline{grid-template-columns:repeat(2,1fr)}.sv-severe-center-grid{grid-template-columns:1fr}.sv-feature-head{align-items:flex-start}.sv-feature-status{font-size:6px}.sv-radar-fullscreen .stormvector-radar{height:calc(100dvh - 250px)!important;min-height:360px!important}}
