@@ -286,6 +286,11 @@ function updateStatusPills() {
   if (!threat) return;
 
   const level = threatLevel(currentWeatherContext?.alerts || []);
+  if (currentWeatherContext?.alertsAvailable === false) {
+    threat.textContent = 'UNKNOWN';
+    threat.classList.remove('vector-threat-normal','vector-threat-watch','vector-threat-warning','vector-threat-critical');
+    return;
+  }
   threat.classList.remove('vector-threat-normal','vector-threat-watch','vector-threat-warning','vector-threat-critical');
 
   if (level === 3) {
@@ -1209,10 +1214,11 @@ async function fetchAlerts(lat, lon) {
       }
     );
     const data = await res.json();
-    return data.features || [];
+    if (!Array.isArray(data.features)) throw new Error('Invalid NWS alerts response');
+    return data.features;
   } catch (error) {
     console.warn('NWS alerts failed:', error);
-    return [];
+    return null;
   }
 }
 
@@ -1473,6 +1479,7 @@ async function prepareBroadcast(options = {}) {
     windG:observation?.windG ?? fallback.windG ?? 0,
     hourly:fallback.hourly ?? {},
     alerts:alerts || [],
+    alertsAvailable:alerts !== null,
     spc:spc || null,
     observation,
     forecast:{
@@ -1503,7 +1510,7 @@ async function prepareBroadcast(options = {}) {
   buildRundown(ctx);
 
   setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'CURRENT' : 'UNAVAILABLE');
-  setText('freshnessAlerts',ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CURRENT');
+  setText('freshnessAlerts',!ctx.alertsAvailable ? 'UNAVAILABLE' : ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CURRENT');
   setText('vectorGraphicStatus','CURRENT');
 
   updateStatusPills();
@@ -3087,9 +3094,17 @@ async function refreshWarningContextOnly() {
       liveLon
     );
 
+  if (alerts === null) {
+    if (currentWeatherContext) currentWeatherContext.alertsAvailable = false;
+    setText('freshnessAlerts','UNAVAILABLE');
+    updateStatusPills();
+    return;
+  }
+
   currentWeatherContext = {
     ...(currentWeatherContext || {}),
-    alerts
+    alerts,
+    alertsAvailable:true
   };
 
   updateSevereTakeover(
@@ -3405,6 +3420,19 @@ async function checkForBreakingWeather() {
   if (!locationReady || liveMuted) return;
 
   const alerts = await fetchAlerts(liveLat,liveLon);
+  if (alerts === null) {
+    if (currentWeatherContext) currentWeatherContext.alertsAvailable = false;
+    setText('freshnessAlerts','UNAVAILABLE');
+    updateStatusPills();
+    return;
+  }
+  if (currentWeatherContext) {
+    currentWeatherContext.alerts = alerts;
+    currentWeatherContext.alertsAvailable = true;
+    updateStatusPills();
+    updateSevereTakeover(currentWeatherContext);
+  }
+  setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
   const priority = alerts
     .filter(isUrgentWarning)
     .sort((a,b) =>
@@ -3420,8 +3448,10 @@ async function checkForBreakingWeather() {
   const warning = newWarnings[0];
   currentWeatherContext = {
     ...(currentWeatherContext || {}),
-    alerts
+    alerts,
+    alertsAvailable:true
   };
+  setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
 
   updateSevereTakeover(currentWeatherContext);
   updateRadarWarnings();
