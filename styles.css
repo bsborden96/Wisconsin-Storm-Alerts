@@ -7356,7 +7356,7 @@ body.sv-radar-open{overflow:hidden}
 }
 #mainContent { padding-top:0; }
 .live-start-overlay {
-  position:relative; inset:auto; z-index:4; display:block; width:100%;
+  position:relative; inset:auto; z-index:100; display:block; width:100%;
   padding:14px clamp(12px,2.5vw,18px) 0; overflow:visible;
   background:transparent; backdrop-filter:none;
 }
@@ -7375,6 +7375,13 @@ body.sv-radar-open{overflow:hidden}
   overflow:auto; background:#0b131d; border:1px solid rgba(74,168,223,.35);
   border-radius:0 0 12px 12px; box-shadow:0 18px 40px rgba(0,0,0,.5);
 }
+.sv-dark-basemap { filter:brightness(.40) saturate(.65) hue-rotate(175deg); }
+.local-mesoscale { margin:16px 0; padding:15px; border:1px solid rgba(168,115,235,.42); border-radius:12px; background:rgba(49,28,72,.30); color:#dbd2e8; font:13px/1.5 system-ui,sans-serif; }
+.local-mesoscale[hidden] { display:none; }
+.local-mesoscale strong { display:block; color:#d2a4ff; font-family:var(--font-display); font-size:17px; letter-spacing:.05em; }
+.local-mesoscale p { margin:8px 0; }
+.local-mesoscale span { display:block; margin:8px 0; color:#c5a8e3; font-size:11px; letter-spacing:.04em; }
+.local-mesoscale a { color:#bfe7ff; text-decoration:underline; }
 .live-start-note { display:none; }
 .live-start-btn { min-height:48px; margin-top:0; }
 .vector-status-row { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; }

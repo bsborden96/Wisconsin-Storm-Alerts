@@ -641,7 +641,7 @@ async function searchUsLocations(query) {
   const url =
     'https://geocoding-api.open-meteo.com/v1/search' +
     `?name=${encodeURIComponent(term)}` +
-    '&count=10&language=en&format=json&countryCode=US';
+    '&count=100&language=en&format=json&countryCode=US';
 
   try {
     const response = await fetch(url, { signal:searchController.signal });
@@ -649,7 +649,7 @@ async function searchUsLocations(query) {
     const data = await response.json();
     return (data.results || []).filter(r =>
       Number.isFinite(Number(r.latitude)) &&
-      Number.isFinite(Number(r.longitude))
+      Number.isFinite(Number(r.longitude)) && r.country_code === 'US'
     );
   } catch (error) {
     if (error.name === 'AbortError') return [];
@@ -1002,6 +1002,41 @@ function pointInGeometry(point, geometry) {
   return false;
 }
 
+const MESOSCALE_SERVICE =
+  'https://mapservices.weather.noaa.gov/vector/rest/services/outlooks/spc_mesoscale_discussion/MapServer/0/query';
+
+async function fetchLocalMesoscale(lat, lon) {
+  try {
+    const query = new URLSearchParams({
+      where:'1=1', outFields:'name,popupinfo,folderpath',
+      returnGeometry:'true', f:'geojson'
+    });
+    const response = await safeFetch(`${MESOSCALE_SERVICE}?${query}`, {timeout:9000});
+    const data = await response.json();
+    const local = (data.features || []).filter(feature =>
+      pointInGeometry([lon,lat], feature.geometry)
+    );
+    const discussions = await Promise.all(local.map(async feature => {
+      const name = String(feature.properties?.name || '');
+      const number = name.match(/\bMD\s*(\d{1,4})\b/i)?.[1];
+      if (!number) return null;
+      const url = `https://www.spc.noaa.gov/products/md/md${number.padStart(4,'0')}.txt`;
+      try {
+        const textResponse = await safeFetch(url,{timeout:8000});
+        const text = await textResponse.text();
+        return StormVectorMesoscale.parse(text,name,url);
+      } catch (error) {
+        console.warn('SPC discussion text unavailable:',error);
+        return {name,summary:'',url};
+      }
+    }));
+    return discussions.filter(Boolean);
+  } catch (error) {
+    console.warn('SPC mesoscale discussions unavailable:',error);
+    return null;
+  }
+}
+
 async function fetchSpcRisk(lat, lon) {
   const urls = [
     'https://www.spc.noaa.gov/products/outlook/day1otlk_cat.lyr.geojson',
@@ -1048,11 +1083,12 @@ async function prepareBroadcast(options = {}) {
   setLiveBadge('UPDATING');
   setText('vectorGraphicStatus','UPDATING');
 
-  const [nws,fallback,alerts,spc] = await Promise.all([
+  const [nws,fallback,alerts,spc,mesoscale] = await Promise.all([
     fetchNwsPoint(liveLat,liveLon),
     fetchOpenMeteo(liveLat,liveLon).catch(() => ({})),
     fetchAlerts(liveLat,liveLon),
-    fetchSpcRisk(liveLat,liveLon).catch(() => null)
+    fetchSpcRisk(liveLat,liveLon).catch(() => null),
+    fetchLocalMesoscale(liveLat,liveLon)
   ]);
 
   const observation = await fetchNearestObservation(nws.stationUrl);
@@ -1107,6 +1143,7 @@ async function prepareBroadcast(options = {}) {
     }) : alerts,
     alertsAvailable:alerts !== null,
     spc:spc || null,
+    mesoscale:mesoscale === null ? (currentWeatherContext?.mesoscale || []) : mesoscale,
     observation,
     forecast:{
       today:currentPeriod?.isDaytime
@@ -1128,6 +1165,7 @@ async function prepareBroadcast(options = {}) {
   renderObservation(ctx.observation);
   renderForecast(ctx);
   renderSevere(ctx);
+  renderMesoscale(ctx);
   renderStormTimeline(ctx);
   renderSevereCenter(ctx);
   renderChanges(detectChanges(ctx));
@@ -1234,6 +1272,19 @@ function renderForecast(ctx) {
     );
   }
   container.innerHTML = html.join('');
+}
+
+function renderMesoscale(ctx) {
+  const box = document.getElementById('localMesoscale');
+  if (!box) return;
+  const discussions = ctx.mesoscale || [];
+  box.hidden = !discussions.length;
+  box.innerHTML = discussions.map(md =>
+    `<strong>${escapeHtml(md.name)}</strong>` +
+    `<p>${escapeHtml(md.summary || 'The Storm Prediction Center has a discussion covering this location. Open the official text for details.')}</p>` +
+    (md.watchProbability == null ? '' : `<span>WATCH ISSUANCE: ${md.watchProbability}% FOR DISCUSSION AREA</span>`) +
+    `<a href="${escapeHtml(md.url)}" target="_blank" rel="noopener noreferrer">READ OFFICIAL SPC DISCUSSION</a>`
+  ).join('');
 }
 
 function renderSevere(ctx) {
@@ -1527,11 +1578,11 @@ function createSpcLeafletMap(type) {
     );
 
   L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
-      maxZoom: 18,
-      subdomains: 'abcd',
-      attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+      maxZoom: 19,
+      className: 'sv-dark-basemap',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     }
   )
   .addTo(map);
@@ -2231,11 +2282,11 @@ function ensureRadar() {
   }).setView([liveLat ?? 39,liveLon ?? -98],liveLat == null ? 4 : 8);
 
   L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
       maxZoom:19,
-      subdomains:'abcd',
-      attribution:'&copy; OpenStreetMap contributors &copy; CARTO'
+      className:'sv-dark-basemap',
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
     }
   ).addTo(radarMap);
 
@@ -2459,6 +2510,14 @@ function buildRundown(ctx) {
         loop:broadcastLoopCount,
         changes:latestChanges
       }).map(cleanForecastText).filter(Boolean);
+
+  const md = (ctx.mesoscale || [])[broadcastLoopCount % (ctx.mesoscale?.length || 1)];
+  if (md) {
+    const discussion = StormVectorMesoscale.segments(md,ctx.cityState,{
+      warning:urgent.length > 0
+    });
+    liveSegments.splice(Math.min(urgent.length ? 3 : 2,liveSegments.length),0,...discussion);
+  }
 
   liveSegIdx = 0;
   rememberListenerUpdate(ctx);
