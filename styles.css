@@ -7136,6 +7136,8 @@ body.weather-theme-critical
 
   }
 
+}
+
 /* ══════════════════════════════════════════════
    OFFICIAL SPC LINKS
 ══════════════════════════════════════════════ */
@@ -7335,13 +7337,13 @@ body.sv-radar-open{overflow:hidden}
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 180px;
+  min-height: 236px;
   padding: 0 clamp(12px,3vw,28px);
   background: linear-gradient(100deg,#080b12,#0c0d13);
   border-bottom: 1px solid rgba(81,167,225,.18);
 }
 .vector-header-brand { display:flex; align-items:center; min-width:0; flex:1; }
-.vector-header-logo-crop { width: min(310px,76vw); height:174px; flex:none; overflow:hidden; position:relative; }
+.vector-header-logo-crop { width: min(390px,80vw); height:226px; flex:none; overflow:hidden; position:relative; }
 .vector-header-logo {
   display:block; position:absolute; width:100%; max-width:none; height:auto;
   top:50%; left:0; transform:translateY(-50%); object-fit:contain;
@@ -7403,9 +7405,10 @@ body.sv-radar-open{overflow:hidden}
   .live-avatar { width:clamp(150px,48vw,210px); height:clamp(215px,67vw,300px); }
 }
 @media(max-width:600px) {
-  .vector-main-header { min-height:162px; padding:0 7px; }
-  .vector-header-logo-crop { width:min(270px,73vw); height:158px; }
-  .vector-header-status { margin:12px 4px 0 3px; padding:6px 7px; font-size:9px; }
+  .vector-main-header { min-height:260px; padding:0 4px; flex-direction:column; justify-content:center; }
+  .vector-header-brand { width:100%; justify-content:center; flex:none; }
+  .vector-header-logo-crop { width:min(390px,98vw); height:224px; }
+  .vector-header-status { align-self:center; margin:0 0 8px; padding:6px 12px; font-size:10px; }
   .section { padding-left:10px; padding-right:10px; }
   .vector-status-row { gap:7px; }
   .vector-status-pill { padding:8px; min-height:46px; }
@@ -7419,8 +7422,8 @@ body.sv-radar-open{overflow:hidden}
   .live-start-inner { padding:16px; }
 }
 @media(max-width:380px) {
-  .vector-header-logo-crop { width:74vw; }
-  .vector-header-status { font-size:8px; letter-spacing:.06em; }
+  .vector-header-logo-crop { width:98vw; height:215px; }
+  .vector-header-status { font-size:9px; }
   .vector-status-pill span,.vector-status-pill strong { font-size:9px; }
 }
 @media(prefers-reduced-motion:reduce) {
