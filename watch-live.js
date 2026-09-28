@@ -80,6 +80,7 @@ let liveMusic = null;
 let speechGeneration = 0;
 
 let currentWeatherContext = null;
+let weatherRequestId = 0;
 let previousSnapshot = null;
 let latestChanges = [];
 let broadcastLoopCount = 0;
@@ -1083,15 +1084,32 @@ async function prepareBroadcast(options = {}) {
   setLiveBadge('UPDATING');
   setText('vectorGraphicStatus','UPDATING');
 
+  const requestId = ++weatherRequestId;
+  const requestLat = liveLat;
+  const requestLon = liveLon;
+  const earlyConditions = fetchOpenMeteo(requestLat,requestLon)
+    .then(conditions => {
+      if (requestId === weatherRequestId && conditions.tempF != null) {
+        renderConditions(conditions);
+        setText('freshnessObservation','CONDITIONS CURRENT');
+      }
+      return conditions;
+    })
+    .catch(error => {
+      console.warn('Current conditions unavailable:',error);
+      return {};
+    });
+
   const [nws,fallback,alerts,spc,mesoscale] = await Promise.all([
-    fetchNwsPoint(liveLat,liveLon),
-    fetchOpenMeteo(liveLat,liveLon).catch(() => ({})),
-    fetchAlerts(liveLat,liveLon),
-    fetchSpcRisk(liveLat,liveLon).catch(() => null),
-    fetchLocalMesoscale(liveLat,liveLon)
+    fetchNwsPoint(requestLat,requestLon),
+    earlyConditions,
+    fetchAlerts(requestLat,requestLon),
+    fetchSpcRisk(requestLat,requestLon).catch(() => null),
+    fetchLocalMesoscale(requestLat,requestLon)
   ]);
 
   const observation = await fetchNearestObservation(nws.stationUrl);
+  if (requestId !== weatherRequestId) return currentWeatherContext;
 
   liveCityState =
     locationMode === 'search' && selectedSearchLocation
@@ -1175,6 +1193,7 @@ async function prepareBroadcast(options = {}) {
   updateSevereTakeover(ctx);
   setBroadcastBackground(ctx);
   buildRundown(ctx);
+  syncMusicForWeather(ctx);
 
   setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'CURRENT' : 'UNAVAILABLE');
   setText('freshnessAlerts',!ctx.alertsAvailable ? 'UNAVAILABLE' : ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CURRENT');
@@ -2557,7 +2576,7 @@ function ensureMusic() {
 
 function startMusic() {
   const music = ensureMusic();
-  if (!music) return;
+  if (!music || liveMuted || musicShouldPause(currentWeatherContext)) return;
   music.loop = true;
   music.volume = 0.16;
   music.play().catch(err => console.warn('Music play blocked:',err));
@@ -2569,6 +2588,18 @@ function stopMusic() {
   music.pause();
 }
 
+function musicShouldPause(ctx) {
+  if (!ctx) return false;
+  if ((ctx.alerts || []).some(a => isUrgentWarning(a) || isWatchAlert(a))) return true;
+  if ((ctx.mesoscale || []).length) return true;
+  return ['SLGT','ENH','MDT','HIGH'].includes(ctx.spc);
+}
+
+function syncMusicForWeather(ctx) {
+  if (musicShouldPause(ctx)) stopMusic();
+  else if (liveStarted && !liveMuted) startMusic();
+}
+
 function duckMusic() {
   const music = ensureMusic();
   if (music && !music.paused) music.volume = 0.045;
@@ -2576,7 +2607,7 @@ function duckMusic() {
 
 function restoreMusic() {
   const music = ensureMusic();
-  if (music && !music.paused) music.volume = 0.16;
+  if (music && !music.paused && !musicShouldPause(currentWeatherContext)) music.volume = 0.16;
 }
 
 function unlockMediaFromUserGesture() {
@@ -2635,6 +2666,7 @@ async function refreshWarningContextOnly() {
 
   updateRadarWarnings();
   updateStatusPills();
+  syncMusicForWeather(currentWeatherContext);
 
   /*
     Rebuild from the newest NWS warning text so movement,
@@ -2953,6 +2985,8 @@ async function checkForBreakingWeather() {
     currentWeatherContext.alertsAvailable = true;
     updateStatusPills();
     updateSevereTakeover(currentWeatherContext);
+    renderMesoscale(currentWeatherContext);
+    syncMusicForWeather(currentWeatherContext);
   }
   setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
   const priority = alerts
