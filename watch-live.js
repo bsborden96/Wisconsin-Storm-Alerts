@@ -1278,11 +1278,13 @@ function renderMesoscale(ctx) {
   const box = document.getElementById('localMesoscale');
   if (!box) return;
   const discussions = ctx.mesoscale || [];
+  const warningActive = (ctx.alerts || []).some(isUrgentWarning);
   box.hidden = !discussions.length;
   box.innerHTML = discussions.map(md =>
     `<strong>${escapeHtml(md.name)}</strong>` +
+    (warningActive ? '<span>ACTIVE NWS WARNING TAKES PRIORITY. FOLLOW ITS INSTRUCTIONS NOW.</span>' : '') +
     `<p>${escapeHtml(md.summary || 'The Storm Prediction Center has a discussion covering this location. Open the official text for details.')}</p>` +
-    (md.watchProbability == null ? '' : `<span>WATCH ISSUANCE: ${md.watchProbability}% FOR DISCUSSION AREA</span>`) +
+    (warningActive || md.watchProbability == null ? '' : `<span>WATCH ISSUANCE: ${md.watchProbability}% FOR DISCUSSION AREA</span>`) +
     `<a href="${escapeHtml(md.url)}" target="_blank" rel="noopener noreferrer">READ OFFICIAL SPC DISCUSSION</a>`
   ).join('');
 }
