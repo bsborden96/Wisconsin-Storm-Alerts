@@ -7356,7 +7356,7 @@ body.sv-radar-open{overflow:hidden}
 }
 #mainContent { padding-top:0; }
 .live-start-overlay {
-  position:relative; inset:auto; z-index:100; display:block; width:100%;
+  position:relative; inset:auto; z-index:100!important; display:block; width:100%;
   padding:14px clamp(12px,2.5vw,18px) 0; overflow:visible;
   background:transparent; backdrop-filter:none;
 }
