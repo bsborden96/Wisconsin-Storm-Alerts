@@ -490,390 +490,13 @@ function rememberListenerUpdate(ctx = currentWeatherContext) {
   } catch (_) {}
 }
 
-function normalLoopOpener(ctx) {
-  if (broadcastLoopCount === 0) {
-    if (returningListener) {
-      return `Welcome back to StormVector. I've got ${ctx.cityState || 'your location'} loaded and I'm still watching the weather with you.`;
-    }
-
-    return `I've got the latest weather loaded for ${ctx.cityState || 'your location'}. Here's where things stand.`;
-  }
-
-  const openers = [
-    `Still with you in ${ctx.cityState || 'your area'}. Here's the next weather check.`,
-    `Here's the latest update for ${ctx.cityState || 'your area'}.`,
-    `I'm still monitoring ${ctx.cityState || 'your area'}. Here's what I'm seeing now.`,
-    `Back with another StormVector check for ${ctx.cityState || 'your area'}.`
-  ];
-
-  return openers[
-    (broadcastLoopCount - 1) %
-    openers.length
-  ];
-}
-
-/* ─────────────────────────────────────────────
-   NWS ALERT DETAILS FOR CONTINUOUS SEVERE COVERAGE
-───────────────────────────────────────────── */
-
-function parseAlertMovement(alert) {
-  const text =
-    String(
-      alert?.properties?.description ||
-      alert?.properties?.headline ||
-      ''
-    );
-
-  const compass =
-    text.match(
-      /moving\s+([NSEW]{1,3})\s+at\s+(\d+)\s*mph/i
-    );
-
-  if (compass) {
-    return {
-      direction: compass[1].toUpperCase(),
-      speed: Number(compass[2])
-    };
-  }
-
-  const words =
-    text.match(
-      /moving\s+(north|south|east|west|northeast|northwest|southeast|southwest)\s+at\s+(\d+)\s*mph/i
-    );
-
-  if (words) {
-    return {
-      direction: words[1],
-      speed: Number(words[2])
-    };
-  }
-
-  return null;
-}
-
-function formatAlertClock(value) {
-  if (!value) return null;
-
-  try {
-    return new Date(value)
-      .toLocaleTimeString(
-        [],
-        {
-          hour: 'numeric',
-          minute: '2-digit'
-        }
-      );
-  } catch (_) {
-    return null;
-  }
-}
-
-const severePhraseMemory = new Map();
-
-function severePick(key, phrases) {
-  if (!phrases?.length) return '';
-
-  const previous =
-    severePhraseMemory.get(key);
-
-  let choices =
-    phrases.filter(
-      (_, index) =>
-        index !== previous
-    );
-
-  if (!choices.length) {
-    choices = phrases;
-  }
-
-  const originalIndex =
-    phrases.indexOf(
-      choices[
-        Math.floor(
-          Math.random() *
-          choices.length
-        )
-      ]
-    );
-
-  severePhraseMemory.set(
-    key,
-    originalIndex
-  );
-
-  return phrases[
-    originalIndex
-  ];
-}
-
-function fillSeverePhrase(template, data) {
-  return String(template)
-    .replace(
-      /\{(\w+)\}/g,
-      (_, key) =>
-        data[key] ?? ''
-    )
-    .replace(
-      /\s+/g,
-      ' '
-    )
-    .trim();
-}
-
-function warningUrgencyProfile(alert) {
-  const event =
-    String(
-      alert?.properties?.event ||
-      ''
-    )
-    .toLowerCase();
-
-  if (
-    isCriticalAlert(alert) ||
-    event.includes('tornado emergency')
-  ) {
-    return 'critical';
-  }
-
-  if (event.includes('tornado warning')) {
-    return 'tornado';
-  }
-
-  if (event.includes('flash flood warning')) {
-    return 'flood';
-  }
-
-  if (event.includes('severe thunderstorm warning')) {
-    return 'severe';
-  }
-
-  return 'warning';
-}
-
+/* The phrase library is separate so warning claims can be tested without the UI. */
 function severeRundown(ctx, alert) {
-  const p =
-    alert?.properties ||
-    {};
-
-  const event =
-    p.event ||
-    'weather warning';
-
-  const area =
-    (p.areaDesc || ctx.cityState || 'your area')
-      .split(';')[0];
-
-  const movement =
-    parseAlertMovement(alert);
-
-  const expires =
-    formatAlertClock(
-      p.expires ||
-      p.ends
-    );
-
-  const profile =
-    warningUrgencyProfile(alert);
-
-  const data = {
-    event,
-    area,
-    direction:
-      movement?.direction ||
-      '',
-    speed:
-      movement?.speed ??
-      '',
-    expires:
-      expires ||
-      ''
-  };
-
-  const firstLoop =
-    broadcastLoopCount === 0;
-
-  const openers = firstLoop
-    ? [
-        'Breaking weather now. A {event} is in effect for {area}.',
-        'StormVector is in breaking weather mode. A {event} is active for {area}.',
-        'Immediate weather alert for {area}. The National Weather Service has issued a {event}.',
-        'Attention in {area}. We have an active {event}.',
-        'This is urgent StormVector coverage for {area}. A {event} is in effect.',
-        'Vector is switching to warning coverage now. A {event} is active for {area}.',
-        'Breaking weather coverage begins now for {area}. The active alert is a {event}.',
-        'Weather warning in progress for {area}. This is a {event}.'
-      ]
-    : [
-        'I am staying on this {event} for {area}.',
-        'Continuing urgent coverage of the {event} affecting {area}.',
-        'This warning remains our only priority right now. The {event} continues for {area}.',
-        'Still tracking the {event} for {area}. Here is the newest warning information.',
-        'I am not leaving this warning. The {event} remains active for {area}.',
-        'Back with another immediate update on the {event} for {area}.',
-        'The severe weather threat is still active. I am continuing coverage for {area}.',
-        'No routine forecast right now. We are staying with the {event} affecting {area}.',
-        'Another warning update now for {area}. The {event} remains active.',
-        'Vector remains in warning mode for {area}. Here is the latest on the {event}.'
-      ];
-
-  const movementLines = [
-    'The National Weather Service reports the storm moving {direction} at {speed} miles per hour.',
-    'Current warning movement is {direction} at about {speed} miles per hour.',
-    'The warned storm is tracking {direction} at {speed} miles per hour.',
-    'Movement remains {direction}, with the storm traveling around {speed} miles per hour.',
-    'The latest warning places storm motion toward the {direction} at {speed} miles per hour.',
-    'Storm motion from the warning is {direction} at roughly {speed} miles per hour.',
-    'This storm is not stationary. It is moving {direction} at {speed} miles per hour.',
-    'The National Weather Service has the storm progressing {direction} at {speed} miles per hour.',
-    'Track this threat toward the {direction}. Its reported speed is {speed} miles per hour.',
-    'The warning text shows motion {direction} at {speed} miles per hour.'
-  ];
-
-  const expirationLines = [
-    'The warning is currently in effect until {expires}.',
-    'Right now, the warning expiration time is {expires}.',
-    'Unless the National Weather Service updates it sooner, this warning runs until {expires}.',
-    'The current warning window extends through {expires}.',
-    'This alert remains active at least until {expires}, unless it is replaced or canceled earlier.',
-    'The latest expiration time on this warning is {expires}.',
-    'The warning clock currently runs to {expires}.',
-    'Keep treating this as active through {expires} unless an updated warning says otherwise.'
-  ];
-
-  const safetyLead = {
-    critical: [
-      'Do not wait to see the storm. Act now.',
-      'This is a life-safety situation. Take action immediately.',
-      'Treat this as an immediate threat. Move now.',
-      'Do not spend time watching outside. Get into your safest available shelter now.',
-      'This is the point to act, not wait.'
-    ],
-
-    tornado: [
-      'If you are in the warned area, move to shelter now.',
-      'Take tornado precautions immediately.',
-      'Do not wait for visual confirmation of a tornado.',
-      'Your next move should be shelter if you are inside this warning.',
-      'Get to your tornado-safe location now.',
-      'Stay away from windows and get as low and protected as you can.'
-    ],
-
-    severe: [
-      'Get indoors and away from windows now.',
-      'Treat damaging wind and large hail as an immediate hazard.',
-      'If you are outside, move into a sturdy building.',
-      'Stay inside and away from windows while this warning is active.',
-      'Secure yourself indoors and avoid unnecessary travel through the warned area.'
-    ],
-
-    flood: [
-      'Stay away from flooded roads and low-lying areas.',
-      'Do not drive into floodwater.',
-      'Move away from flood-prone areas and seek higher ground when needed.',
-      'If water is covering a road, turn around.',
-      'Flash flooding can become life-threatening quickly. Avoid low crossings and flooded streets.'
-    ],
-
-    warning: [
-      'Follow the warning instructions now.',
-      'Take the recommended safety action while this warning is active.',
-      'Stay in a safe location and continue monitoring official warning information.'
-    ]
-  };
-
-  const contextLines = [
-    'I will keep refreshing this warning and tell you if the area, motion, wording, or expiration changes.',
-    'I am continuing to monitor the National Weather Service warning for any update.',
-    'If the warning is replaced, expanded, canceled, or upgraded, Vector will break in with the change.',
-    'I will stay with this threat and keep the warning information in front of you.',
-    'Routine weather is on hold while this warning is active.',
-    'Severe coverage continues until the warning no longer affects this location.',
-    'I am watching the warning text for changes in storm motion, timing, and affected areas.',
-    'This warning remains the focus of the broadcast until the threat clears your location.',
-    'Vector will continue cycling the newest warning information while the alert remains active.'
-  ];
-
-  const segments = [];
-
-  segments.push(
-    fillSeverePhrase(
-      severePick(
-        'severe-opener',
-        openers
-      ),
-      data
-    )
-  );
-
-  if (movement) {
-    segments.push(
-      fillSeverePhrase(
-        severePick(
-          'severe-movement',
-          movementLines
-        ),
-        data
-      )
-    );
-  }
-
-  if (expires) {
-    segments.push(
-      fillSeverePhrase(
-        severePick(
-          'severe-expiration',
-          expirationLines
-        ),
-        data
-      )
-    );
-  }
-
-  const headline =
-    removeEmojis(
-      p.headline ||
-      ''
-    );
-
-  if (
-    headline &&
-    Math.random() >
-    0.35
-  ) {
-    segments.push(
-      headline
-    );
-  }
-
-  segments.push(
-    severePick(
-      `severe-safety-${profile}`,
-      safetyLead[profile] ||
-      safetyLead.warning
-    )
-  );
-
-  /*
-    Keep the actual NWS-style safety instruction intact.
-    The varied lead-in changes the delivery; the safety action itself
-    stays direct and consistent.
-  */
-  segments.push(
-    safetyInstructions(alert)
-  );
-
-  segments.push(
-    severePick(
-      'severe-context',
-      contextLines
-    )
-  );
-
-  return segments
-    .map(cleanForecastText)
-    .filter(Boolean);
+  return StormVectorBroadcast.severeSegments(ctx,alert,{
+    loop:broadcastLoopCount,
+    safety:safetyInstructions(alert)
+  }).map(cleanForecastText).filter(Boolean);
 }
-
 
 /* ─────────────────────────────────────────────
    WEATHER LANGUAGE
@@ -1478,12 +1101,18 @@ async function prepareBroadcast(options = {}) {
     windDeg:observation?.windDeg ?? fallback.windDeg ?? 0,
     windG:observation?.windG ?? fallback.windG ?? 0,
     hourly:fallback.hourly ?? {},
-    alerts:alerts || [],
+    alerts:alerts === null ? (currentWeatherContext?.alerts || []).filter(a => {
+      const end = new Date(a.properties?.ends || a.properties?.expires).getTime();
+      return !Number.isFinite(end) || end > Date.now();
+    }) : alerts,
     alertsAvailable:alerts !== null,
     spc:spc || null,
     observation,
     forecast:{
-      today:cleanForecastText(currentPeriod?.detailedForecast || currentPeriod?.shortForecast || ''),
+      today:currentPeriod?.isDaytime
+        ? cleanForecastText(currentPeriod.detailedForecast || currentPeriod.shortForecast || '')
+        : '',
+      tomorrow:cleanForecastText(tomorrow?.detailedForecast || tomorrow?.shortForecast || ''),
       tonight:cleanForecastText(tonight?.detailedForecast || tonight?.shortForecast || ''),
       tomorrow:cleanForecastText(tomorrow?.detailedForecast || tomorrow?.shortForecast || '')
     }
@@ -2818,186 +2447,18 @@ function updateSevereTakeover(ctx) {
 function buildRundown(ctx) {
   const urgent = [...(ctx.alerts || [])]
     .filter(isUrgentWarning)
-    .sort(
-      (a,b) =>
-        alertPriorityScore(a.properties?.event || '') -
-        alertPriorityScore(b.properties?.event || '')
-    );
+    .sort((a,b) => alertPriorityScore(a.properties?.event || '') - alertPriorityScore(b.properties?.event || ''));
+  const watch = (ctx.alerts || []).find(isWatchAlert);
 
-  /*
-    Active warning = severe weather only.
-    No routine forecast chatter is mixed into the warning coverage.
-  */
-  if (urgent.length) {
-    liveSegments =
-      severeRundown(
-        ctx,
-        urgent[0]
-      );
-
-    liveSegIdx = 0;
-    rememberListenerUpdate(ctx);
-    return;
-  }
-
-  const segments = [];
-
-  segments.push(
-    normalLoopOpener(ctx)
-  );
-
-  if (latestChanges.some(c => c.important)) {
-    segments.push(
-      "Here's what's changed since the last update."
-    );
-
-    latestChanges
-      .filter(c => c.important)
-      .slice(0,2)
-      .forEach(
-        c =>
-          segments.push(c.text)
-      );
-  }
-
-  /*
-    Rotate the normal rundown so a 20-second loop doesn't sound identical.
-    Data still refreshes independently in the background.
-  */
-  const rotation =
-    broadcastLoopCount %
-    4;
-
-  if (rotation === 0) {
-    if (ctx.tempF != null) {
-      let current =
-        `Right now it's ${ctx.tempF} degrees`;
-
-      if (
-        ctx.feelsF != null &&
-        Math.abs(ctx.feelsF - ctx.tempF) >= 3
-      ) {
-        current +=
-          `, and it feels like ${ctx.feelsF}`;
-      }
-
-      current +=
-        `. We're seeing ${skyDescription(ctx.wcode)}.`;
-
-      segments.push(current);
-    }
-
-    if (ctx.forecast.today) {
-      segments.push(
-        `Looking ahead, ${ctx.forecast.today}`
-      );
-    }
-  }
-
-  else if (rotation === 1) {
-    if (ctx.tempF != null) {
-      segments.push(
-        `Temperature is holding near ${ctx.tempF} degrees with ${skyDescription(ctx.wcode)}.`
-      );
-    }
-
-    if (ctx.windSpd >= 7 || ctx.windG >= 12) {
-      segments.push(
-        `Wind is out of the ${window.degToCompass(ctx.windDeg) || 'variable'} at ${ctx.windSpd} miles per hour` +
-        `${ctx.windG > ctx.windSpd + 5 ? `, with gusts near ${ctx.windG}` : ''}.`
-      );
-    }
-
-    if (ctx.dewF != null) {
-      segments.push(
-        `The dew point is ${ctx.dewF} degrees, so the air feels ${window.dewLabel(ctx.dewF)}.`
-      );
-    }
-  }
-
-  else if (rotation === 2) {
-    if (ctx.forecast.tonight) {
-      segments.push(
-        `For tonight, ${ctx.forecast.tonight}`
-      );
-    } else if (ctx.forecast.today) {
-      segments.push(
-        `For the next part of the forecast, ${ctx.forecast.today}`
-      );
-    }
-
-    if (ctx.spc) {
-      const labels = {
-        TSTM:'general thunderstorm',
-        MRGL:'marginal',
-        SLGT:'slight',
-        ENH:'enhanced',
-        MDT:'moderate',
-        HIGH:'high'
-      };
-
-      segments.push(
-        `The Storm Prediction Center has this location under a ${labels[ctx.spc]} risk today.`
-      );
-    }
-  }
-
-  else {
-    if (latestChanges.length) {
-      const meaningful =
-        latestChanges
-          .filter(c => c.text)
-          .slice(0,2);
-
-      meaningful.forEach(
-        c =>
-          segments.push(c.text)
-      );
-    }
-
-    if (
-      !latestChanges.length ||
-      latestChanges.every(
-        c =>
-          /no significant/i.test(c.text || '')
-      )
-    ) {
-      segments.push(
-        `Nothing significant has changed around ${ctx.cityState || 'your area'} since the last check.`
-      );
-    }
-
-    if (ctx.tempF != null) {
-      segments.push(
-        `Current temperature remains around ${ctx.tempF} degrees.`
-      );
-    }
-  }
-
-  const watches =
-    (ctx.alerts || [])
-      .filter(isWatchAlert);
-
-  if (watches.length) {
-    const p =
-      watches[0].properties ||
-      {};
-
-    segments.push(
-      `A ${p.event || 'weather watch'} remains in effect for ${(p.areaDesc || ctx.cityState || 'your area').split(';')[0]}. Stay weather-aware and be ready to act if a warning is issued.`
-    );
-  }
-
-  segments.push(
-    broadcastLoopCount === 0
-      ? "That's your StormVector update. I'm staying with you and I'll keep watching for changes."
-      : "That's the latest check. I'm still monitoring the weather with you."
-  );
-
-  liveSegments =
-    segments
-      .map(cleanForecastText)
-      .filter(Boolean);
+  // Warnings and watches exclude routine fair-weather chatter.
+  liveSegments = urgent.length
+    ? severeRundown(ctx,urgent[0])
+    : watch
+      ? StormVectorBroadcast.watchSegments(ctx,watch,{loop:broadcastLoopCount})
+      : StormVectorBroadcast.normalSegments(ctx,{
+        loop:broadcastLoopCount,
+        changes:latestChanges
+      }).map(cleanForecastText).filter(Boolean);
 
   liveSegIdx = 0;
   rememberListenerUpdate(ctx);
@@ -3012,7 +2473,7 @@ function pickVoice() {
   const voices = speechSynthesis.getVoices();
 
   liveVoice =
-    voices.find(v => /en-US/i.test(v.lang) && /Daniel|Aaron|David|Alex|Tom/i.test(v.name)) ||
+    voices.find(v => /en-US/i.test(v.lang) && /Samantha|Ava|Daniel|Alex|Allison|Google US English/i.test(v.name)) ||
     voices.find(v => /en-US/i.test(v.lang)) ||
     voices.find(v => /^en/i.test(v.lang)) ||
     voices[0] ||
@@ -3022,7 +2483,7 @@ function pickVoice() {
 function createUtterance(text) {
   const utter = new SpeechSynthesisUtterance(removeEmojis(text));
   if (liveVoice) utter.voice = liveVoice;
-  utter.rate = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 0.93 : 0.96;
+  utter.rate = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 0.97 : 0.98;
   utter.pitch = 1;
   utter.volume = 1;
   return utter;
