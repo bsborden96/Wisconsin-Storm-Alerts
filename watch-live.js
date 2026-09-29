@@ -80,6 +80,8 @@ let liveMusic = null;
 let speechGeneration = 0;
 
 let currentWeatherContext = null;
+let lastAlertCheckAt = null;
+let alertPollId = 0;
 let weatherRequestId = 0;
 let previousSnapshot = null;
 let latestChanges = [];
@@ -115,6 +117,7 @@ let radarWarningLayer = null;
 let radarWarningsVisible = true;
 let radarZoomMode = 'local';
 let radarLastLoaded = null;
+let radarTileErrors = 0;
 
 let selectedView = 'conditions';
 let selectedRadarProduct = 'radar';
@@ -276,8 +279,7 @@ function setRobotSpeaking(on) {
 function updateStatusPills() {
   const travel = document.getElementById('vectorTravelStatus');
   if (travel) {
-    if (liveMuted) travel.textContent = 'PAUSED';
-    else if (!locationReady) travel.textContent = 'LOCATION OFF';
+    if (!locationReady) travel.textContent = 'LOCATION OFF';
     else if (locationMode === 'search') travel.textContent = 'FIXED LOCATION';
     else if (movingRefreshRunning) travel.textContent = 'GPS UPDATING';
     else travel.textContent = 'GPS TRACKING';
@@ -287,8 +289,8 @@ function updateStatusPills() {
   if (!threat) return;
 
   const level = threatLevel(currentWeatherContext?.alerts || []);
-  if (currentWeatherContext?.alertsAvailable === false) {
-    threat.textContent = 'UNKNOWN';
+  if (!currentWeatherContext || currentWeatherContext.alertsAvailable === false) {
+    threat.textContent = currentWeatherContext ? 'UNKNOWN' : 'NOT CHECKED';
     threat.classList.remove('vector-threat-normal','vector-threat-watch','vector-threat-warning','vector-threat-critical');
     return;
   }
@@ -307,6 +309,53 @@ function updateStatusPills() {
     threat.textContent = 'NORMAL';
     threat.classList.add('vector-threat-normal');
   }
+}
+
+function updateDecision(ctx) {
+  const box = document.getElementById('vectorDecision');
+  if (!box || !ctx) return;
+  const checked = lastAlertCheckAt
+    ? `Warnings checked ${lastAlertCheckAt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
+    : 'Warnings not checked yet';
+  setText('vectorAlertChecked',ctx.alertsAvailable ? checked : 'Warning check failed — last result may be stale');
+  const urgent = (ctx.alerts || []).filter(isUrgentWarning)
+    .sort((a,b) => alertPriorityScore(a.properties?.event) - alertPriorityScore(b.properties?.event))[0];
+  const watch = (ctx.alerts || []).find(isWatchAlert);
+  box.classList.toggle('warning-active',Boolean(urgent));
+  box.classList.toggle('status-unknown',!ctx.alertsAvailable);
+  if (!ctx.alertsAvailable) {
+    setText('vectorDecisionTitle','Unable to verify current warnings');
+    setText('vectorDecisionDetail',urgent
+      ? `Last known: ${urgent.properties?.event}. Continue following official instructions while checking another warning source.`
+      : 'Check Wireless Emergency Alerts, NOAA Weather Radio, or weather.gov. StormVector cannot confirm that this location is clear.');
+  } else if (urgent) {
+    const p = urgent.properties || {};
+    const end = p.ends || p.expires;
+    const expiry = end && Number.isFinite(new Date(end).getTime())
+      ? ` Warning valid until ${new Date(end).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}.`
+      : '';
+    setText('vectorDecisionTitle',p.event || 'Weather warning in effect');
+    setText('vectorDecisionDetail',`${safetyInstructions(urgent)}${expiry}`);
+  } else if (watch) {
+    setText('vectorDecisionTitle',watch.properties?.event || 'Weather watch in effect');
+    setText('vectorDecisionDetail','Be ready to act if a warning is issued. Follow the official watch details.');
+  } else {
+    setText('vectorDecisionTitle','No active NWS warning for this location');
+    setText('vectorDecisionDetail','Conditions can change. Keep another way to receive urgent warnings.');
+  }
+}
+
+function syncAlertUi(ctx) {
+  if (!ctx) return;
+  renderSevere(ctx);
+  renderSevereCenter(ctx);
+  renderMesoscale(ctx);
+  updateSevereTakeover(ctx);
+  updateRadarWarnings();
+  updateStatusPills();
+  updateDecision(ctx);
+  syncMusicForWeather(ctx);
+  setText('freshnessAlerts',!ctx.alertsAvailable ? 'CHECK FAILED' : ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CHECKED');
 }
 
 /* ─────────────────────────────────────────────
@@ -927,6 +976,8 @@ async function fetchNearestObservation(stationUrl) {
         const obs = await obsRes.json();
         const p = obs.properties || {};
         if (p.temperature?.value == null) continue;
+        if (!p.timestamp || !Number.isFinite(new Date(p.timestamp).getTime()) ||
+            Date.now() - new Date(p.timestamp).getTime() > 90 * 60 * 1000) continue;
 
         return {
           stationId,
@@ -1048,6 +1099,7 @@ async function fetchSpcRisk(lat, lon) {
     try {
       const res = await safeFetch(url,{timeout:9000});
       const data = await res.json();
+      if (!Array.isArray(data.features)) throw new Error('Invalid SPC outlook response');
       let best = null;
       const point = [lon,lat];
 
@@ -1063,13 +1115,13 @@ async function fetchSpcRisk(lat, lon) {
           if (!best || SPC_RANK[label] > SPC_RANK[best]) best = label;
         }
       }
-      return best;
+      return {available:true,category:best};
     } catch (error) {
       console.warn('SPC risk request failed:', error);
     }
   }
 
-  return null;
+  return {available:false,category:null};
 }
 
 /* ─────────────────────────────────────────────
@@ -1085,13 +1137,14 @@ async function prepareBroadcast(options = {}) {
   setText('vectorGraphicStatus','UPDATING');
 
   const requestId = ++weatherRequestId;
+  const alertPollAtStart = alertPollId;
   const requestLat = liveLat;
   const requestLon = liveLon;
   const earlyConditions = fetchOpenMeteo(requestLat,requestLon)
     .then(conditions => {
       if (requestId === weatherRequestId && conditions.tempF != null) {
         renderConditions(conditions);
-        setText('freshnessObservation','CONDITIONS CURRENT');
+        setText('freshnessObservation','MODEL ESTIMATE');
       }
       return conditions;
     })
@@ -1104,12 +1157,15 @@ async function prepareBroadcast(options = {}) {
     fetchNwsPoint(requestLat,requestLon),
     earlyConditions,
     fetchAlerts(requestLat,requestLon),
-    fetchSpcRisk(requestLat,requestLon).catch(() => null),
+    fetchSpcRisk(requestLat,requestLon).catch(() => ({available:false,category:null})),
     fetchLocalMesoscale(requestLat,requestLon)
   ]);
 
   const observation = await fetchNearestObservation(nws.stationUrl);
   if (requestId !== weatherRequestId) return currentWeatherContext;
+  const latestAlerts = alertPollId !== alertPollAtStart && currentWeatherContext
+    ? {items:currentWeatherContext.alerts,available:currentWeatherContext.alertsAvailable}
+    : {items:alerts,available:alerts !== null};
 
   liveCityState =
     locationMode === 'search' && selectedSearchLocation
@@ -1155,25 +1211,27 @@ async function prepareBroadcast(options = {}) {
     windDeg:observation?.windDeg ?? fallback.windDeg ?? 0,
     windG:observation?.windG ?? fallback.windG ?? 0,
     hourly:fallback.hourly ?? {},
-    alerts:alerts === null ? (currentWeatherContext?.alerts || []).filter(a => {
+    alerts:latestAlerts.items === null ? (currentWeatherContext?.alerts || []).filter(a => {
       const end = new Date(a.properties?.ends || a.properties?.expires).getTime();
       return !Number.isFinite(end) || end > Date.now();
-    }) : alerts,
-    alertsAvailable:alerts !== null,
-    spc:spc || null,
+    }) : latestAlerts.items,
+    alertsAvailable:latestAlerts.available,
+    spc:spc.category,
+    spcAvailable:spc.available,
     mesoscale:mesoscale === null ? (currentWeatherContext?.mesoscale || []) : mesoscale,
     observation,
     forecast:{
       today:currentPeriod?.isDaytime
         ? cleanForecastText(currentPeriod.detailedForecast || currentPeriod.shortForecast || '')
         : '',
-      tomorrow:cleanForecastText(tomorrow?.detailedForecast || tomorrow?.shortForecast || ''),
       tonight:cleanForecastText(tonight?.detailedForecast || tonight?.shortForecast || ''),
       tomorrow:cleanForecastText(tomorrow?.detailedForecast || tomorrow?.shortForecast || '')
     }
   };
 
   currentWeatherContext = ctx;
+  if (ctx.alertsAvailable) lastAlertCheckAt = new Date();
+  if (!liveStarted && ctx.alertsAvailable) (ctx.alerts || []).filter(isUrgentWarning).forEach(a => knownPriorityAlertIds.add(a.id));
 
   lastWeatherRefreshLat = liveLat;
   lastWeatherRefreshLon = liveLon;
@@ -1182,24 +1240,16 @@ async function prepareBroadcast(options = {}) {
   renderConditions(ctx);
   renderObservation(ctx.observation);
   renderForecast(ctx);
-  renderSevere(ctx);
-  renderMesoscale(ctx);
   renderStormTimeline(ctx);
-  renderSevereCenter(ctx);
   renderChanges(detectChanges(ctx));
   updateRadarForLocation();
-  updateRadarWarnings();
   updateSpcImagePanels();
-  updateSevereTakeover(ctx);
+  syncAlertUi(ctx);
   setBroadcastBackground(ctx);
   buildRundown(ctx);
-  syncMusicForWeather(ctx);
 
   setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'CURRENT' : 'UNAVAILABLE');
-  setText('freshnessAlerts',!ctx.alertsAvailable ? 'UNAVAILABLE' : ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CURRENT');
   setText('vectorGraphicStatus','CURRENT');
-
-  updateStatusPills();
 
   return ctx;
 }
@@ -1235,7 +1285,7 @@ function renderObservation(obs) {
 
   if (!obs) {
     if (box) box.hidden = true;
-    setText('freshnessObservation','FALLBACK DATA');
+    setText('freshnessObservation','MODEL ESTIMATE');
     return;
   }
 
@@ -1327,17 +1377,17 @@ function renderSevere(ctx) {
     HIGH:'A significant severe weather outbreak is possible.'
   };
 
-  setText('graphicSpcRisk',titles[ctx.spc] || 'NO ORGANIZED RISK');
+  setText('graphicSpcRisk',!ctx.spcAvailable ? 'OUTLOOK UNAVAILABLE' : titles[ctx.spc] || 'NO ORGANIZED RISK');
   setText(
     'graphicSpcDescription',
-    descriptions[ctx.spc] ||
-    'No categorical severe weather risk is currently loaded for this location.'
+    !ctx.spcAvailable ? 'StormVector could not check the SPC outlook.' :
+    descriptions[ctx.spc] || 'No categorical severe weather risk covers this location.'
   );
 
   const significant = (ctx.alerts || []).filter(a => isUrgentWarning(a) || isWatchAlert(a));
   setText(
     'severeAlertSummary',
-    significant.length
+    !ctx.alertsAvailable ? 'Unable to verify current watches and warnings.' : significant.length
       ? `Active: ${significant.slice(0,3).map(a => a.properties?.event || 'Weather Alert').join(', ')}`
       : 'No active severe weather watches or warnings for this location.'
   );
@@ -2005,12 +2055,15 @@ function renderSevereCenter(ctx) {
   const urgent = alerts.filter(isUrgentWarning);
   const watches = alerts.filter(isWatchAlert);
   const top = urgent[0] || watches[0] || alerts[0];
-  setText('severeCenterAlerts', urgent.length ? String(urgent.length) : (alerts.length ? String(alerts.length) : 'NONE'));
-  setText('severeCenterAlertName', top?.properties?.event || 'No active NWS alert for this location');
-  setText('severeCenterSpc', ctx?.spc || 'NONE');
+  setText('severeCenterAlerts', !ctx.alertsAvailable ? 'UNKNOWN' : String(alerts.length));
+  setText('severeCenterAlertName', !ctx.alertsAvailable ? 'Unable to check NWS alerts' : top?.properties?.event || 'No active NWS alert for this location');
+  setText('severeCenterSpc', !ctx.spcAvailable ? 'UNAVAILABLE' : ctx.spc || 'NONE');
   let threat = 'NORMAL';
   let detail = 'No urgent NWS warning is active for this location.';
-  if (urgent.length) {
+  if (!ctx.alertsAvailable) {
+    threat = 'UNKNOWN';
+    detail = 'Current NWS warnings cannot be verified.';
+  } else if (urgent.length) {
     threat = 'WARNING';
     detail = top?.properties?.event || 'Urgent warning active';
   } else if (watches.length) {
@@ -2022,7 +2075,7 @@ function renderSevereCenter(ctx) {
   }
   setText('severeCenterThreat',threat);
   setText('severeCenterThreatDetail',detail);
-  setText('severeCenterStatus',urgent.length ? 'WARNING ACTIVE' : watches.length ? 'WATCH ACTIVE' : 'MONITORING');
+  setText('severeCenterStatus',!ctx.alertsAvailable ? 'CHECK FAILED' : urgent.length ? 'WARNING ACTIVE' : watches.length ? 'WATCH ACTIVE' : 'MONITORING');
   document.getElementById('severeCenter')?.classList.toggle('warning-active',urgent.length > 0);
 }
 
@@ -2327,21 +2380,25 @@ function ensureRadar() {
   radarLayer.addTo(radarMap);
 
   radarLayer.on('loading',() => {
+    radarTileErrors = 0;
     setRadarStatus('Loading NOAA MRMS radar...');
     setText('freshnessRadar','LOADING');
   });
 
   radarLayer.on('load',() => {
     radarLastLoaded = new Date();
-    setRadarStatus('NOAA MRMS radar current');
+    setRadarStatus(radarTileErrors
+      ? 'Some radar tiles failed to load. Image may be incomplete.'
+      : 'NOAA MRMS overlay loaded. Image observation time not verified.');
     setText(
       'radarTimestamp',
-      `Loaded ${radarLastLoaded.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
+      `Map refreshed ${radarLastLoaded.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
     );
-    setText('freshnessRadar','CURRENT');
+    setText('freshnessRadar',radarTileErrors ? 'PARTIAL LOAD' : 'MAP LOADED');
   });
 
   radarLayer.on('tileerror',() => {
+    radarTileErrors++;
     setRadarStatus('A radar tile failed to load. Retrying automatically.');
     setText('freshnessRadar','RETRYING');
   });
@@ -2503,13 +2560,16 @@ function updateSevereTakeover(ctx) {
   if (takeover) takeover.hidden = false;
   if (banner) banner.hidden = false;
 
-  setText('severeTakeoverTitle',p.event || 'WEATHER WARNING');
+  const title = ctx.alertsAvailable ? (p.event || 'WEATHER WARNING') : `LAST KNOWN ${p.event || 'WEATHER WARNING'} — CHECK FAILED`;
+  const safety = ctx.alertsAvailable ? safetyInstructions(warning) :
+    `Warning status cannot be verified. Keep following official instructions. ${safetyInstructions(warning)}`;
+  setText('severeTakeoverTitle',title);
   setText('severeTakeoverArea',(p.areaDesc || ctx.cityState || 'Current location').split(';')[0]);
-  setText('severeTakeoverSafety',safetyInstructions(warning));
+  setText('severeTakeoverSafety',safety);
 
-  setText('graphicAlertTitle',p.event || 'WEATHER WARNING');
+  setText('graphicAlertTitle',title);
   setText('graphicAlertArea',(p.areaDesc || ctx.cityState || 'Current location').split(';')[0]);
-  setText('graphicAlertInstruction',safetyInstructions(warning));
+  setText('graphicAlertInstruction',safety);
 }
 
 /* ─────────────────────────────────────────────
@@ -2641,32 +2701,7 @@ async function refreshWarningContextOnly() {
     return;
   }
 
-  const alerts =
-    await fetchAlerts(
-      liveLat,
-      liveLon
-    );
-
-  if (alerts === null) {
-    if (currentWeatherContext) currentWeatherContext.alertsAvailable = false;
-    setText('freshnessAlerts','UNAVAILABLE');
-    updateStatusPills();
-    return;
-  }
-
-  currentWeatherContext = {
-    ...(currentWeatherContext || {}),
-    alerts,
-    alertsAvailable:true
-  };
-
-  updateSevereTakeover(
-    currentWeatherContext
-  );
-
-  updateRadarWarnings();
-  updateStatusPills();
-  syncMusicForWeather(currentWeatherContext);
+  await checkForBreakingWeather();
 
   /*
     Rebuild from the newest NWS warning text so movement,
@@ -2860,9 +2895,9 @@ function toggleMute() {
     setRobotSpeaking(false);
     stopMusic();
     setLiveBadge('MUTED');
-    if (button) button.textContent = 'RESUME';
+    if (button) button.textContent = 'UNMUTE AUDIO';
   } else {
-    if (button) button.textContent = 'STOP';
+    if (button) button.textContent = 'MUTE AUDIO';
     startMusic();
     setLiveBadge('LIVE');
 
@@ -2947,13 +2982,13 @@ function startTimers() {
   alertTimer = setInterval(checkForBreakingWeather,CONFIG.alertCheckMs);
 
   refreshTimer = setInterval(async () => {
-    if (liveMuted || !locationReady || movingRefreshRunning) return;
+    if (!locationReady || movingRefreshRunning) return;
 
     try {
       broadcastLoopCount++;
       await prepareBroadcast({preserveSpeech:true});
 
-      if (!currentWeatherContext?.alerts?.some(isUrgentWarning)) {
+      if (!liveMuted && !currentWeatherContext?.alerts?.some(isUrgentWarning)) {
         // Do not interrupt normal speech every refresh.
         if (!('speechSynthesis' in window) || !window.speechSynthesis.speaking) startCurrentRundown();
       }
@@ -2971,24 +3006,24 @@ function stopTimers() {
 }
 
 async function checkForBreakingWeather() {
-  if (!locationReady || liveMuted) return;
-
-  const alerts = await fetchAlerts(liveLat,liveLon);
+  if (!locationReady) return;
+  const requestId = ++alertPollId;
+  const lat = liveLat;
+  const lon = liveLon;
+  const alerts = await fetchAlerts(lat,lon);
+  if (requestId !== alertPollId || lat !== liveLat || lon !== liveLon) return;
   if (alerts === null) {
     if (currentWeatherContext) currentWeatherContext.alertsAvailable = false;
-    setText('freshnessAlerts','UNAVAILABLE');
-    updateStatusPills();
+    syncAlertUi(currentWeatherContext);
     return;
   }
+  lastAlertCheckAt = new Date();
+  const hadWarning = (currentWeatherContext?.alerts || []).some(isUrgentWarning);
   if (currentWeatherContext) {
     currentWeatherContext.alerts = alerts;
     currentWeatherContext.alertsAvailable = true;
-    updateStatusPills();
-    updateSevereTakeover(currentWeatherContext);
-    renderMesoscale(currentWeatherContext);
-    syncMusicForWeather(currentWeatherContext);
   }
-  setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
+  syncAlertUi(currentWeatherContext);
   const priority = alerts
     .filter(isUrgentWarning)
     .sort((a,b) =>
@@ -2999,7 +3034,13 @@ async function checkForBreakingWeather() {
   const newWarnings = priority.filter(a => !knownPriorityAlertIds.has(a.id));
   priority.forEach(a => knownPriorityAlertIds.add(a.id));
 
-  if (!newWarnings.length) return;
+  if (!newWarnings.length) {
+    if (hadWarning && !priority.length && !liveMuted) {
+      buildRundown(currentWeatherContext);
+      startCurrentRundown();
+    }
+    return;
+  }
 
   const warning = newWarnings[0];
   currentWeatherContext = {
@@ -3009,9 +3050,9 @@ async function checkForBreakingWeather() {
   };
   setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
 
-  updateSevereTakeover(currentWeatherContext);
-  updateRadarWarnings();
-  updateStatusPills();
+  syncAlertUi(currentWeatherContext);
+
+  if (liveMuted) return;
 
   speechGeneration++;
   try { speechSynthesis.cancel(); } catch (_) {}

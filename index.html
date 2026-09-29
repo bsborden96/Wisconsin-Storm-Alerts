@@ -336,12 +336,21 @@
         id="vectorThreatStatus"
         class="vector-threat-normal">
 
-        NORMAL
+        NOT CHECKED
 
       </strong>
 
     </div>
 
+  </div>
+
+  <div id="vectorDecision" class="vector-decision" role="status" aria-live="polite">
+    <div class="vector-decision-meta">
+      <strong id="liveLocationText">Choose a location</strong>
+      <span id="vectorAlertChecked">Warnings not checked yet</span>
+    </div>
+    <strong id="vectorDecisionTitle">Choose a location to check the weather</strong>
+    <p id="vectorDecisionDetail">StormVector checks official warnings while this page is open.</p>
   </div>
 
 </section>
@@ -866,7 +875,7 @@
               </span>
 
               <span id="radarTimestamp">
-                --
+                Map not refreshed
               </span>
 
             </div>
@@ -1403,7 +1412,7 @@
         type="button"
         onclick="toggleMute()">
 
-        STOP
+        MUTE AUDIO
 
       </button>
 

@@ -7397,6 +7397,33 @@ body.sv-radar-open{overflow:hidden}
 .vector-status-pill span { color:#a9bacb; }
 .vector-status-pill strong { margin:0; }
 .section:has(.vector-status-row) { padding-top:12px; }
+
+.vector-decision {
+  margin-top: 12px;
+  padding: 18px 20px;
+  border: 1px solid rgba(105, 211, 255, .38);
+  border-radius: 14px;
+  background: #102333;
+  color: #f5faff;
+}
+.vector-decision-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px 18px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+.vector-decision-meta span { color: #c6dce8; }
+.vector-decision > strong { display: block; font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
+.vector-decision p { margin: 8px 0 0; font-size: 16px; line-height: 1.45; }
+.vector-decision.warning-active { border: 2px solid #ff6868; background: #421722; }
+.vector-decision.status-unknown { border: 2px solid #ffbf62; background: #3a281a; }
+@media (max-width: 520px) {
+  .vector-decision { padding: 15px; }
+  .vector-decision-meta { font-size: 13px; }
+  .vector-decision p { font-size: 15px; }
+}
 .section:has(.live-stage) { padding-top:12px; }
 .live-stage {
   background:radial-gradient(circle at 50% 12%,rgba(0,157,232,.13),transparent 40%),
