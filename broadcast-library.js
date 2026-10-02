@@ -131,10 +131,10 @@
       'For {place}, the official warning text says around {time}. Take the recommended action now.',
       'The National Weather Service lists {place} around {time}. Conditions can change before then.'
     ],
-    noArrival: [
-      'The warning does not give a reliable arrival time for {place}. Treat it as a threat now.',
-      'There is no specific arrival time for {place} in this warning. Act on the warning now.',
-      'I cannot put an exact arrival time on {place} from this warning. Stay in your safe place.'
+    warningImmediate: [
+      'This warning is in effect for {place} now. Take protective action immediately.',
+      'If you are in {place}, act on this warning now and stay sheltered.',
+      'For {place}, this is a current warning. Follow the safety instructions now.'
     ],
     warningClose: [
       'I will keep the warning in focus and check for official updates.',
@@ -316,8 +316,8 @@
     }
     const arrival = officialArrival(alert,place);
     const motion = movementFromAlert(alert);
-    if (arrival) lines.push(fill(pick('arrival',loop),{place,time:arrival}));
-    else if (loop % 2 === 0) lines.push(fill(pick('noArrival',loop),{place}));
+    if (arrival && ctx.alertsAvailable !== false) lines.push(fill(pick('arrival',loop),{place,time:arrival}));
+    else if (ctx.alertsAvailable !== false && loop % 2 === 0) lines.push(fill(pick('warningImmediate',loop),{place}));
     if (motion) lines.push(fill(pick('warningMotion',loop),motion));
     const impacts = hazard(alert);
     if (impacts) lines.push(impacts);

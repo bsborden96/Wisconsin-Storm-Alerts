@@ -52,8 +52,17 @@ test('no fabricated arrival or storm motion from polygon and expiration alone', 
   const alert = {properties:{event:'Tornado Warning',areaDesc:'Dodge County',
     description:'A tornado warning is in effect.',ends:'2026-09-28T21:00:00Z'}};
   const text = brief.severeSegments(fair,alert,{loop:0,safety:'Take shelter now.'}).join(' ');
-  assert.match(text,/no specific arrival time|cannot put an exact arrival time|does not give a reliable arrival time/i);
+  assert.match(text,/warning is in effect for Waupun now|act on this warning now|current warning/i);
+  assert.doesNotMatch(text,/arrival time|cannot determine|around \d|by \d/i);
   assert.doesNotMatch(text,/miles per hour|moving northeast|Mostly sunny/);
+});
+
+test('last known warning does not present its old arrival as current', () => {
+  const alert = {properties:{event:'Tornado Warning',areaDesc:'Dodge County',
+    description:'Waupun around 3:45 PM.',expires:'2026-09-28T21:00:00Z'}};
+  const text = brief.severeSegments({...fair,alertsAvailable:false},alert,{loop:0,safety:'Take shelter now.'}).join(' ');
+  assert.match(text,/last warning I received/);
+  assert.doesNotMatch(text,/3:45 PM|arrival time/i);
 });
 
 test('unavailable alert feed is called out without routine forecast in warning mode', () => {
