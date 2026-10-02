@@ -7417,8 +7417,13 @@ body.sv-radar-open{overflow:hidden}
 .vector-decision-meta span { color: #c6dce8; }
 .vector-decision > strong { display: block; font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
 .vector-decision p { margin: 8px 0 0; font-size: 16px; line-height: 1.45; }
+#vectorWarningArea { font-weight: 700; }
+#vectorOfficialDetails { margin-top: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; }
+#vectorOfficialDetails summary { cursor: pointer; font-weight: 700; min-height: 28px; }
+#vectorOfficialText { white-space: pre-line; max-height: 45vh; overflow: auto; }
 .vector-decision.warning-active { border: 2px solid #ff6868; background: #421722; }
 .vector-decision.status-unknown { border: 2px solid #ffbf62; background: #3a281a; }
+.live-freshness-bar strong { overflow-wrap: anywhere; }
 @media (max-width: 520px) {
   .vector-decision { padding: 15px; }
   .vector-decision-meta { font-size: 13px; }

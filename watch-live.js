@@ -26,6 +26,7 @@ const CONFIG = {
   movingRefreshMiles: 2,
   movingRefreshMs: 5 * 60 * 1000,
   alertCheckMs: 30 * 1000,
+  maxAlertAgeMs: 90 * 1000,
   normalRefreshMs: 5 * 60 * 1000,
 
   /*
@@ -70,6 +71,7 @@ let liveCityState = null;
 let locationMode = 'none'; // none | device | search
 let selectedSearchLocation = null;
 let locationReady = false;
+let locationGeneration = 0;
 
 let liveStarted = false;
 let liveMuted = false;
@@ -81,6 +83,7 @@ let speechGeneration = 0;
 
 let currentWeatherContext = null;
 let lastAlertCheckAt = null;
+let alertCheckPending = false;
 let alertPollId = 0;
 let weatherRequestId = 0;
 let previousSnapshot = null;
@@ -95,6 +98,7 @@ let movingRefreshRunning = false;
 
 let alertTimer = null;
 let refreshTimer = null;
+let freshnessTimer = null;
 let speechLoopTimer = null;
 const knownPriorityAlertIds = new Set();
 
@@ -317,14 +321,19 @@ function updateDecision(ctx) {
   const checked = lastAlertCheckAt
     ? `Warnings checked ${lastAlertCheckAt.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
     : 'Warnings not checked yet';
-  setText('vectorAlertChecked',ctx.alertsAvailable ? checked : 'Warning check failed — last result may be stale');
+  setText('vectorAlertChecked',alertCheckPending ? `Checking warnings now · ${checked}` :
+    ctx.alertsAvailable ? checked : `Warning status unavailable · ${checked}`);
   const urgent = (ctx.alerts || []).filter(isUrgentWarning)
     .sort((a,b) => alertPriorityScore(a.properties?.event) - alertPriorityScore(b.properties?.event))[0];
   const watch = (ctx.alerts || []).find(isWatchAlert);
   box.classList.toggle('warning-active',Boolean(urgent));
   box.classList.toggle('status-unknown',!ctx.alertsAvailable);
+  const area = document.getElementById('vectorWarningArea');
+  const details = document.getElementById('vectorOfficialDetails');
+  if (area) area.hidden = !urgent || !ctx.alertsAvailable;
+  if (details) details.hidden = !urgent || !ctx.alertsAvailable;
   if (!ctx.alertsAvailable) {
-    setText('vectorDecisionTitle','Unable to verify current warnings');
+    setText('vectorDecisionTitle',alertCheckPending ? 'Checking current warnings' : 'Unable to verify current warnings');
     setText('vectorDecisionDetail',urgent
       ? `Last known: ${urgent.properties?.event}. Continue following official instructions while checking another warning source.`
       : 'Check Wireless Emergency Alerts, NOAA Weather Radio, or weather.gov. StormVector cannot confirm that this location is clear.');
@@ -336,6 +345,8 @@ function updateDecision(ctx) {
       : '';
     setText('vectorDecisionTitle',p.event || 'Weather warning in effect');
     setText('vectorDecisionDetail',`${safetyInstructions(urgent)}${expiry}`);
+    setText('vectorWarningArea',`Selected location: ${ctx.cityState || liveCityState || 'current location'}. NWS affected area: ${p.areaDesc || 'See full warning'}.`);
+    setText('vectorOfficialText',[p.headline,p.description,p.instruction].filter(Boolean).join('\n\n') || 'The full warning text is unavailable. Check weather.gov/alerts.');
   } else if (watch) {
     setText('vectorDecisionTitle',watch.properties?.event || 'Weather watch in effect');
     setText('vectorDecisionDetail','Be ready to act if a warning is issued. Follow the official watch details.');
@@ -355,7 +366,36 @@ function syncAlertUi(ctx) {
   updateStatusPills();
   updateDecision(ctx);
   syncMusicForWeather(ctx);
-  setText('freshnessAlerts',!ctx.alertsAvailable ? 'CHECK FAILED' : ctx.alerts.length ? `${ctx.alerts.length} ACTIVE` : 'CHECKED');
+  setText('freshnessAlerts',alertCheckPending ? 'CHECKING' : !ctx.alertsAvailable ? 'UNAVAILABLE' :
+    `${ctx.alerts.length ? `${ctx.alerts.length} ACTIVE · ` : ''}${lastAlertCheckAt ? Math.max(0,Math.floor((Date.now()-lastAlertCheckAt.getTime())/60000)) : 0} MIN AGO`);
+}
+
+function expireOldAlertStatus(now = Date.now()) {
+  if (!currentWeatherContext?.alertsAvailable || !lastAlertCheckAt ||
+      now - lastAlertCheckAt.getTime() <= CONFIG.maxAlertAgeMs) return false;
+  currentWeatherContext.alertsAvailable = false;
+  syncAlertUi(currentWeatherContext);
+  return true;
+}
+
+function resetLocationAlertState() {
+  // Invalidate requests for the previous location, including a full weather refresh.
+  locationGeneration++;
+  alertPollId++;
+  weatherRequestId++;
+  lastAlertCheckAt = null;
+  alertCheckPending = false;
+  knownPriorityAlertIds.clear();
+  currentWeatherContext = null;
+  setText('vectorAlertChecked','Warnings not checked yet');
+  setText('freshnessAlerts','CHECKING');
+  setText('vectorDecisionTitle','Checking current warnings');
+  setText('vectorDecisionDetail','Waiting for an official NWS warning check for this location.');
+  const area = document.getElementById('vectorWarningArea');
+  const details = document.getElementById('vectorOfficialDetails');
+  if (area) area.hidden = true;
+  if (details) details.hidden = true;
+  updateStatusPills();
 }
 
 /* ─────────────────────────────────────────────
@@ -576,7 +616,7 @@ function cleanForecastText(text) {
    LOCATION — CURRENT DEVICE
 ───────────────────────────────────────────── */
 
-function requestCurrentLocation() {
+function requestCurrentLocation(expectedGeneration = locationGeneration) {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error('This browser does not support location services.'));
@@ -585,6 +625,10 @@ function requestCurrentLocation() {
 
     navigator.geolocation.getCurrentPosition(
       position => {
+        if (expectedGeneration !== locationGeneration) {
+          reject(new Error('A newer location was selected.'));
+          return;
+        }
         deviceLat = position.coords.latitude;
         deviceLon = position.coords.longitude;
         liveLat = deviceLat;
@@ -633,6 +677,10 @@ function startMovingLocationWatch() {
         !lastWeatherRefreshAt ||
         now - lastWeatherRefreshAt >= CONFIG.movingRefreshMs;
 
+      if (moved && !movingRefreshRunning) {
+        resetLocationAlertState();
+        previousSnapshot = null;
+      }
       updateRadarForLocation();
 
       if ((moved || old) && !movingRefreshRunning) {
@@ -659,19 +707,24 @@ function updateReturnButton() {
 }
 
 async function returnToMyLocation() {
+  const requestedGeneration = locationGeneration;
   setLiveBadge('LOCATING');
   setLocationText('Getting your current location...');
 
   try {
     await requestCurrentLocation();
+    resetLocationAlertState();
+    const generation = locationGeneration;
     startMovingLocationWatch();
     previousSnapshot = null;
     await prepareBroadcast();
+    if (generation !== locationGeneration) return;
     if (liveStarted && !liveMuted) {
       await speakStandalone(`Switching StormVector coverage back to ${liveCityState || 'your current location'}.`);
       startCurrentRundown();
     }
   } catch (error) {
+    if (requestedGeneration !== locationGeneration) return;
     setCaption(error.message);
     setLiveBadge('LOCATION ERROR');
   }
@@ -829,10 +882,14 @@ async function selectSearchedLocation(result) {
 
   liveLat = Number(result.latitude);
   liveLon = Number(result.longitude);
+  const selectedLat = liveLat;
+  const selectedLon = liveLon;
   locationMode = 'search';
   selectedSearchLocation = result;
   locationReady = true;
   liveCityState = locationDisplay(result);
+  resetLocationAlertState();
+  const generation = locationGeneration;
   previousSnapshot = null;
   broadcastLoopCount = 0;
 
@@ -852,6 +909,7 @@ async function selectSearchedLocation(result) {
 
   try {
     await prepareBroadcast();
+    if (generation !== locationGeneration || locationMode !== 'search' || liveLat !== selectedLat || liveLon !== selectedLon) return;
 
     hideStartOverlay();
     if (!liveStarted) {
@@ -1162,7 +1220,7 @@ async function prepareBroadcast(options = {}) {
   ]);
 
   const observation = await fetchNearestObservation(nws.stationUrl);
-  if (requestId !== weatherRequestId) return currentWeatherContext;
+  if (requestId !== weatherRequestId || requestLat !== liveLat || requestLon !== liveLon) return currentWeatherContext;
   const latestAlerts = alertPollId !== alertPollAtStart && currentWeatherContext
     ? {items:currentWeatherContext.alerts,available:currentWeatherContext.alertsAvailable}
     : {items:alerts,available:alerts !== null};
@@ -1230,7 +1288,8 @@ async function prepareBroadcast(options = {}) {
   };
 
   currentWeatherContext = ctx;
-  if (ctx.alertsAvailable) lastAlertCheckAt = new Date();
+  alertCheckPending = false;
+  if (ctx.alertsAvailable && alertPollId === alertPollAtStart) lastAlertCheckAt = new Date();
   if (!liveStarted && ctx.alertsAvailable) (ctx.alerts || []).filter(isUrgentWarning).forEach(a => knownPriorityAlertIds.add(a.id));
 
   lastWeatherRefreshLat = liveLat;
@@ -1248,7 +1307,7 @@ async function prepareBroadcast(options = {}) {
   setBroadcastBackground(ctx);
   buildRundown(ctx);
 
-  setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'CURRENT' : 'UNAVAILABLE');
+  setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'LOADED · ISSUE TIME UNKNOWN' : 'UNAVAILABLE');
   setText('vectorGraphicStatus','CURRENT');
 
   return ctx;
@@ -1292,13 +1351,14 @@ function renderObservation(obs) {
   if (box) box.hidden = false;
   setText('liveObservationStation',`${obs.stationName} (${obs.stationId})`);
 
-  if (obs.timestamp) {
-    const age = Math.max(0,Math.round((Date.now()-new Date(obs.timestamp).getTime())/60000));
+  const observedAt = obs.timestamp ? new Date(obs.timestamp).getTime() : NaN;
+  if (Number.isFinite(observedAt)) {
+    const age = Math.max(0,Math.round((Date.now()-observedAt)/60000));
     setText('liveObservationAge',age <= 1 ? 'Latest observation' : `${age} min old`);
     setText('freshnessObservation',age <= 15 ? 'CURRENT' : `${age} MIN OLD`);
   } else {
     setText('liveObservationAge','');
-    setText('freshnessObservation','AVAILABLE');
+    setText('freshnessObservation','AGE UNKNOWN');
   }
 }
 
@@ -2392,9 +2452,9 @@ function ensureRadar() {
       : 'NOAA MRMS overlay loaded. Image observation time not verified.');
     setText(
       'radarTimestamp',
-      `Map refreshed ${radarLastLoaded.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
+      `Tiles loaded ${radarLastLoaded.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · radar image time unknown`
     );
-    setText('freshnessRadar',radarTileErrors ? 'PARTIAL LOAD' : 'MAP LOADED');
+    setText('freshnessRadar',radarTileErrors ? 'PARTIAL · TIME UNKNOWN' : 'TILES LOADED · TIME UNKNOWN');
   });
 
   radarLayer.on('tileerror',() => {
@@ -2980,6 +3040,13 @@ function startTimers() {
   stopTimers();
 
   alertTimer = setInterval(checkForBreakingWeather,CONFIG.alertCheckMs);
+  freshnessTimer = setInterval(() => {
+    if (!expireOldAlertStatus() && currentWeatherContext) {
+      updateDecision(currentWeatherContext);
+      if (currentWeatherContext.alertsAvailable) syncAlertUi(currentWeatherContext);
+    }
+    if (currentWeatherContext?.observation) renderObservation(currentWeatherContext.observation);
+  },15 * 1000);
 
   refreshTimer = setInterval(async () => {
     if (!locationReady || movingRefreshRunning) return;
@@ -3001,17 +3068,23 @@ function startTimers() {
 function stopTimers() {
   if (alertTimer) clearInterval(alertTimer);
   if (refreshTimer) clearInterval(refreshTimer);
+  if (freshnessTimer) clearInterval(freshnessTimer);
   alertTimer = null;
   refreshTimer = null;
+  freshnessTimer = null;
 }
 
 async function checkForBreakingWeather() {
   if (!locationReady) return;
+  expireOldAlertStatus();
   const requestId = ++alertPollId;
   const lat = liveLat;
   const lon = liveLon;
-  const alerts = await fetchAlerts(lat,lon);
+  let alerts;
+  try { alerts = await fetchAlerts(lat,lon); }
+  catch (error) { console.warn('NWS alert check failed:',error); alerts = null; }
   if (requestId !== alertPollId || lat !== liveLat || lon !== liveLon) return;
+  alertCheckPending = false;
   if (alerts === null) {
     if (currentWeatherContext) currentWeatherContext.alertsAvailable = false;
     syncAlertUi(currentWeatherContext);
@@ -3048,8 +3121,6 @@ async function checkForBreakingWeather() {
     alerts,
     alertsAvailable:true
   };
-  setText('freshnessAlerts',alerts.length ? `${alerts.length} ACTIVE` : 'CURRENT');
-
   syncAlertUi(currentWeatherContext);
 
   if (liveMuted) return;
@@ -3239,9 +3310,22 @@ function runDiagnostics() {
   if (missing.length) console.warn('StormVector missing DOM elements:',missing);
 }
 
+function resumeAlertChecks() {
+  if (!locationReady) return;
+  // Background timers may have been suspended; never display an old clear result.
+  if (currentWeatherContext) {
+    currentWeatherContext.alertsAvailable = false;
+    alertCheckPending = true;
+    syncAlertUi(currentWeatherContext);
+    if (currentWeatherContext.observation) renderObservation(currentWeatherContext.observation);
+  }
+  return checkForBreakingWeather();
+}
+
 document.addEventListener('visibilitychange',() => {
   if (document.visibilityState === 'visible') {
     setTimeout(() => radarMap?.invalidateSize(),200);
+    resumeAlertChecks();
   }
 });
 
