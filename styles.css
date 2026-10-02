@@ -7401,10 +7401,11 @@ body.sv-radar-open{overflow:hidden}
 .vector-decision {
   margin-top: 12px;
   padding: 18px 20px;
-  border: 1px solid rgba(105, 211, 255, .38);
+  border: 1px solid rgba(85, 173, 196, .48);
   border-radius: 14px;
-  background: #102333;
-  color: #f5faff;
+  background: linear-gradient(145deg, #18212a, #0e151d);
+  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 12px 30px rgba(0,0,0,.22);
+  color: #edf5f8;
 }
 .vector-decision-meta {
   display: flex;
@@ -7421,8 +7422,8 @@ body.sv-radar-open{overflow:hidden}
 #vectorOfficialDetails { margin-top: 14px; padding: 12px; border: 1px solid rgba(255,255,255,.35); border-radius: 8px; }
 #vectorOfficialDetails summary { cursor: pointer; font-weight: 700; min-height: 28px; }
 #vectorOfficialText { white-space: pre-line; max-height: 45vh; overflow: auto; }
-.vector-decision.warning-active { border: 2px solid #ff6868; background: #421722; }
-.vector-decision.status-unknown { border: 2px solid #ffbf62; background: #3a281a; }
+.vector-decision.warning-active { border: 2px solid #f36a70; background: linear-gradient(145deg,#311a20,#171216); }
+.vector-decision.status-unknown { border: 2px solid #e9af59; background: linear-gradient(145deg,#302619,#191712); }
 .live-freshness-bar strong { overflow-wrap: anywhere; }
 @media (max-width: 520px) {
   .vector-decision { padding: 15px; }
