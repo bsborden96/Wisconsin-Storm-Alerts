@@ -30,6 +30,8 @@ test('24-hour forecast respects selected-location offset and never duplicates mi
   const points=api.timelinePoints(ctx,6,Date.parse('2026-10-03T15:00Z'));
   assert.equal(points.length,2);
   assert.equal(points[1].temp,null);
+  const midHour=api.timelinePoints(ctx,6,Date.parse('2026-10-03T15:46Z'));
+  assert.equal(midHour[0].time,Date.parse('2026-10-03T15:00Z'));
   assert.equal(api.timelinePoints(ctx,24,Date.parse('2026-10-04T15:00Z')).length,0);
 });
 

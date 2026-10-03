@@ -2107,7 +2107,7 @@ function forecastTimeMs(time, ctx) {
 function timelinePoints(ctx, hours = 6, now = Date.now()) {
   const h = ctx?.hourly || {};
   const times = h.time || [];
-  const start = times.findIndex(t => forecastTimeMs(t,ctx) >= now - 30 * 60000);
+  const start = times.findIndex(t => forecastTimeMs(t,ctx) > now - 60 * 60000);
   if (start < 0) return [];
   const offsets = hours === 24 ? [0,3,6,9,12,18,24] : hours === 12 ? [0,2,4,6,9,12] : [0,1,3,6];
   return offsets.map(offset => {
@@ -2136,7 +2136,7 @@ function upcomingChanges(ctx, hours = timelineHours) {
   const h = ctx.hourly || {};
   const now = Date.now();
   const entries = (h.time || []).map((t,i) => ({time:forecastTimeMs(t,ctx),i}))
-    .filter(p => p.time >= now - 30*60000 && p.time <= now + hours*3600000);
+    .filter(p => p.time > now - 60*60000 && p.time <= now + hours*3600000);
   if (!entries.length) return 'Hourly forecast temporarily unavailable.';
   const notes = [];
   const wet = c => c != null && Number(c) >= 51;
