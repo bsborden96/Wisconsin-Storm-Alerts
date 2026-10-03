@@ -7554,6 +7554,9 @@ body > #svRadarDialog:not([hidden]) { position:fixed!important; inset:0!importan
 #svRadarDialog .radar-footer { display:block; margin-top:5px; font:10px/1.3 system-ui,sans-serif; }
 #svRadarDialog .radar-footer #radarStatus { display:none; }
 #svRadarDialog .radar-footer #radarTimestamp { display:block; }
+#svRadarDialog .radar-legend-title,#svRadarDialog .radar-legend-labels { font-size:10px; }
+#svRadarDialog .radar-tool-btn,#svRadarDialog .radar-control-row .radar-tool-btn { min-height:42px; }
+#svRadarDialog .stormvector-radar .leaflet-control-zoom a { width:38px; height:38px; line-height:38px; font-size:20px; }
 @media(max-width:600px) {
   #svRadarDialog .radar-toolbar { display:flex; flex-wrap:wrap; }
   #svRadarDialog .radar-toolbar-actions { justify-content:flex-start; }
