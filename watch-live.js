@@ -135,6 +135,7 @@ let radarReplayIndex = 0;
 let radarReplayTimer = null;
 let radarReplayRequestId = 0;
 let radarTracksLayer = null;
+let radarTracksFeatures = [];
 let radarTracksVisible = false;
 let radarTracksRequestId = 0;
 let radarDiscussionsLayer = null;
@@ -2606,6 +2607,10 @@ function ensureRadar() {
   }).setView([liveLat ?? 39,liveLon ?? -98],liveLat == null ? 4 : 8);
   L.control.scale({imperial:true,metric:false,position:'bottomleft',maxWidth:110}).addTo(radarMap);
   radarMap.on('click',handleRadarMapClick);
+  radarMap.on('moveend',() => {
+    if (radarTracksVisible && radarTracksFeatures.length) renderRadarTracks();
+    if (radarDiscussionsVisible && radarDiscussionsLayer?.getLayers().length) updateRadarDiscussionCount();
+  });
 
   L.tileLayer(
     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2783,12 +2788,47 @@ function projectStormTrack(lat,lon,direction,speedKnots,minutes=30) {
   return [phi2*180/Math.PI,lambda2*180/Math.PI];
 }
 
+function renderRadarTracks() {
+  if (!radarTracksLayer || !radarMap || !radarTracksVisible) return;
+  radarTracksLayer.clearLayers();
+  const bounds = radarMap.getBounds().pad(.3);
+  let count = 0;
+  for (const feature of radarTracksFeatures) {
+    const [lon,lat] = feature.geometry?.coordinates || [];
+    const p = feature.properties || {};
+    const direction = Number(p.drct), speed = Number(p.sknt);
+    const valid = Date.parse(p.valid);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(direction) ||
+        !Number.isFinite(speed) || speed <= 0 || speed > 120 ||
+        !Number.isFinite(valid) || Date.now()-valid > 40*60*1000 || valid-Date.now() > 5*60*1000 ||
+        !bounds.contains([lat,lon])) continue;
+    const end = projectStormTrack(lat,lon,direction,speed);
+    const label = `${escapeHtml(p.nexrad || 'NEXRAD')} cell ${escapeHtml(p.storm_id || '')}`;
+    const popup = `<strong>${label}</strong><br>Estimated motion: ${Math.round(direction)}° at ${Math.round(speed*1.15078)} mph<br>Projected 30-minute path, not an arrival forecast.<br>Scan: ${escapeHtml(new Date(valid).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}`;
+    L.polyline([[lat,lon],end],{color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
+    L.circleMarker([lat,lon],{radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
+    if (++count >= 150) break;
+  }
+  if (!radarMap.hasLayer(radarTracksLayer)) radarTracksLayer.addTo(radarMap);
+  setText('radarTracksStatus',count ? `${count} recent NEXRAD cells in view · projected 30 min` : 'No recent NEXRAD storm cells in view');
+}
+
+function updateRadarDiscussionCount() {
+  if (!radarDiscussionsLayer || !radarMap || !radarDiscussionsVisible) return;
+  const count = radarDiscussionsLayer.getLayers().filter(layer => {
+    const bounds = layer.getBounds?.();
+    return bounds?.isValid() && radarMap.getBounds().intersects(bounds);
+  }).length;
+  setText('radarDiscussionsStatus',count ? `${count} SPC discussion areas in view · not warnings` : 'No active SPC discussions in view');
+}
+
 async function toggleRadarTracks() {
   radarTracksVisible = !radarTracksVisible;
   const requestId = ++radarTracksRequestId;
   setRadarSwitch('radarTracksBtn',radarTracksVisible);
   if (!radarTracksVisible) {
     radarTracksLayer?.clearLayers();
+    radarTracksFeatures = [];
     if (radarTracksLayer && radarMap?.hasLayer(radarTracksLayer)) radarMap.removeLayer(radarTracksLayer);
     setText('radarTracksStatus','');
     return;
@@ -2799,27 +2839,8 @@ async function toggleRadarTracks() {
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid storm-cell feed');
     if (!radarTracksVisible || requestId !== radarTracksRequestId || !radarMap) return;
-    radarTracksLayer.clearLayers();
-    const bounds = radarMap.getBounds().pad(.3);
-    let count = 0;
-    for (const feature of data.features) {
-      const [lon,lat] = feature.geometry?.coordinates || [];
-      const p = feature.properties || {};
-      const direction = Number(p.drct), speed = Number(p.sknt);
-      const valid = Date.parse(p.valid);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(direction) ||
-          !Number.isFinite(speed) || speed <= 0 || speed > 120 ||
-          !Number.isFinite(valid) || Date.now()-valid > 40*60*1000 || valid-Date.now() > 5*60*1000 ||
-          !bounds.contains([lat,lon])) continue;
-      const end = projectStormTrack(lat,lon,direction,speed);
-      const label = `${escapeHtml(p.nexrad || 'NEXRAD')} cell ${escapeHtml(p.storm_id || '')}`;
-      const popup = `<strong>${label}</strong><br>Estimated motion: ${Math.round(direction)}° at ${Math.round(speed*1.15078)} mph<br>Projected 30-minute path, not an arrival forecast.<br>Scan: ${escapeHtml(new Date(valid).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}`;
-      L.polyline([[lat,lon],end],{color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
-      L.circleMarker([lat,lon],{radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
-      if (++count >= 150) break;
-    }
-    radarTracksLayer.addTo(radarMap);
-    setText('radarTracksStatus',count ? `${count} recent NEXRAD cells in view · projected 30 min` : 'No recent NEXRAD storm cells in view');
+    radarTracksFeatures = data.features;
+    renderRadarTracks();
   } catch (error) {
     console.warn('NEXRAD storm cells unavailable:',error);
     if (requestId === radarTracksRequestId) {
@@ -2856,11 +2877,7 @@ async function toggleRadarDiscussions() {
     radarWarningLayer?.bringToFront();
     const link = document.getElementById('radarDiscussionsLink');
     if (link) link.hidden = false;
-    const count = radarDiscussionsLayer.getLayers().filter(layer => {
-      const bounds = layer.getBounds?.();
-      return bounds?.isValid() && radarMap.getBounds().intersects(bounds);
-    }).length;
-    setText('radarDiscussionsStatus',count ? `${count} SPC discussion areas in view · not warnings` : 'No active SPC discussions in view');
+    updateRadarDiscussionCount();
   } catch (error) {
     console.warn('SPC discussion polygons unavailable; using WMS:',error);
     if (requestId === radarDiscussionsRequestId) {
