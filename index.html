@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261003-6"
+    href="styles.css?v=20261003-7"
   >
 
 </head>
@@ -788,10 +788,22 @@
             </div>
 
 
-            <div
-              id="stormVectorRadar"
-              class="stormvector-radar"
-              aria-label="StormVector NOAA weather radar">
+            <div class="sv-radar-map-wrap">
+              <div
+                id="stormVectorRadar"
+                class="stormvector-radar"
+                aria-label="NOAA MRMS reflectivity map with weather warnings">
+              </div>
+              <div class="sv-radar-map-hud" aria-live="polite">
+                <span class="sv-radar-live-dot" aria-hidden="true"></span>
+                <span id="radarMapHud">NOAA MRMS · Loading</span>
+              </div>
+            </div>
+
+            <div class="sv-radar-detail-row">
+              <button id="radarMeasureBtn" class="radar-tool-btn" type="button" aria-pressed="false">MEASURE DISTANCE</button>
+              <button id="radarMeasureClearBtn" class="radar-tool-btn" type="button" hidden>CLEAR</button>
+              <output id="radarMapReadout" aria-live="polite">Tap the map for coordinates</output>
             </div>
 
 
@@ -826,6 +838,12 @@
 
               </div>
 
+            </div>
+
+            <div class="sv-radar-opacity-row">
+              <label for="radarOpacity">RADAR OPACITY</label>
+              <input id="radarOpacity" type="range" min="25" max="100" step="5" value="80" aria-label="Radar opacity">
+              <output id="radarOpacityValue" for="radarOpacity">80%</output>
             </div>
 
 
@@ -1525,7 +1543,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261003-6"></script>
+<script src="watch-live.js?v=20261003-7"></script>
 
 
 </body>
