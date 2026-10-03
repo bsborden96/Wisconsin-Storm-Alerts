@@ -125,6 +125,9 @@ let radarWarningsVisible = true;
 let radarZoomMode = 'local';
 let radarLastLoaded = null;
 let radarTileErrors = 0;
+let radarMeasureActive = false;
+let radarMeasurePoints = [];
+let radarMeasureLayer = null;
 
 let selectedView = 'conditions';
 let selectedRadarProduct = 'radar';
@@ -2294,14 +2297,10 @@ function openStormVectorRadarFullscreen() {
 
 function resizeFullscreenRadar() {
   if (!radarFullscreenDialog || radarFullscreenDialog.hidden) return;
-  const panel = document.getElementById('radarProductRadar');
+  const wrapper = document.querySelector('#svRadarDialog .sv-radar-map-wrap');
   const map = document.getElementById('stormVectorRadar');
-  if (panel && map && panel.clientHeight > 0) {
-    const chrome = [...panel.children].filter(el => el !== map).reduce((height,el) => {
-      const style = getComputedStyle(el);
-      return height + el.getBoundingClientRect().height + (parseFloat(style.marginTop)||0) + (parseFloat(style.marginBottom)||0);
-    },0);
-    map.style.setProperty('height',`${Math.max(120,panel.clientHeight-chrome)}px`,'important');
+  if (wrapper && map && wrapper.clientHeight > 0) {
+    map.style.setProperty('height',`${Math.max(120,wrapper.clientHeight)}px`,'important');
   }
   radarMap?.invalidateSize({pan:false});
 }
@@ -2583,6 +2582,8 @@ function ensureRadar() {
     attributionControl:true,
     preferCanvas:true
   }).setView([liveLat ?? 39,liveLon ?? -98],liveLat == null ? 4 : 8);
+  L.control.scale({imperial:true,metric:false,position:'bottomleft',maxWidth:110}).addTo(radarMap);
+  radarMap.on('click',handleRadarMapClick);
 
   L.tileLayer(
     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -2601,7 +2602,7 @@ function ensureRadar() {
       transparent:true,
       version:'1.1.1',
       tiled:true,
-      opacity:0.78,
+      opacity:0.8,
       attribution:'NOAA/NWS MRMS'
     }
   );
@@ -2612,6 +2613,7 @@ function ensureRadar() {
     radarTileErrors = 0;
     setRadarStatus('Loading NOAA MRMS radar...');
     setText('freshnessRadar','LOADING');
+    setText('radarMapHud','NOAA MRMS · Loading reflectivity');
   });
 
   radarLayer.on('load',() => {
@@ -2624,12 +2626,14 @@ function ensureRadar() {
       `Tiles loaded ${radarLastLoaded.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · radar image time unknown`
     );
     setText('freshnessRadar',radarTileErrors ? 'PARTIAL · TIME UNKNOWN' : 'TILES LOADED · TIME UNKNOWN');
+    setText('radarMapHud',radarTileErrors ? 'NOAA MRMS · Some tiles unavailable' : 'NOAA MRMS · Reflectivity');
   });
 
   radarLayer.on('tileerror',() => {
     radarTileErrors++;
     setRadarStatus('A radar tile failed to load. Retrying automatically.');
     setText('freshnessRadar','RETRYING');
+    setText('radarMapHud','NOAA MRMS · Retrying tiles');
   });
 
   radarWarningLayer = L.geoJSON(null,{
@@ -2649,6 +2653,37 @@ function ensureRadar() {
 
 function setRadarStatus(text) {
   setText('radarStatus',text);
+}
+
+function clearRadarMeasurement() {
+  radarMeasurePoints = [];
+  if (radarMap && radarMeasureLayer) radarMap.removeLayer(radarMeasureLayer);
+  radarMeasureLayer = null;
+  setText('radarMapReadout',radarMeasureActive ? 'Tap two points on the map' : 'Tap the map for coordinates');
+  const clear = document.getElementById('radarMeasureClearBtn');
+  if (clear) clear.hidden = true;
+}
+
+function handleRadarMapClick(event) {
+  const point = event.latlng;
+  if (!radarMeasureActive) {
+    setText('radarMapReadout',`${Math.abs(point.lat).toFixed(3)}°${point.lat >= 0 ? 'N' : 'S'} · ${Math.abs(point.lng).toFixed(3)}°${point.lng >= 0 ? 'E' : 'W'}`);
+    return;
+  }
+  if (radarMeasurePoints.length === 2) clearRadarMeasurement();
+  radarMeasurePoints.push(point);
+  if (radarMeasurePoints.length === 1) {
+    radarMeasureLayer = L.layerGroup().addTo(radarMap);
+    L.circleMarker(point,{radius:6,color:'#fff',weight:2,fillColor:'#a87bf5',fillOpacity:1}).addTo(radarMeasureLayer);
+    setText('radarMapReadout','Tap the destination');
+    return;
+  }
+  const miles = radarMap.distance(radarMeasurePoints[0],point) / 1609.344;
+  L.circleMarker(point,{radius:6,color:'#fff',weight:2,fillColor:'#a87bf5',fillOpacity:1}).addTo(radarMeasureLayer);
+  L.polyline(radarMeasurePoints,{color:'#d6afff',weight:3,dashArray:'7 6'}).addTo(radarMeasureLayer);
+  setText('radarMapReadout',`${miles < 10 ? miles.toFixed(1) : Math.round(miles)} miles straight-line`);
+  const clear = document.getElementById('radarMeasureClearBtn');
+  if (clear) clear.hidden = false;
 }
 
 function warningPolygonStyle(feature) {
@@ -2711,6 +2746,8 @@ function setRadarZoomMode(mode) {
 function updateRadarForLocation() {
   if (!radarMap || liveLat == null || liveLon == null) return;
 
+  clearRadarMeasurement();
+
   createRadarMarker();
   radarMarker?.bindTooltip(liveCityState || 'StormVector location',{direction:'top'});
   radarMap.setView([liveLat,liveLon],radarZoomLevel());
@@ -2743,6 +2780,20 @@ function refreshRadar() {
 }
 
 function bindRadarControls() {
+  const measure = document.getElementById('radarMeasureBtn');
+  measure?.addEventListener('click',() => {
+    radarMeasureActive = !radarMeasureActive;
+    measure.setAttribute('aria-pressed',String(radarMeasureActive));
+    measure.classList.toggle('active',radarMeasureActive);
+    document.getElementById('stormVectorRadar')?.classList.toggle('sv-radar-measuring',radarMeasureActive);
+    clearRadarMeasurement();
+  });
+  document.getElementById('radarMeasureClearBtn')?.addEventListener('click',clearRadarMeasurement);
+  document.getElementById('radarOpacity')?.addEventListener('input',event => {
+    const opacity = Number(event.target.value);
+    radarLayer?.setOpacity(opacity / 100);
+    setText('radarOpacityValue',`${opacity}%`);
+  });
   document.getElementById('radarLocalBtn')?.addEventListener('click',() => setRadarZoomMode('local'));
   document.getElementById('radarRegionalBtn')?.addEventListener('click',() => setRadarZoomMode('regional'));
   document.getElementById('radarStateBtn')?.addEventListener('click',() => setRadarZoomMode('state'));
@@ -2757,6 +2808,7 @@ function bindRadarControls() {
   warnBtn?.addEventListener('click',() => {
     radarWarningsVisible = !radarWarningsVisible;
     warnBtn.classList.toggle('active',radarWarningsVisible);
+    warnBtn.setAttribute('aria-pressed',String(radarWarningsVisible));
     warnBtn.textContent = radarWarningsVisible ? 'WARNINGS ON' : 'WARNINGS OFF';
     updateRadarWarnings();
   });
