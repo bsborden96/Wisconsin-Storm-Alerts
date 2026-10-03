@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261003-1"
+    href="styles.css?v=20261003-2"
   >
 
 </head>
@@ -1334,6 +1334,8 @@
 
     <!-- FRESHNESS -->
 
+    <details class="sv-data-status">
+      <summary>DATA STATUS <span id="dataStatusSummary">Waiting for location</span></summary>
     <div
       id="liveFreshnessBar"
       class="live-freshness-bar">
@@ -1393,6 +1395,8 @@
     </div>
 
 
+    </details>
+
     <!-- CONTROLS -->
 
     <div
@@ -1415,12 +1419,15 @@
         id="liveMuteBtn"
         class="live-ctrl-btn"
         type="button"
-        onclick="toggleMute()">
+        onclick="toggleMute()"
+        aria-pressed="true">
 
-        MUTE AUDIO
+        VOICE ON
 
       </button>
 
+      <button id="liveMusicBtn" class="live-ctrl-btn" type="button" onclick="toggleMusic()" aria-pressed="true">MUSIC ON</button>
+      <p id="liveAudioStatus" class="sv-audio-status" role="status">Choose a location to start monitoring.</p>
     </div>
 
   </div>
@@ -1437,6 +1444,12 @@
       <div><span class="sv-feature-kicker">WHAT HAPPENS NEXT</span><h2>FUTURE TIMELINE</h2></div>
       <span id="stormTimelineStatus" class="sv-feature-status">WAITING FOR LOCATION</span>
     </div>
+    <div id="timelineRanges" class="sv-timeline-ranges" role="group" aria-label="Forecast timeline range">
+      <button type="button" data-hours="6" aria-pressed="true">6 HOURS</button>
+      <button type="button" data-hours="12" aria-pressed="false">12 HOURS</button>
+      <button type="button" data-hours="24" aria-pressed="false">24 HOURS</button>
+    </div>
+    <p id="timelineChanges" class="sv-timeline-changes">Choose a location to see upcoming changes.</p>
     <div id="stormTimeline" class="sv-storm-timeline">
       <div class="sv-feature-empty">Start StormVector to build your next-hours timeline.</div>
     </div>
@@ -1453,9 +1466,9 @@
       <span id="severeCenterStatus" class="sv-feature-status">MONITORING</span>
     </div>
     <div class="sv-severe-center-grid">
-      <div class="sv-severe-metric"><span>NWS ALERTS</span><strong id="severeCenterAlerts">--</strong><small id="severeCenterAlertName">Waiting for weather data</small></div>
-      <div class="sv-severe-metric"><span>SPC DAY 1</span><strong id="severeCenterSpc">--</strong><small>Official categorical outlook at this location</small></div>
-      <div class="sv-severe-metric"><span>LOCAL THREAT</span><strong id="severeCenterThreat">--</strong><small id="severeCenterThreatDetail">StormVector monitoring</small></div>
+      <div class="sv-severe-metric"><span>NWS ALERTS</span><strong id="severeCenterAlerts">Checking</strong><small id="severeCenterAlertName">Waiting for weather data</small></div>
+      <div class="sv-severe-metric"><span>SPC DAY 1</span><strong id="severeCenterSpc">Checking</strong><small id="severeCenterSpcDetail">Waiting for the official SPC outlook</small></div>
+      <div class="sv-severe-metric"><span>LOCAL THREAT</span><strong id="severeCenterThreat">Checking</strong><small id="severeCenterThreatDetail">StormVector monitoring</small></div>
     </div>
     <button id="severeCenterRadarBtn" class="sv-severe-radar-btn" type="button">OPEN FULL-SCREEN RADAR</button>
   </div>
@@ -1512,7 +1525,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261002-1"></script>
+<script src="watch-live.js?v=20261003-2"></script>
 
 
 </body>

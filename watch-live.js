@@ -75,6 +75,9 @@ let locationGeneration = 0;
 
 let liveStarted = false;
 let liveMuted = false;
+let musicMuted = false;
+let robotSpeaking = false;
+let timelineHours = 6;
 let liveSegments = [];
 let liveSegIdx = 0;
 let liveVoice = null;
@@ -277,6 +280,8 @@ function setLiveBadge(text) {
 }
 
 function setRobotSpeaking(on) {
+  robotSpeaking = !!on;
+  updateAudioControls();
   document.getElementById('liveAvatar')?.classList.toggle('speaking', !!on);
 }
 
@@ -351,8 +356,8 @@ function updateDecision(ctx) {
     setText('vectorDecisionTitle',watch.properties?.event || 'Weather watch in effect');
     setText('vectorDecisionDetail','Be ready to act if a warning is issued. Follow the official watch details.');
   } else {
-    setText('vectorDecisionTitle','No active NWS warning for this location');
-    setText('vectorDecisionDetail','Conditions can change. Keep another way to receive urgent warnings.');
+    setText('vectorDecisionTitle','Your local forecast');
+    setText('vectorDecisionDetail',localWeatherSummary(ctx));
   }
 }
 
@@ -366,6 +371,7 @@ function syncAlertUi(ctx) {
   updateStatusPills();
   updateDecision(ctx);
   syncMusicForWeather(ctx);
+  updateDataStatus(ctx);
   setText('freshnessAlerts',alertCheckPending ? 'CHECKING' : !ctx.alertsAvailable ? 'UNAVAILABLE' :
     `${ctx.alerts.length ? `${ctx.alerts.length} ACTIVE · ` : ''}${lastAlertCheckAt ? Math.max(0,Math.floor((Date.now()-lastAlertCheckAt.getTime())/60000)) : 0} MIN AGO`);
 }
@@ -387,6 +393,10 @@ function resetLocationAlertState() {
   alertCheckPending = false;
   knownPriorityAlertIds.clear();
   currentWeatherContext = null;
+  setText('dataStatusSummary','Checking new location');
+  setText('timelineChanges','Checking the forecast for this location.');
+  const timeline = document.getElementById('stormTimeline');
+  if (timeline) timeline.innerHTML = '<div class="sv-feature-empty">Checking forecast…</div>';
   setText('vectorAlertChecked','Warnings not checked yet');
   setText('freshnessAlerts','CHECKING');
   setText('vectorDecisionTitle','Checking current warnings');
@@ -970,6 +980,7 @@ async function fetchNwsPoint(lat, lon) {
     const rel = p.relativeLocation?.properties || {};
 
     let periods = [];
+    let forecastUpdated = null;
     if (p.forecast) {
       try {
         const fRes = await safeFetch(p.forecast, {
@@ -981,6 +992,7 @@ async function fetchNwsPoint(lat, lon) {
         });
         const fData = await fRes.json();
         periods = fData.properties?.periods || [];
+        forecastUpdated = fData.properties?.updateTime || fData.properties?.generatedAt || null;
       } catch (error) {
         console.warn('NWS forecast failed:', error);
       }
@@ -989,7 +1001,8 @@ async function fetchNwsPoint(lat, lon) {
     return {
       cityState: [rel.city,stateName(rel.state)].filter(Boolean).join(', '),
       stationUrl:p.observationStations || null,
-      periods
+      periods,
+      forecastUpdated
     };
   } catch (error) {
     console.warn('NWS point failed:', error);
@@ -1078,7 +1091,9 @@ async function fetchOpenMeteo(lat, lon) {
     windSpd:Math.round(c.wind_speed_10m || 0),
     windDeg:Number(c.wind_direction_10m || 0),
     windG:Math.round(c.wind_gusts_10m || 0),
-    hourly:data.hourly || {}
+    hourly:data.hourly || {},
+    timeZone:data.timezone || null,
+    utcOffsetSeconds:data.utc_offset_seconds ?? null
   };
 }
 
@@ -1269,6 +1284,9 @@ async function prepareBroadcast(options = {}) {
     windDeg:observation?.windDeg ?? fallback.windDeg ?? 0,
     windG:observation?.windG ?? fallback.windG ?? 0,
     hourly:fallback.hourly ?? {},
+    timeZone:fallback.timeZone,
+    utcOffsetSeconds:fallback.utcOffsetSeconds,
+    forecastUpdated:nws.forecastUpdated,
     alerts:latestAlerts.items === null ? (currentWeatherContext?.alerts || []).filter(a => {
       const end = new Date(a.properties?.ends || a.properties?.expires).getTime();
       return !Number.isFinite(end) || end > Date.now();
@@ -1307,7 +1325,11 @@ async function prepareBroadcast(options = {}) {
   setBroadcastBackground(ctx);
   buildRundown(ctx);
 
-  setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight ? 'LOADED · ISSUE TIME UNKNOWN' : 'UNAVAILABLE');
+  setText('freshnessForecast',ctx.forecast.today || ctx.forecast.tonight
+    ? ctx.forecastUpdated && Number.isFinite(Date.parse(ctx.forecastUpdated))
+      ? `ISSUED ${new Date(ctx.forecastUpdated).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`
+      : 'LOADED · ISSUE TIME UNKNOWN' : 'UNAVAILABLE');
+  updateDataStatus(ctx);
   setText('vectorGraphicStatus','CURRENT');
 
   return ctx;
@@ -2061,7 +2083,9 @@ function updateSpcImagePanels() {
 ───────────────────────────────────────────── */
 
 function timelineWeatherLabel(code) {
+  if (code == null) return 'UNAVAILABLE';
   const c = Number(code);
+  if ([51,53,55,56,57].includes(c)) return 'DRIZZLE';
   if ([95,96,99].includes(c)) return 'THUNDERSTORMS';
   if ([80,81,82].includes(c)) return 'SHOWERS';
   if ([61,63,65,66,67].includes(c)) return 'RAIN';
@@ -2072,42 +2096,106 @@ function timelineWeatherLabel(code) {
   return 'WEATHER';
 }
 
+function forecastTimeMs(time, ctx) {
+  // Open-Meteo's local wall times have no offset; do not interpret them in the viewer's zone.
+  if (!time) return NaN;
+  if (/Z$|[+-]\d{2}:\d{2}$/.test(time)) return Date.parse(time);
+  return ctx.utcOffsetSeconds == null ? Date.parse(time)
+    : Date.parse(time + 'Z') - ctx.utcOffsetSeconds * 1000;
+}
+
+function timelinePoints(ctx, hours = 6, now = Date.now()) {
+  const h = ctx?.hourly || {};
+  const times = h.time || [];
+  const start = times.findIndex(t => forecastTimeMs(t,ctx) >= now - 30 * 60000);
+  if (start < 0) return [];
+  const offsets = hours === 24 ? [0,3,6,9,12,18,24] : hours === 12 ? [0,2,4,6,9,12] : [0,1,3,6];
+  return offsets.map(offset => {
+    const i = start + offset;
+    if (i >= times.length) return null;
+    const value = key => h[key]?.[i] == null || !Number.isFinite(Number(h[key][i])) ? null : Math.round(Number(h[key][i]));
+    return {offset,time:forecastTimeMs(times[i],ctx),temp:value('temperature_2m'),pop:value('precipitation_probability'),wind:value('wind_speed_10m'),gust:value('wind_gusts_10m'),code:h.weather_code?.[i]};
+  }).filter(Boolean);
+}
+
+function timelineIcon(code) {
+  if (code == null) return '—';
+  const c = Number(code);
+  if ([95,96,99].includes(c)) return '⛈';
+  if ([71,73,75,77,85,86].includes(c)) return '❄';
+  if ([51,53,55,56,57,61,63,65,66,67,80,81,82].includes(c)) return '🌧';
+  if ([45,48].includes(c)) return '🌫';
+  return c === 0 ? '☀' : c === 1 ? '🌤' : '☁';
+}
+
+function forecastClock(time,ctx) {
+  return new Date(time).toLocaleTimeString([],{hour:'numeric',...(ctx.timeZone ? {timeZone:ctx.timeZone} : {})});
+}
+
+function upcomingChanges(ctx, hours = timelineHours) {
+  const h = ctx.hourly || {};
+  const now = Date.now();
+  const entries = (h.time || []).map((t,i) => ({time:forecastTimeMs(t,ctx),i}))
+    .filter(p => p.time >= now - 30*60000 && p.time <= now + hours*3600000);
+  if (!entries.length) return 'Hourly forecast temporarily unavailable.';
+  const notes = [];
+  const wet = c => c != null && Number(c) >= 51;
+  const first = entries[0].i;
+  const rain = entries.find(p => wet(h.weather_code?.[p.i]));
+  if (rain) notes.push((wet(h.weather_code?.[first]) ? 'Precipitation in the near-term forecast' : `Precipitation forecast around ${forecastClock(rain.time,ctx)}`));
+  const gust = entries.find(p => h.wind_gusts_10m?.[p.i] >= 25);
+  if (gust) notes.push(`Gusts near ${Math.round(h.wind_gusts_10m[gust.i])} mph around ${forecastClock(gust.time,ctx)}`);
+  const t0 = h.temperature_2m?.[first], t1 = h.temperature_2m?.[entries.at(-1).i];
+  if (t0 != null && t1 != null && Math.abs(t1-t0) >= 10) notes.push(`Temperatures ${t1 < t0 ? 'fall' : 'rise'} about ${Math.round(Math.abs(t1-t0))}° over this period`);
+  return notes.length ? notes.join('. ') + '.' : 'No major precipitation or wind changes indicated in this period.';
+}
+
+function localWeatherSummary(ctx) {
+  const current = ctx.tempF == null ? '' : `${ctx.tempF}° now. `;
+  const forecast = ctx.forecast || {};
+  const brief = text => String(text || '').match(/[^.!?]+[.!?]?/g)?.slice(0,2).join('').trim() || '';
+  const today = brief(forecast.today);
+  const tonight = brief(forecast.tonight);
+  return current + [today,tonight ? `Tonight: ${tonight}` : ''].filter(Boolean).join(' ') || 'Local forecast temporarily unavailable. No active NWS warning was found at the last check.';
+}
+
 function renderStormTimeline(ctx) {
   const box = document.getElementById('stormTimeline');
   if (!box) return;
-  const hourly = ctx?.hourly || {};
-  const times = hourly.time || [];
-  if (!times.length) {
+  const points = timelinePoints(ctx,timelineHours);
+  setText('timelineChanges',upcomingChanges(ctx));
+  if (!points.length) {
     box.innerHTML = '<div class="sv-feature-empty">Hourly timeline temporarily unavailable.</div>';
     setText('stormTimelineStatus','DATA UNAVAILABLE');
     return;
   }
-  const now = Date.now();
-  let start = times.findIndex(t => new Date(t).getTime() >= now - 30 * 60000);
-  if (start < 0) start = 0;
-  const targets = [
-    {label:'NOW', offset:0},
-    {label:'+1 HR', offset:1},
-    {label:'+3 HR', offset:3},
-    {label:'+6 HR', offset:6}
-  ];
-  box.innerHTML = targets.map(({label,offset}) => {
-    const i = Math.min(start + offset, times.length - 1);
-    const temp = Math.round(hourly.temperature_2m?.[i] ?? ctx.tempF ?? 0);
-    const pop = Math.round(hourly.precipitation_probability?.[i] ?? 0);
-    const wind = Math.round(hourly.wind_speed_10m?.[i] ?? ctx.windSpd ?? 0);
-    const code = hourly.weather_code?.[i];
-    const clock = new Date(times[i]).toLocaleTimeString([],{hour:'numeric'});
-    return '<div class="sv-timeline-stop">' +
-      '<span class="sv-timeline-label">'+label+'</span>' +
-      '<small>'+clock+'</small>' +
-      '<strong>'+temp+'°</strong>' +
-      '<b>'+timelineWeatherLabel(code)+'</b>' +
-      '<span>'+pop+'% precip</span>' +
-      '<span>Wind '+wind+' mph</span>' +
-    '</div>';
-  }).join('');
-  setText('stormTimelineStatus','NEXT 6 HOURS');
+  const metric = (value,suffix) => value == null ? 'Unavailable' : `${value}${suffix}`;
+  box.innerHTML = points.map(p => '<div class="sv-timeline-stop">' +
+    `<span class="sv-timeline-label">${p.offset === 0 ? 'NOW' : '+'+p.offset+' HR'}</span>` +
+    `<small>${escapeHtml(forecastClock(p.time,ctx))}</small>` +
+    `<span class="sv-weather-icon" aria-hidden="true">${timelineIcon(p.code)}</span>` +
+    `<strong>${metric(p.temp,'°')}</strong><b>${timelineWeatherLabel(p.code)}</b>` +
+    `<span>${metric(p.pop,'% precip')}</span><span>Wind ${metric(p.wind,' mph')}</span>` +
+    `<span>Gusts ${metric(p.gust,' mph')}</span></div>`).join('');
+  setText('stormTimelineStatus',`NEXT ${timelineHours} HOURS`);
+}
+
+function spcDescription(ctx) {
+  const labels = {TSTM:['General thunderstorms','Thunderstorms possible; organized severe storms are not expected.'],MRGL:['Marginal risk','Isolated severe storms are possible.'],SLGT:['Slight risk','Scattered severe storms are possible.'],ENH:['Enhanced risk','Numerous severe storms are possible in parts of the risk area.'],MDT:['Moderate risk','Widespread severe weather is possible.'],HIGH:['High risk','A significant severe weather outbreak is possible.']};
+  if (!ctx.spcAvailable) return ['UNAVAILABLE','The official SPC outlook could not be checked.'];
+  return labels[ctx.spc] || ['No organized severe risk','No categorical severe risk covers this location.'];
+}
+
+function updateDataStatus(ctx) {
+  if (!ctx) return;
+  const issues = [];
+  if (!ctx.alertsAvailable) issues.push('Warning checks unavailable');
+  if (!ctx.forecast?.today && !ctx.forecast?.tonight) issues.push('Forecast unavailable');
+  if (!ctx.observation) issues.push('Conditions estimated');
+  if (!ctx.spcAvailable) issues.push('Outlook unavailable');
+  const text = issues.length ? issues.join(' · ') : 'Warnings checked · Forecast loaded';
+  setText('dataStatusSummary',text);
+  document.getElementById('dataStatusSummary')?.classList.toggle('sv-data-problem',!ctx.alertsAvailable);
 }
 
 function renderSevereCenter(ctx) {
@@ -2117,7 +2205,9 @@ function renderSevereCenter(ctx) {
   const top = urgent[0] || watches[0] || alerts[0];
   setText('severeCenterAlerts', !ctx.alertsAvailable ? 'UNKNOWN' : String(alerts.length));
   setText('severeCenterAlertName', !ctx.alertsAvailable ? 'Unable to check NWS alerts' : top?.properties?.event || 'No active NWS alert for this location');
-  setText('severeCenterSpc', !ctx.spcAvailable ? 'UNAVAILABLE' : ctx.spc || 'NONE');
+  const [riskLabel,riskDetail] = spcDescription(ctx);
+  setText('severeCenterSpc',riskLabel);
+  setText('severeCenterSpcDetail',riskDetail);
   let threat = 'NORMAL';
   let detail = 'No urgent NWS warning is active for this location.';
   if (!ctx.alertsAvailable) {
@@ -2130,8 +2220,8 @@ function renderSevereCenter(ctx) {
     threat = 'WATCH';
     detail = watches[0]?.properties?.event || 'Watch active';
   } else if (ctx?.spc && ctx.spc !== 'TSTM') {
-    threat = ctx.spc;
-    detail = 'SPC severe risk is active at this location.';
+    threat = riskLabel;
+    detail = riskDetail;
   }
   setText('severeCenterThreat',threat);
   setText('severeCenterThreatDetail',detail);
@@ -2169,6 +2259,13 @@ function closeStormVectorRadarFullscreen() {
 }
 
 function bindStormVectorFeatureControls() {
+  document.querySelectorAll('#timelineRanges button').forEach(button => {
+    button.addEventListener('click',() => {
+      timelineHours = Number(button.dataset.hours);
+      document.querySelectorAll('#timelineRanges button').forEach(b => b.setAttribute('aria-pressed',String(b === button)));
+      if (currentWeatherContext) renderStormTimeline(currentWeatherContext);
+    });
+  });
   document.getElementById('radarFullscreenBtn')?.addEventListener('click',openStormVectorRadarFullscreen);
   document.getElementById('severeCenterRadarBtn')?.addEventListener('click',openStormVectorRadarFullscreen);
   document.addEventListener('keydown',e => {
@@ -2696,16 +2793,20 @@ function ensureMusic() {
 
 function startMusic() {
   const music = ensureMusic();
-  if (!music || liveMuted || musicShouldPause(currentWeatherContext)) return;
+  if (!music || musicMuted || !liveStarted || musicShouldPause(currentWeatherContext)) return;
   music.loop = true;
   music.volume = 0.16;
-  music.play().catch(err => console.warn('Music play blocked:',err));
+  music.play().then(updateAudioControls).catch(err => {
+    console.warn('Music play blocked:',err);
+    updateAudioControls();
+  });
 }
 
 function stopMusic() {
   const music = ensureMusic();
   if (!music) return;
   music.pause();
+  updateAudioControls();
 }
 
 function musicShouldPause(ctx) {
@@ -2717,7 +2818,7 @@ function musicShouldPause(ctx) {
 
 function syncMusicForWeather(ctx) {
   if (musicShouldPause(ctx)) stopMusic();
-  else if (liveStarted && !liveMuted) startMusic();
+  else if (liveStarted && !musicMuted) startMusic();
 }
 
 function duckMusic() {
@@ -2732,7 +2833,7 @@ function restoreMusic() {
 
 function unlockMediaFromUserGesture() {
   const music = ensureMusic();
-  if (music) {
+  if (music && !musicMuted && !musicShouldPause(currentWeatherContext)) {
     music.volume = 0.01;
     music.play().catch(() => {});
   }
@@ -2943,31 +3044,37 @@ function replaySegment() {
   setTimeout(() => speakSegment(liveSegIdx),100);
 }
 
+function updateAudioControls() {
+  const voice = document.getElementById('liveMuteBtn');
+  const musicButton = document.getElementById('liveMusicBtn');
+  if (voice) { voice.textContent = liveMuted ? 'VOICE OFF' : 'VOICE ON'; voice.setAttribute?.('aria-pressed',String(!liveMuted)); }
+  if (musicButton) { musicButton.textContent = musicMuted ? 'MUSIC OFF' : 'MUSIC ON'; musicButton.setAttribute?.('aria-pressed',String(!musicMuted)); }
+  const voiceStatus = !liveStarted ? 'Choose a location to start monitoring.' : robotSpeaking ? 'Vector is speaking.' : liveMuted ? 'Monitoring quietly · voice off.' : 'Monitoring · voice ready.';
+  const musicStatus = musicMuted ? 'Music off.' : musicShouldPause(currentWeatherContext) ? 'Music paused for severe weather.' : liveStarted && liveMusic?.paused ? 'Music paused · switch Music off and on to retry.' : '';
+  setText('liveAudioStatus',[voiceStatus,musicStatus].filter(Boolean).join(' '));
+}
+
+function toggleMusic() {
+  musicMuted = !musicMuted;
+  if (musicMuted) stopMusic(); else startMusic();
+  updateAudioControls();
+}
+
 function toggleMute() {
   liveMuted = !liveMuted;
-  const button = document.getElementById('liveMuteBtn');
-
   speechGeneration++;
-
   if (liveMuted) {
     clearSpeechLoopTimer();
     try { speechSynthesis.cancel(); } catch (_) {}
     setRobotSpeaking(false);
-    stopMusic();
-    setLiveBadge('MUTED');
-    if (button) button.textContent = 'UNMUTE AUDIO';
-  } else {
-    if (button) button.textContent = 'MUTE AUDIO';
-    startMusic();
+    restoreMusic();
+    setLiveBadge('MONITORING');
+  } else if (liveStarted && currentWeatherContext) {
     setLiveBadge('LIVE');
-
-    /*
-      Resume as a continuing listener rather than replaying a stale fragment.
-    */
     buildRundown(currentWeatherContext);
     startCurrentRundown();
   }
-
+  updateAudioControls();
   updateStatusPills();
 }
 
@@ -3613,6 +3720,7 @@ document.addEventListener('DOMContentLoaded',() => {
   bindStormVectorFeatureControls();
 
   bindHistory();
+  updateAudioControls();
 
   const startButton = document.getElementById('liveStartBtn');
   if (startButton) {

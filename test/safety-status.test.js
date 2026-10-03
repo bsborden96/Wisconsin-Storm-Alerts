@@ -90,7 +90,7 @@ test('an expired warning clears across the page even while audio is muted', asyn
   await api.check();
   assert.equal(elements('vectorThreatStatus').textContent,'NORMAL');
   assert.equal(elements('severeCenterAlertName').textContent,'No active NWS alert for this location');
-  assert.equal(elements('vectorDecisionTitle').textContent,'No active NWS warning for this location');
+  assert.equal(elements('vectorDecisionTitle').textContent,'Your local forecast');
   assert.equal(elements('severeTakeover').hidden,true);
 });
 
@@ -119,7 +119,7 @@ test('returning to a visible page checks immediately and shows checking until it
   resolve([]);
   await pending;
   assert.equal(elements('vectorThreatStatus').textContent,'NORMAL');
-  assert.equal(elements('vectorDecisionTitle').textContent,'No active NWS warning for this location');
+  assert.equal(elements('vectorDecisionTitle').textContent,'Your local forecast');
 });
 
 test('switching location invalidates an in-flight warning response and checks the new location', async () => {
@@ -136,7 +136,7 @@ test('switching location invalidates an in-flight warning response and checks th
   resolveOld([{id:'old-place',properties:{event:'Tornado Warning'}}]);
   await oldCheck;
   assert.equal(elements('vectorThreatStatus').textContent,'NORMAL');
-  assert.equal(elements('vectorDecisionTitle').textContent,'No active NWS warning for this location');
+  assert.equal(elements('vectorDecisionTitle').textContent,'Your local forecast');
   assert.match(elements('vectorAlertChecked').textContent,/Warnings checked/);
 });
 
@@ -169,7 +169,7 @@ test('an updated warning and then its expiration refresh the action card', async
   api.setFetch(async () => []);
   await api.check();
   assert.equal(elements('vectorOfficialDetails').hidden,true);
-  assert.equal(elements('vectorDecisionTitle').textContent,'No active NWS warning for this location');
+  assert.equal(elements('vectorDecisionTitle').textContent,'Your local forecast');
 });
 
 test('a failed recheck after tab resume stays unknown with the last check time', async () => {
