@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261003-8"
+    href="styles.css?v=20261003-9"
   >
 
 </head>
@@ -846,6 +846,22 @@
               <output id="radarOpacityValue" for="radarOpacity">80%</output>
             </div>
 
+            <div class="sv-radar-layer-switches" aria-label="Radar layers">
+              <button id="radarPlayBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>PLAY LOOP</span><i aria-hidden="true"></i></button>
+              <button id="radarTracksBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>STORM TRACKS</span><i aria-hidden="true"></i></button>
+              <button id="radarDiscussionsBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>SPC DISCUSSIONS</span><i aria-hidden="true"></i></button>
+            </div>
+            <div id="radarPlaybackControls" class="sv-radar-playback" hidden>
+              <button id="radarLiveBtn" class="radar-tool-btn" type="button">LIVE MRMS</button>
+              <input id="radarFrameSlider" type="range" min="0" max="0" value="0" aria-label="Historical radar frame">
+              <output id="radarFrameTime" for="radarFrameSlider">Loading frames</output>
+              <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer data</a>
+            </div>
+            <div class="sv-radar-layer-status" aria-live="polite">
+              <span id="radarTracksStatus"></span>
+              <span id="radarDiscussionsStatus"></span>
+            </div>
+
 
             <div class="radar-control-row">
 
@@ -1543,7 +1559,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261003-8"></script>
+<script src="watch-live.js?v=20261003-9"></script>
 
 
 </body>
