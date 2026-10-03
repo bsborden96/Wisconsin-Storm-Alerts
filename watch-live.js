@@ -2292,7 +2292,14 @@ function openStormVectorRadarFullscreen() {
   close.focus();
   resizeFullscreenRadar();
   setTimeout(resizeFullscreenRadar,0);
-  setTimeout(resizeFullscreenRadar,200);
+  setTimeout(() => {
+    resizeFullscreenRadar();
+    if (radarMap) radarMap.setView(
+      [liveLat ?? 39,liveLon ?? -98],
+      liveLat == null ? 4 : radarMap.getZoom(),
+      {animate:false}
+    );
+  },200);
 }
 
 function resizeFullscreenRadar() {
