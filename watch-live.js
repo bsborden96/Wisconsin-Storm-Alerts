@@ -128,6 +128,18 @@ let radarTileErrors = 0;
 let radarMeasureActive = false;
 let radarMeasurePoints = [];
 let radarMeasureLayer = null;
+let radarReplayLayer = null;
+let radarReplayFrames = [];
+let radarReplayHost = '';
+let radarReplayIndex = 0;
+let radarReplayTimer = null;
+let radarReplayRequestId = 0;
+let radarTracksLayer = null;
+let radarTracksVisible = false;
+let radarTracksRequestId = 0;
+let radarDiscussionsLayer = null;
+let radarDiscussionsVisible = false;
+let radarDiscussionsRequestId = 0;
 
 let selectedView = 'conditions';
 let selectedRadarProduct = 'radar';
@@ -2332,6 +2344,7 @@ function restoreRadarFromFullscreen() {
 }
 
 function closeStormVectorRadarFullscreen() {
+  if (radarReplayLayer || radarReplayTimer) returnRadarLive();
   if (radarFullscreenDialog) { radarFullscreenDialog.open = false; radarFullscreenDialog.hidden = true; }
   restoreRadarFromFullscreen();
 }
@@ -2617,6 +2630,7 @@ function ensureRadar() {
   radarLayer.addTo(radarMap);
 
   radarLayer.on('loading',() => {
+    if (radarReplayLayer) return;
     radarTileErrors = 0;
     setRadarStatus('Loading NOAA MRMS radar...');
     setText('freshnessRadar','LOADING');
@@ -2624,6 +2638,7 @@ function ensureRadar() {
   });
 
   radarLayer.on('load',() => {
+    if (radarReplayLayer) return;
     radarLastLoaded = new Date();
     setRadarStatus(radarTileErrors
       ? 'Some radar tiles failed to load. Image may be incomplete.'
@@ -2637,6 +2652,7 @@ function ensureRadar() {
   });
 
   radarLayer.on('tileerror',() => {
+    if (radarReplayLayer) return;
     radarTileErrors++;
     setRadarStatus('A radar tile failed to load. Retrying automatically.');
     setText('freshnessRadar','RETRYING');
@@ -2654,12 +2670,197 @@ function ensureRadar() {
     }
   }).addTo(radarMap);
 
+  radarTracksLayer = L.layerGroup();
+  radarDiscussionsLayer = L.geoJSON(null,{
+    style:{color:'#b788f4',weight:2,dashArray:'8 5',fillColor:'#8554c5',fillOpacity:0.09},
+    onEachFeature:(feature,layer) => {
+      const name = String(feature.properties?.name || 'SPC Mesoscale Discussion');
+      const number = name.match(/\bMD\s*(\d{1,4})\b/i)?.[1];
+      const link = number ? `https://www.spc.noaa.gov/products/md/md${number.padStart(4,'0')}.html` : 'https://www.spc.noaa.gov/products/md/';
+      layer.bindPopup(`<strong>${escapeHtml(name)}</strong><br>Discussion area, not a warning.<br><a href="${link}" target="_blank" rel="noopener noreferrer">Official SPC discussion</a>`);
+    }
+  });
+
   updateRadarForLocation();
   setTimeout(() => radarMap?.invalidateSize(),200);
 }
 
 function setRadarStatus(text) {
   setText('radarStatus',text);
+}
+
+function setRadarSwitch(id,on) {
+  const button = document.getElementById(id);
+  button?.setAttribute('aria-pressed',String(on));
+  button?.classList.toggle('active',on);
+}
+
+function radarFrameUrl(frame) {
+  return `${radarReplayHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
+}
+
+function showRadarFrame(index) {
+  if (!radarMap || !radarReplayFrames.length) return;
+  radarReplayIndex = Math.max(0,Math.min(radarReplayFrames.length-1,index));
+  const frame = radarReplayFrames[radarReplayIndex];
+  if (!radarReplayLayer) {
+    radarMap.removeLayer(radarLayer);
+    radarReplayLayer = L.tileLayer(radarFrameUrl(frame),{
+      opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,
+      maxNativeZoom:7,maxZoom:19,attribution:'Radar data by <a href="https://www.rainviewer.com/">RainViewer</a>'
+    }).addTo(radarMap);
+  } else radarReplayLayer.setUrl(radarFrameUrl(frame));
+  const time = new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+  setText('radarFrameTime',`${time} · frame time`);
+  setText('radarMapHud',`RainViewer history · ${time}`);
+  const slider = document.getElementById('radarFrameSlider');
+  if (slider) slider.value = String(radarReplayIndex);
+}
+
+function pauseRadarLoop() {
+  if (radarReplayTimer) clearInterval(radarReplayTimer);
+  radarReplayTimer = null;
+  setRadarSwitch('radarPlayBtn',false);
+  const button = document.getElementById('radarPlayBtn');
+  if (button) button.querySelector('span').textContent = 'PLAY LOOP';
+}
+
+function returnRadarLive() {
+  radarReplayRequestId++;
+  pauseRadarLoop();
+  if (radarReplayLayer && radarMap) radarMap.removeLayer(radarReplayLayer);
+  radarReplayLayer = null;
+  if (radarMap && radarLayer && !radarMap.hasLayer(radarLayer)) radarLayer.addTo(radarMap);
+  const controls = document.getElementById('radarPlaybackControls');
+  if (controls) controls.hidden = true;
+  setText('radarMapHud','NOAA MRMS · Reflectivity');
+}
+
+async function toggleRadarLoop() {
+  if (radarReplayTimer) { pauseRadarLoop(); return; }
+  const button = document.getElementById('radarPlayBtn');
+  if (button) button.disabled = true;
+  const requestId = ++radarReplayRequestId;
+  try {
+    if (!radarReplayFrames.length || Date.now()-radarReplayFrames.at(-1).time*1000 > 15*60*1000) {
+      setText('radarMapHud','Loading historical radar frames…');
+      const response = await safeFetch('https://api.rainviewer.com/public/weather-maps.json',{timeout:9000});
+      const data = await response.json();
+      const host = new URL(data.host);
+      if (host.protocol !== 'https:' || host.hostname !== 'tilecache.rainviewer.com') throw new Error('Unexpected radar tile host');
+      const frames = (data.radar?.past || []).filter(frame =>
+        Number.isFinite(frame.time) && /^\/v2\/radar\/\d+$/.test(frame.path)
+      );
+      if (frames.length < 2) throw new Error('Historical frames unavailable');
+      radarReplayFrames = frames;
+      radarReplayHost = host.origin;
+    }
+    if (requestId !== radarReplayRequestId) return;
+    const controls = document.getElementById('radarPlaybackControls');
+    if (controls) controls.hidden = false;
+    const slider = document.getElementById('radarFrameSlider');
+    if (slider) slider.max = String(radarReplayFrames.length-1);
+    showRadarFrame(radarReplayLayer ? radarReplayIndex : 0);
+    radarReplayTimer = setInterval(() => showRadarFrame((radarReplayIndex+1)%radarReplayFrames.length),1300);
+    setRadarSwitch('radarPlayBtn',true);
+    if (button) button.querySelector('span').textContent = 'PAUSE LOOP';
+  } catch (error) {
+    console.warn('Radar playback unavailable:',error);
+    if (requestId === radarReplayRequestId) {
+      returnRadarLive();
+      setText('radarMapHud','Historical loop unavailable · Live NOAA radar');
+    }
+  } finally { if (button) button.disabled = false; }
+}
+
+function projectStormTrack(lat,lon,direction,speedKnots,minutes=30) {
+  const radius=6371, distance=speedKnots*1.852*minutes/60/radius;
+  const bearing=direction*Math.PI/180, phi=lat*Math.PI/180, lambda=lon*Math.PI/180;
+  const phi2=Math.asin(Math.sin(phi)*Math.cos(distance)+Math.cos(phi)*Math.sin(distance)*Math.cos(bearing));
+  const lambda2=lambda+Math.atan2(Math.sin(bearing)*Math.sin(distance)*Math.cos(phi),Math.cos(distance)-Math.sin(phi)*Math.sin(phi2));
+  return [phi2*180/Math.PI,lambda2*180/Math.PI];
+}
+
+async function toggleRadarTracks() {
+  radarTracksVisible = !radarTracksVisible;
+  const requestId = ++radarTracksRequestId;
+  setRadarSwitch('radarTracksBtn',radarTracksVisible);
+  if (!radarTracksVisible) {
+    radarTracksLayer?.clearLayers();
+    if (radarTracksLayer && radarMap?.hasLayer(radarTracksLayer)) radarMap.removeLayer(radarTracksLayer);
+    setText('radarTracksStatus','');
+    return;
+  }
+  setText('radarTracksStatus','Checking recent NEXRAD storm cells…');
+  try {
+    const response = await safeFetch('https://mesonet.agron.iastate.edu/geojson/nexrad_attr.py',{timeout:10000});
+    const data = await response.json();
+    if (!Array.isArray(data.features)) throw new Error('Invalid storm-cell feed');
+    if (!radarTracksVisible || requestId !== radarTracksRequestId || !radarMap) return;
+    radarTracksLayer.clearLayers();
+    const bounds = radarMap.getBounds().pad(.3);
+    let count = 0;
+    for (const feature of data.features) {
+      const [lon,lat] = feature.geometry?.coordinates || [];
+      const p = feature.properties || {};
+      const direction = Number(p.drct), speed = Number(p.sknt);
+      const valid = Date.parse(p.valid);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(direction) ||
+          !Number.isFinite(speed) || speed <= 0 || speed > 120 ||
+          !Number.isFinite(valid) || Date.now()-valid > 40*60*1000 || valid-Date.now() > 5*60*1000 ||
+          !bounds.contains([lat,lon])) continue;
+      const end = projectStormTrack(lat,lon,direction,speed);
+      const label = `${escapeHtml(p.nexrad || 'NEXRAD')} cell ${escapeHtml(p.storm_id || '')}`;
+      const popup = `<strong>${label}</strong><br>Estimated motion: ${Math.round(direction)}° at ${Math.round(speed*1.15078)} mph<br>Projected 30-minute path, not an arrival forecast.<br>Scan: ${escapeHtml(new Date(valid).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}`;
+      L.polyline([[lat,lon],end],{color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
+      L.circleMarker([lat,lon],{radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
+      if (++count >= 150) break;
+    }
+    radarTracksLayer.addTo(radarMap);
+    setText('radarTracksStatus',count ? `${count} recent NEXRAD cells in view · projected 30 min` : 'No recent NEXRAD storm cells in view');
+  } catch (error) {
+    console.warn('NEXRAD storm cells unavailable:',error);
+    if (requestId === radarTracksRequestId) {
+      radarTracksVisible = false;
+      setRadarSwitch('radarTracksBtn',false);
+      setText('radarTracksStatus','Storm tracks unavailable');
+    }
+  }
+}
+
+async function toggleRadarDiscussions() {
+  radarDiscussionsVisible = !radarDiscussionsVisible;
+  const requestId = ++radarDiscussionsRequestId;
+  setRadarSwitch('radarDiscussionsBtn',radarDiscussionsVisible);
+  if (!radarDiscussionsVisible) {
+    radarDiscussionsLayer?.clearLayers();
+    if (radarDiscussionsLayer && radarMap?.hasLayer(radarDiscussionsLayer)) radarMap.removeLayer(radarDiscussionsLayer);
+    setText('radarDiscussionsStatus','');
+    return;
+  }
+  setText('radarDiscussionsStatus','Checking active SPC discussions…');
+  try {
+    const query = new URLSearchParams({where:'1=1',outFields:'name,popupinfo,folderpath',returnGeometry:'true',f:'geojson'});
+    const response = await safeFetch(`${MESOSCALE_SERVICE}?${query}`,{timeout:9000});
+    const data = await response.json();
+    if (!Array.isArray(data.features)) throw new Error('Invalid discussion feed');
+    if (!radarDiscussionsVisible || requestId !== radarDiscussionsRequestId || !radarMap) return;
+    radarDiscussionsLayer.clearLayers();
+    radarDiscussionsLayer.addData(data.features.filter(f => f.geometry));
+    radarDiscussionsLayer.addTo(radarMap);
+    const count = radarDiscussionsLayer.getLayers().filter(layer => {
+      const bounds = layer.getBounds?.();
+      return bounds?.isValid() && radarMap.getBounds().intersects(bounds);
+    }).length;
+    setText('radarDiscussionsStatus',count ? `${count} SPC discussion areas in view · not warnings` : 'No active SPC discussions in view');
+  } catch (error) {
+    console.warn('SPC map discussions unavailable:',error);
+    if (requestId === radarDiscussionsRequestId) {
+      radarDiscussionsVisible = false;
+      setRadarSwitch('radarDiscussionsBtn',false);
+      setText('radarDiscussionsStatus','SPC discussions unavailable');
+    }
+  }
 }
 
 function clearRadarMeasurement() {
@@ -2774,6 +2975,7 @@ function updateRadarWarnings() {
 }
 
 function refreshRadar() {
+  if (radarReplayLayer || radarReplayTimer) returnRadarLive();
   if (!radarLayer) {
     ensureRadar();
     return;
@@ -2787,6 +2989,14 @@ function refreshRadar() {
 }
 
 function bindRadarControls() {
+  document.getElementById('radarPlayBtn')?.addEventListener('click',toggleRadarLoop);
+  document.getElementById('radarLiveBtn')?.addEventListener('click',returnRadarLive);
+  document.getElementById('radarFrameSlider')?.addEventListener('input',event => {
+    pauseRadarLoop();
+    showRadarFrame(Number(event.target.value));
+  });
+  document.getElementById('radarTracksBtn')?.addEventListener('click',toggleRadarTracks);
+  document.getElementById('radarDiscussionsBtn')?.addEventListener('click',toggleRadarDiscussions);
   const measure = document.getElementById('radarMeasureBtn');
   measure?.addEventListener('click',() => {
     radarMeasureActive = !radarMeasureActive;
@@ -2799,6 +3009,7 @@ function bindRadarControls() {
   document.getElementById('radarOpacity')?.addEventListener('input',event => {
     const opacity = Number(event.target.value);
     radarLayer?.setOpacity(opacity / 100);
+    radarReplayLayer?.setOpacity(opacity / 100);
     setText('radarOpacityValue',`${opacity}%`);
   });
   document.getElementById('radarLocalBtn')?.addEventListener('click',() => setRadarZoomMode('local'));
