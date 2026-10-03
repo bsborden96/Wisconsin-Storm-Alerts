@@ -7596,3 +7596,24 @@ body > #svRadarDialog:not([hidden]) { position:fixed!important; inset:0!importan
   .sv-radar-detail-row { flex-wrap:wrap; }
   .sv-radar-detail-row output { flex:1; }
 }
+
+/* Site-based radar workspace. */
+.sv-dark-basemap { filter:none; }
+.sv-radar-source-controls { display:flex; gap:8px; align-items:end; margin:6px 0; }
+.sv-radar-source-controls label { flex:1; min-width:0; color:#a7bac8; font:600 10px/1.4 system-ui,sans-serif; }
+.sv-radar-source-controls select { display:block; width:100%; min-height:40px; padding:6px; color:#e8f1f8; background:#151f2b; border:1px solid #475365; border-radius:5px; font:12px system-ui,sans-serif; }
+.sv-radar-scan-status { margin:3px 0 7px; color:#afc1d0; font:11px/1.4 system-ui,sans-serif; }
+.sv-radar-tools { margin-top:6px; border:1px solid #344252; border-radius:6px; padding:0 8px 8px; }
+.sv-radar-tools:not([open]) { padding-bottom:0; }
+.sv-radar-tools summary { padding:10px 0; color:#dce7ef; cursor:pointer; font:600 12px system-ui,sans-serif; }
+#svRadarDialog .sv-radar-tools { flex-shrink:0; max-height:38dvh; overflow:auto; }
+#svRadarDialog .sv-radar-source-controls,#svRadarDialog .sv-radar-scan-status { flex-shrink:0; }
+.stormvector-radar .sv-md-label,.stormvector-radar .sv-site-label { background:#181322; border:1px solid #c595ef; color:#f2e4ff; font:600 11px system-ui,sans-serif; box-shadow:0 2px 6px #0009; }
+.stormvector-radar .leaflet-popup-content-wrapper,.stormvector-radar .leaflet-popup-tip { background:#14202d; color:#eaf3fb; }
+.stormvector-radar .leaflet-popup-content a { color:#ceadfa; }
+.sv-radar-discussion-list { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.sv-radar-discussion-list[hidden] { display:none; }
+.sv-velocity-legend .radar-legend-scale { background:linear-gradient(90deg,#00f78b,#00944a,#577168,#6d4c4c,#b82027,#ff6370); }
+.sv-velocity-legend .radar-legend-scale span { background:transparent; }
+.sv-velocity-legend .radar-legend-labels { display:none; }
+@media(max-width:600px) { .sv-radar-source-controls { flex-wrap:wrap; } .sv-radar-source-controls label { flex-basis:calc(50% - 4px); } .sv-radar-source-controls button { min-height:32px!important; } }

@@ -117,6 +117,14 @@ let returningListener = false;
 let searchTimer = null;
 let searchController = null;
 
+let radarSites = [];
+let radarSite = 'mosaic';
+let radarField = 'N0B';
+let radarSourceRequestId = 0;
+let radarScanTime = null;
+let radarSiteMarker = null;
+let radarSiteRange = null;
+let radarVectorRenderer = null;
 let radarMap = null;
 let radarLayer = null;
 let radarMarker = null;
@@ -1749,11 +1757,11 @@ function createSpcLeafletMap(type) {
     );
 
   L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
     {
       maxZoom: 19,
       className: 'sv-dark-basemap',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }
   )
   .addTo(map);
@@ -2270,7 +2278,7 @@ function openStormVectorRadarFullscreen() {
     radarFullscreenDialog.addEventListener('keydown',event => {
       if (event.key === 'Escape') { event.preventDefault(); closeStormVectorRadarFullscreen(); }
       if (event.key !== 'Tab') return;
-      const controls = [...radarFullscreenDialog.querySelectorAll('button,a[href],[tabindex="0"]')]
+      const controls = [...radarFullscreenDialog.querySelectorAll('button,a[href],input,select,summary,[tabindex="0"]')]
         .filter(el => !el.disabled && el.getClientRects().length);
       if (!controls.length) return;
       const first = controls[0], last = controls.at(-1);
@@ -2603,8 +2611,12 @@ function ensureRadar() {
   radarMap = L.map(target,{
     zoomControl:true,
     attributionControl:true,
-    preferCanvas:true
+    preferCanvas:false
   }).setView([liveLat ?? 39,liveLon ?? -98],liveLat == null ? 4 : 8);
+  for (const [name,z] of [['radarData',300],['radarDiscussions',430],['radarTracks',440],['radarWarnings',460]]) {
+    radarMap.createPane(name).style.zIndex = String(z);
+  }
+  radarVectorRenderer = L.svg({pane:'radarDiscussions'});
   L.control.scale({imperial:true,metric:false,position:'bottomleft',maxWidth:110}).addTo(radarMap);
   radarMap.on('click',handleRadarMapClick);
   radarMap.on('moveend',() => {
@@ -2624,6 +2636,7 @@ function ensureRadar() {
   radarLayer = L.tileLayer.wms(
     'https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows',
     {
+      pane:'radarData',
       layers:'conus_bref_qcd',
       format:'image/png',
       transparent:true,
@@ -2667,6 +2680,7 @@ function ensureRadar() {
   });
 
   radarWarningLayer = L.geoJSON(null,{
+    pane:'radarWarnings',
     style:warningPolygonStyle,
     onEachFeature:(feature,layer) => {
       const p = feature.properties || {};
@@ -2679,17 +2693,138 @@ function ensureRadar() {
 
   radarTracksLayer = L.layerGroup();
   radarDiscussionsLayer = L.geoJSON(null,{
-    style:{color:'#b788f4',weight:2,dashArray:'8 5',fillColor:'#8554c5',fillOpacity:0.09},
+    pane:'radarDiscussions',renderer:radarVectorRenderer,
+    style:{color:'#d8a2ff',weight:3,dashArray:'8 5',fillColor:'#a354e4',fillOpacity:0.18},
     onEachFeature:(feature,layer) => {
       const name = String(feature.properties?.name || 'SPC Mesoscale Discussion');
       const number = name.match(/\bMD\s*(\d{1,4})\b/i)?.[1];
       const link = number ? `https://www.spc.noaa.gov/products/md/md${number.padStart(4,'0')}.html` : 'https://www.spc.noaa.gov/products/md/';
+      layer.bindTooltip(escapeHtml(name),{permanent:true,direction:'center',className:'sv-md-label'});
       layer.bindPopup(`<strong>${escapeHtml(name)}</strong><br>Discussion area, not a warning.<br><a href="${link}" target="_blank" rel="noopener noreferrer">Official SPC discussion</a>`);
     }
   });
 
+  loadRadarSites();
   updateRadarForLocation();
   setTimeout(() => radarMap?.invalidateSize(),200);
+}
+
+async function loadRadarSites() {
+  try {
+    const response = await safeFetch('radar-sites.json',{timeout:8000});
+    const data = await response.json();
+    radarSites = data.filter(s => /^[A-Z0-9]{3}$/.test(s.id) && Number.isFinite(s.lat) && Number.isFinite(s.lon));
+    const select = document.getElementById('radarSiteSelect');
+    if (!select) return;
+    for (const site of [...radarSites].sort((a,b) => `${a.state} ${a.name}`.localeCompare(`${b.state} ${b.name}`))) {
+      const option = document.createElement('option');
+      option.value = site.id;
+      option.textContent = `${site.id} · ${site.name}, ${site.state}`;
+      select.appendChild(option);
+    }
+  } catch (error) {
+    console.warn('Radar site list unavailable:',error);
+    setText('radarScanStatus','Site list unavailable · national mosaic available');
+  }
+}
+
+async function selectRadarSource(resetProduct=true) {
+  returnRadarLive();
+  const requestId = ++radarSourceRequestId;
+  radarReplayFrames = [];
+  radarScanTime = null;
+  const site = radarSite, productSelect = document.getElementById('radarFieldSelect');
+  setText('radarScanStatus',`Loading ${site === 'mosaic' ? 'national mosaic' : site}…`);
+  if (radarLayer) radarMap.removeLayer(radarLayer);
+  radarLayer = null;
+  if (radarSiteMarker) radarMap.removeLayer(radarSiteMarker);
+  if (radarSiteRange) radarMap.removeLayer(radarSiteRange);
+  radarSiteMarker = radarSiteRange = null;
+  try {
+    if (site === 'mosaic') {
+      radarField = 'N0B';
+      if (productSelect) { productSelect.replaceChildren(new Option('Base reflectivity','N0B')); productSelect.disabled = true; }
+      radarLayer = L.tileLayer.wms('https://opengeo.ncep.noaa.gov/geoserver/conus/conus_bref_qcd/ows',{
+        pane:'radarData',layers:'conus_bref_qcd',format:'image/png',transparent:true,version:'1.1.1',opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,attribution:'NOAA/NWS MRMS'
+      });
+    } else {
+      if (resetProduct) {
+        const query = new URLSearchParams({operation:'products',radar:site,start:new Date().toISOString()});
+        const response = await safeFetch(`https://mesonet.agron.iastate.edu/json/radar.py?${query}`,{timeout:9000});
+        const data = await response.json();
+        if (requestId !== radarSourceRequestId) return;
+        const names = {N0B:'Base reflectivity',N0S:'Storm-relative velocity',N0U:'Base velocity'};
+        const products = (data.products || []).filter(p => names[p.id]);
+        if (!products.length) throw new Error('No supported recent products at this site');
+        if (!products.some(p => p.id === radarField)) radarField = products.some(p => p.id === 'N0B') ? 'N0B' : products[0].id;
+        if (productSelect) {
+          productSelect.replaceChildren(...products.map(p => new Option(names[p.id],p.id)));
+          productSelect.value = radarField; productSelect.disabled = false;
+        }
+      }
+      const product = radarField;
+      const response = await safeFetch(`https://mesonet.agron.iastate.edu/data/gis/images/4326/ridge/${site}/${product}_0.json`,{timeout:9000});
+      const data = await response.json();
+      if (requestId !== radarSourceRequestId) return;
+      const valid = Date.parse(data.meta?.valid);
+      if (!Number.isFinite(valid)) throw new Error('Radar scan timestamp unavailable');
+      radarScanTime = valid;
+      const stamp = new Date(valid).toISOString().replace(/[-:TZ.]/g,'').slice(0,12);
+      radarLayer = L.tileLayer(`https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/ridge::${site}-${product}-${stamp}/{z}/{x}/{y}.png`,{
+        pane:'radarData',maxNativeZoom:12,maxZoom:19,opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,attribution:'NWS Level III via Iowa Environmental Mesonet'
+      });
+      const station = radarSites.find(s => s.id === site);
+      if (station) {
+        radarSiteMarker = L.circleMarker([station.lat,station.lon],{pane:'radarTracks',radius:6,color:'#80d6ed',fillOpacity:1}).bindTooltip(site,{permanent:true,direction:'right',className:'sv-site-label'}).addTo(radarMap);
+        radarSiteRange = L.circle([station.lat,station.lon],{pane:'radarTracks',radius:100*1852,color:'#80d6ed',weight:1,dashArray:'4 6',fill:false,interactive:false}).addTo(radarMap);
+      }
+    }
+    if (requestId !== radarSourceRequestId) return;
+    const currentLayer = radarLayer;
+    radarTileErrors = 0;
+    currentLayer.on('tileerror',() => { if (radarLayer === currentLayer) { radarTileErrors++; setText('radarMapHud',`${site} · Some tiles unavailable`); } });
+    currentLayer.on('load',() => {
+      if (radarLayer !== currentLayer || radarReplayLayer) return;
+      const name = site === 'mosaic' ? 'NOAA MRMS reflectivity' : `${site} · ${radarField === 'N0B' ? 'Base reflectivity' : radarField === 'N0S' ? 'Storm-relative velocity' : 'Base velocity'}`;
+      setText('radarMapHud',radarTileErrors ? `${name} · Incomplete image` : name);
+      const age = radarScanTime ? Math.max(0,Math.round((Date.now()-radarScanTime)/60000)) : null;
+      const status = radarScanTime ? `Scan ${new Date(radarScanTime).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${age} min old${age > 15 ? ' · STALE' : ''}` : 'National composite · image time unknown';
+      setText('radarScanStatus',status); setText('radarTimestamp',status);
+      setText('freshnessRadar',age == null ? 'IMAGE TIME UNKNOWN' : `${age} MIN OLD`);
+    });
+    document.querySelector('.radar-legend')?.classList.toggle('sv-velocity-legend',radarField !== 'N0B');
+    setText('radarLegendTitle',radarField === 'N0B' ? 'REFLECTIVITY · LIGHT TO HEAVY' : 'VELOCITY · GREEN TOWARD / RED AWAY FROM RADAR');
+    radarLayer.addTo(radarMap);
+    setText('radarMapHud',`${site} · Loading ${radarField}`);
+  } catch (error) {
+    if (requestId !== radarSourceRequestId) return;
+    console.warn('Radar product unavailable:',error);
+    setText('radarScanStatus',`${site} ${radarField} unavailable · select another site or national mosaic`);
+    setText('radarMapHud','Radar image unavailable');
+  }
+}
+
+function isRadarDiscussion(feature) {
+  const name = String(feature?.properties?.name || '');
+  return /\bMD\s*\d{1,4}\b/i.test(name) && ['Polygon','MultiPolygon'].includes(feature?.geometry?.type);
+}
+
+function renderRadarDiscussionList() {
+  const list = document.getElementById('radarDiscussionList');
+  if (!list) return;
+  list.replaceChildren();
+  const layers = radarDiscussionsLayer.getLayers();
+  list.hidden = !layers.length;
+  for (const layer of layers) {
+    const button = document.createElement('button');
+    button.type = 'button'; button.className = 'radar-tool-btn';
+    button.textContent = `VIEW ${layer.feature.properties.name}`;
+    button.addEventListener('click',() => {
+      radarMap.fitBounds(layer.getBounds(),{padding:[35,35],maxZoom:7});
+      layer.openPopup(layer.getBounds().getCenter());
+    });
+    list.appendChild(button);
+  }
 }
 
 function setRadarStatus(text) {
@@ -2703,6 +2838,7 @@ function setRadarSwitch(id,on) {
 }
 
 function radarFrameUrl(frame) {
+  if (frame.site) return `https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/ridge::${frame.site}-${frame.product}-${frame.stamp}/{z}/{x}/{y}.png`;
   return `${radarReplayHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 }
 
@@ -2714,12 +2850,13 @@ function showRadarFrame(index) {
     radarMap.removeLayer(radarLayer);
     radarReplayLayer = L.tileLayer(radarFrameUrl(frame),{
       opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,
-      maxNativeZoom:7,maxZoom:19,attribution:'Radar data by <a href="https://www.rainviewer.com/">RainViewer</a>'
+      pane:'radarData',maxNativeZoom:frame.site ? 12 : 7,maxZoom:19,attribution:frame.site ? 'NWS Level III via Iowa Environmental Mesonet' : 'Radar data by <a href="https://www.rainviewer.com/">RainViewer</a>'
     }).addTo(radarMap);
   } else radarReplayLayer.setUrl(radarFrameUrl(frame));
   const time = new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
   setText('radarFrameTime',`${time} · frame time`);
-  setText('radarMapHud',`RainViewer history · ${time}`);
+  setText('radarMapHud',`${frame.site ? frame.site+' '+frame.product : 'RainViewer history'} · ${time}`);
+  setText('radarScanStatus',`History · ${time} · overlays show current conditions`);
   const slider = document.getElementById('radarFrameSlider');
   if (slider) slider.value = String(radarReplayIndex);
 }
@@ -2740,16 +2877,25 @@ function returnRadarLive() {
   if (radarMap && radarLayer && !radarMap.hasLayer(radarLayer)) radarLayer.addTo(radarMap);
   const controls = document.getElementById('radarPlaybackControls');
   if (controls) controls.hidden = true;
-  setText('radarMapHud','NOAA MRMS · Reflectivity');
+  setText('radarMapHud',radarSite === 'mosaic' ? 'NOAA MRMS · Reflectivity' : `${radarSite} · ${radarField}`);
+  if (radarSite !== 'mosaic') setText('radarScanStatus',radarScanTime ? `Scan ${new Date(radarScanTime).toLocaleTimeString()} · ${radarSite} ${radarField}` : 'Scan time unavailable');
 }
 
 async function toggleRadarLoop() {
+  if (!radarLayer) { setText('radarMapHud','Choose an available radar product before playing'); return; }
   if (radarReplayTimer) { pauseRadarLoop(); return; }
   const button = document.getElementById('radarPlayBtn');
   if (button) button.disabled = true;
   const requestId = ++radarReplayRequestId;
   try {
-    if (!radarReplayFrames.length || Date.now()-radarReplayFrames.at(-1).time*1000 > 15*60*1000) {
+    if (radarSite !== 'mosaic') {
+      const end = new Date(), start = new Date(end.getTime()-60*60*1000);
+      const query = new URLSearchParams({operation:'list',radar:radarSite,product:radarField,start:start.toISOString(),end:end.toISOString()});
+      const response = await safeFetch(`https://mesonet.agron.iastate.edu/json/radar.py?${query}`,{timeout:10000});
+      const data = await response.json();
+      radarReplayFrames = (data.scans || []).filter(scan => Number.isFinite(Date.parse(scan.ts))).slice(-10).map(scan => ({time:Date.parse(scan.ts)/1000,site:radarSite,product:radarField,stamp:scan.ts.replace(/[-:TZ]/g,'').slice(0,12)}));
+      if (radarReplayFrames.length < 2) throw new Error('Not enough recent scans');
+    } else if (!radarReplayFrames.length || radarReplayFrames[0].site || Date.now()-radarReplayFrames.at(-1).time*1000 > 15*60*1000) {
       setText('radarMapHud','Loading historical radar frames…');
       const response = await safeFetch('https://api.rainviewer.com/public/weather-maps.json',{timeout:9000});
       const data = await response.json();
@@ -2765,6 +2911,8 @@ async function toggleRadarLoop() {
     if (requestId !== radarReplayRequestId) return;
     const controls = document.getElementById('radarPlaybackControls');
     if (controls) controls.hidden = false;
+    const credit = controls?.querySelector('a');
+    if (credit) { credit.href = radarSite === 'mosaic' ? 'https://www.rainviewer.com/' : 'https://mesonet.agron.iastate.edu/GIS/ridge.phtml'; credit.textContent = radarSite === 'mosaic' ? 'RainViewer data' : 'NWS / IEM data'; }
     const slider = document.getElementById('radarFrameSlider');
     if (slider) slider.max = String(radarReplayFrames.length-1);
     showRadarFrame(radarReplayLayer ? radarReplayIndex : 0);
@@ -2805,8 +2953,8 @@ function renderRadarTracks() {
     const end = projectStormTrack(lat,lon,direction,speed);
     const label = `${escapeHtml(p.nexrad || 'NEXRAD')} cell ${escapeHtml(p.storm_id || '')}`;
     const popup = `<strong>${label}</strong><br>Estimated motion: ${Math.round(direction)}° at ${Math.round(speed*1.15078)} mph<br>Projected 30-minute path, not an arrival forecast.<br>Scan: ${escapeHtml(new Date(valid).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}`;
-    L.polyline([[lat,lon],end],{color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
-    L.circleMarker([lat,lon],{radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
+    L.polyline([[lat,lon],end],{pane:'radarTracks',color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
+    L.circleMarker([lat,lon],{pane:'radarTracks',radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
     if (++count >= 150) break;
   }
   if (!radarMap.hasLayer(radarTracksLayer)) radarTracksLayer.addTo(radarMap);
@@ -2819,7 +2967,8 @@ function updateRadarDiscussionCount() {
     const bounds = layer.getBounds?.();
     return bounds?.isValid() && radarMap.getBounds().intersects(bounds);
   }).length;
-  setText('radarDiscussionsStatus',count ? `${count} SPC discussion areas in view · not warnings` : 'No active SPC discussions in view');
+  const total = radarDiscussionsLayer.getLayers().length;
+  setText('radarDiscussionsStatus',count ? `${count} of ${total} active SPC discussions in view · tap an area` : total ? `${total} active discussions outside this view · choose one below` : 'No active SPC mesoscale discussions nationwide');
 }
 
 async function toggleRadarTracks() {
@@ -2861,22 +3010,25 @@ async function toggleRadarDiscussions() {
     if (radarDiscussionsWmsLayer && radarMap?.hasLayer(radarDiscussionsWmsLayer)) radarMap.removeLayer(radarDiscussionsWmsLayer);
     const link = document.getElementById('radarDiscussionsLink');
     if (link) link.hidden = true;
+    const list = document.getElementById('radarDiscussionList');
+    if (list) { list.hidden = true; list.replaceChildren(); }
     setText('radarDiscussionsStatus','');
     return;
   }
   setText('radarDiscussionsStatus','Checking active SPC discussions…');
   try {
-    const query = new URLSearchParams({where:'1=1',outFields:'name,popupinfo,folderpath',returnGeometry:'true',f:'geojson'});
+    const query = new URLSearchParams({where:'1=1',outFields:'name,popupinfo,folderpath',returnGeometry:'true',outSR:'4326',f:'geojson'});
     const response = await safeFetch(`${MESOSCALE_SERVICE}?${query}`,{timeout:9000});
     const data = await response.json();
     if (!Array.isArray(data.features)) throw new Error('Invalid discussion feed');
     if (!radarDiscussionsVisible || requestId !== radarDiscussionsRequestId || !radarMap) return;
     radarDiscussionsLayer.clearLayers();
-    radarDiscussionsLayer.addData(data.features.filter(f => f.geometry));
+    radarDiscussionsLayer.addData(data.features.filter(isRadarDiscussion));
     radarDiscussionsLayer.addTo(radarMap);
     radarWarningLayer?.bringToFront();
     const link = document.getElementById('radarDiscussionsLink');
     if (link) link.hidden = false;
+    renderRadarDiscussionList();
     updateRadarDiscussionCount();
   } catch (error) {
     console.warn('SPC discussion polygons unavailable; using WMS:',error);
@@ -2884,7 +3036,7 @@ async function toggleRadarDiscussions() {
       if (!radarDiscussionsWmsLayer) {
         radarDiscussionsWmsLayer = L.tileLayer.wms(
           'https://mapservices.weather.noaa.gov/vector/services/outlooks/spc_mesoscale_discussion/MapServer/WMSServer',
-          {layers:'0',format:'image/png',transparent:true,version:'1.1.1',opacity:.75,attribution:'NOAA/SPC Mesoscale Discussions'}
+          {pane:'radarData',zIndex:5,layers:'0',format:'image/png',transparent:true,version:'1.1.1',opacity:.75,attribution:'NOAA/SPC Mesoscale Discussions'}
         );
         radarDiscussionsWmsLayer.on('tileerror',() => {
           if (++radarDiscussionsTileErrors < 3 || !radarDiscussionsVisible) return;
@@ -2899,7 +3051,7 @@ async function toggleRadarDiscussions() {
       radarWarningLayer?.bringToFront();
       const link = document.getElementById('radarDiscussionsLink');
       if (link) link.hidden = false;
-      setText('radarDiscussionsStatus','Official SPC map overlay · active areas only');
+      setText('radarDiscussionsStatus','SPC image fallback · use official link for discussion details');
     }
   }
 }
@@ -3022,6 +3174,7 @@ function refreshRadar() {
     return;
   }
 
+  if (radarSite !== 'mosaic') { selectRadarSource(); return; }
   setRadarStatus('Refreshing NOAA MRMS radar...');
   setText('freshnessRadar','REFRESHING');
 
@@ -3030,6 +3183,15 @@ function refreshRadar() {
 }
 
 function bindRadarControls() {
+  document.getElementById('radarSiteSelect')?.addEventListener('change',event => { radarSite = event.target.value; selectRadarSource(); });
+  document.getElementById('radarFieldSelect')?.addEventListener('change',event => { radarField = event.target.value; selectRadarSource(false); });
+  document.getElementById('radarNearestBtn')?.addEventListener('click',() => {
+    const center = radarMap?.getCenter();
+    const lat = liveLat ?? center?.lat ?? 43.6, lon = liveLon ?? center?.lng ?? -88.7;
+    const nearest = [...radarSites].sort((a,b) => radarMap.distance([lat,lon],[a.lat,a.lon])-radarMap.distance([lat,lon],[b.lat,b.lon]))[0];
+    if (nearest) { radarSite = nearest.id; document.getElementById('radarSiteSelect').value = radarSite; selectRadarSource(); radarMap.setView([nearest.lat,nearest.lon],8); }
+  });
+  document.querySelector('.sv-radar-tools')?.addEventListener('toggle',() => { setTimeout(resizeFullscreenRadar,0); });
   document.getElementById('radarPlayBtn')?.addEventListener('click',toggleRadarLoop);
   document.getElementById('radarLiveBtn')?.addEventListener('click',returnRadarLive);
   document.getElementById('radarFrameSlider')?.addEventListener('input',event => {

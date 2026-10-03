@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261003-11"
+    href="styles.css?v=20261003-14"
   >
 
 </head>
@@ -788,6 +788,12 @@
             </div>
 
 
+            <div class="sv-radar-source-controls">
+              <label>SITE<select id="radarSiteSelect" aria-label="Radar site"><option value="mosaic">National MRMS mosaic</option></select></label>
+              <label>PRODUCT<select id="radarFieldSelect" aria-label="Radar product" disabled><option value="N0B">Base reflectivity</option></select></label>
+              <button id="radarNearestBtn" class="radar-tool-btn" type="button">NEAREST SITE</button>
+            </div>
+            <p id="radarScanStatus" class="sv-radar-scan-status" aria-live="polite">National reflectivity composite</p>
             <div class="sv-radar-map-wrap">
               <div
                 id="stormVectorRadar"
@@ -800,6 +806,7 @@
               </div>
             </div>
 
+            <details class="sv-radar-tools"><summary>LAYERS &amp; TOOLS</summary>
             <div class="sv-radar-detail-row">
               <button id="radarMeasureBtn" class="radar-tool-btn" type="button" aria-pressed="false">MEASURE DISTANCE</button>
               <button id="radarMeasureClearBtn" class="radar-tool-btn" type="button" hidden>CLEAR</button>
@@ -809,7 +816,7 @@
 
             <div class="radar-legend">
 
-              <div class="radar-legend-title">
+              <div id="radarLegendTitle" class="radar-legend-title">
                 REFLECTIVITY
               </div>
 
@@ -852,11 +859,12 @@
               <button id="radarDiscussionsBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>SPC DISCUSSIONS</span><i aria-hidden="true"></i></button>
             </div>
             <div id="radarPlaybackControls" class="sv-radar-playback" hidden>
-              <button id="radarLiveBtn" class="radar-tool-btn" type="button">LIVE MRMS</button>
+              <button id="radarLiveBtn" class="radar-tool-btn" type="button">LIVE</button>
               <input id="radarFrameSlider" type="range" min="0" max="0" value="0" aria-label="Historical radar frame">
               <output id="radarFrameTime" for="radarFrameSlider">Loading frames</output>
               <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer data</a>
             </div>
+            <div id="radarDiscussionList" class="sv-radar-discussion-list" hidden></div>
             <div class="sv-radar-layer-status" aria-live="polite">
               <span id="radarTracksStatus"></span>
               <span id="radarDiscussionsStatus"></span>
@@ -908,6 +916,7 @@
             </div>
 
 
+            </details>
             <div class="radar-footer">
 
               <span id="radarStatus">
@@ -1560,7 +1569,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261003-13"></script>
+<script src="watch-live.js?v=20261003-14"></script>
 
 
 </body>
