@@ -7517,3 +7517,6 @@ body.sv-radar-open{overflow:hidden}
 #svRadarDialog[hidden] { display:none!important; }
 #svRadarDialog .sv-radar-fullscreen { animation:none!important; transform:none!important; }
 #svRadarDialog .stormvector-radar { flex:1 1 0; background:#101821; }
+
+/* Override the page-wide body-child positioning rule. */
+body > #svRadarDialog:not([hidden]) { position:fixed!important; inset:0!important; width:100vw!important; height:100dvh!important; z-index:2147483000!important; }

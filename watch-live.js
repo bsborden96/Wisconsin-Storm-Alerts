@@ -2236,7 +2236,7 @@ let radarBackgroundState = [];
 
 function openStormVectorRadarFullscreen() {
   const radarView = document.getElementById('graphicRadar');
-  if (!radarView || radarFullscreenDialog?.open) return;
+  if (!radarView || (radarFullscreenDialog && !radarFullscreenDialog.hidden)) return;
   radarFullscreenFocus = document.activeElement;
   selectView('radar');
   selectRadarProduct('radar');
@@ -2293,7 +2293,7 @@ function openStormVectorRadarFullscreen() {
 }
 
 function resizeFullscreenRadar() {
-  if (!radarFullscreenDialog?.open) return;
+  if (!radarFullscreenDialog || radarFullscreenDialog.hidden) return;
   const panel = document.getElementById('radarProductRadar');
   const map = document.getElementById('stormVectorRadar');
   if (panel && map && panel.clientHeight > 0) {
