@@ -7520,3 +7520,46 @@ body.sv-radar-open{overflow:hidden}
 
 /* Override the page-wide body-child positioning rule. */
 body > #svRadarDialog:not([hidden]) { position:fixed!important; inset:0!important; width:100vw!important; height:100dvh!important; z-index:2147483000!important; }
+
+/* Radar workstation: keep the map dominant, with compact controls and readable data. */
+.sv-dark-basemap { filter:brightness(.68) saturate(.55) contrast(1.12); }
+.sv-radar-map-wrap { position:relative; min-height:0; }
+.sv-radar-map-wrap .stormvector-radar { display:block; }
+.sv-radar-map-hud { position:absolute; z-index:450; top:10px; left:50px; max-width:calc(100% - 65px); padding:7px 10px; border:1px solid rgba(150,171,187,.25); border-radius:6px; background:rgba(7,12,20,.88); color:#e6eff5; font:600 11px/1.3 system-ui,sans-serif; pointer-events:none; box-shadow:0 2px 12px #0008; }
+.sv-radar-live-dot { display:inline-block; width:7px; height:7px; margin-right:6px; border-radius:50%; background:#6cbddb; vertical-align:1px; }
+.sv-radar-detail-row { display:flex; align-items:center; gap:8px; min-height:38px; margin-top:7px; color:#bdc8d3; font:11px/1.3 system-ui,sans-serif; }
+.sv-radar-detail-row output { margin-left:auto; text-align:right; }
+.sv-radar-detail-row button { white-space:nowrap; }
+.sv-radar-detail-row button[hidden] { display:none!important; }
+.sv-radar-opacity-row { display:flex; align-items:center; gap:10px; margin-top:8px; color:#b8c4cf; font:600 10px/1.2 system-ui,sans-serif; letter-spacing:.04em; }
+.sv-radar-opacity-row input { flex:1; min-width:50px; accent-color:#9f78d9; }
+.sv-radar-opacity-row output { min-width:34px; text-align:right; }
+.stormvector-radar.sv-radar-measuring { cursor:crosshair; }
+.stormvector-radar .leaflet-control-scale-line { background:rgba(7,12,20,.84); border-color:#cbd6df; color:#fff; font:10px system-ui,sans-serif; }
+.stormvector-radar .leaflet-control-zoom { border:1px solid rgba(180,194,208,.4); border-radius:7px; overflow:hidden; box-shadow:0 3px 12px #0008; }
+#svRadarDialog { background:#080c13; }
+#svRadarDialog .sv-radar-fullscreen { padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))!important; overflow:hidden!important; }
+#svRadarDialog .sv-radar-close { min-height:40px; margin-bottom:6px; background:#171e2a; border-color:#526074; color:#f3f7fa; }
+#svRadarDialog .radar-toolbar { margin-bottom:6px; }
+#svRadarDialog .radar-toolbar .graphic-label { color:#80bad7; }
+#svRadarDialog .radar-toolbar-actions { flex:0 0 auto; }
+#svRadarDialog .radar-tool-btn { min-height:36px; border-color:#475365; background:#161d29; color:#d1dbe4; font:600 10px system-ui,sans-serif; letter-spacing:.03em; }
+#svRadarDialog .radar-tool-btn.active { background:#382950; border-color:#a886da; color:#fff; }
+#svRadarDialog .sv-radar-map-wrap { flex:1 1 0; display:flex; min-height:120px; }
+#svRadarDialog .stormvector-radar { flex:1 1 0; height:100%!important; min-height:120px!important; border-color:#526274; border-radius:5px; background:#101821; }
+#svRadarDialog .radar-legend { margin-top:4px; padding:5px 8px; }
+#svRadarDialog .radar-legend-title { margin-bottom:2px; }
+#svRadarDialog .radar-control-row { margin-top:6px; }
+#svRadarDialog .radar-control-row .radar-tool-btn { min-height:36px; }
+#svRadarDialog .radar-footer { display:block; margin-top:5px; font:10px/1.3 system-ui,sans-serif; }
+#svRadarDialog .radar-footer #radarStatus { display:none; }
+#svRadarDialog .radar-footer #radarTimestamp { display:block; }
+@media(max-width:600px) {
+  #svRadarDialog .radar-toolbar { display:flex; flex-wrap:wrap; }
+  #svRadarDialog .radar-toolbar-actions { justify-content:flex-start; }
+  #svRadarDialog .radar-tool-btn { padding:6px 9px; }
+  #svRadarDialog .radar-control-row { flex-wrap:nowrap; }
+  #svRadarDialog .radar-control-row .radar-tool-btn { min-width:0; padding:5px 3px; font-size:9px; }
+  .sv-radar-detail-row { flex-wrap:wrap; }
+  .sv-radar-detail-row output { flex:1; }
+}
