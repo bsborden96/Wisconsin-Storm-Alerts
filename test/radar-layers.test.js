@@ -29,3 +29,26 @@ test('NOAA NoArea placeholder is not presented as an active discussion',()=>{
   assert.equal(context.frameUrl({site:'MKX',product:'N0S',stamp:'202610032201'}),
     'https://mesonet.agron.iastate.edu/c/tile.py/1.0.0/ridge::MKX-N0S-202610032201/{z}/{x}/{y}.png');
 });
+
+test('discussion toggle filters placeholders and lets an offscreen area be opened',async()=>{
+  const nodes=new Map();
+  const makeNode=()=>({hidden:false,children:[],classList:{toggle(){}},setAttribute(){},replaceChildren(){this.children=[];},appendChild(n){this.children.push(n);},addEventListener(type,handler){this.handler=handler;}});
+  for(const id of ['radarDiscussionsBtn','radarDiscussionsStatus','radarDiscussionList','radarDiscussionsLink']) nodes.set(id,makeNode());
+  let added,fit=false,opened=false;
+  const bounds={isValid:()=>true,getCenter:()=>[43,-89]};
+  const layer={feature:{properties:{name:'MD 0123'}},getBounds:()=>bounds,openPopup(){opened=true;}};
+  const context=vm.createContext({window:{addEventListener(){}},document:{addEventListener(){},getElementById:id=>nodes.get(id),createElement:makeNode},console,URLSearchParams});
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../watch-live.js'),'utf8'),context);
+  context.feed={features:[{properties:{name:'NoArea'},geometry:{type:'Polygon'}},{properties:{name:'MD 0123'},geometry:{type:'Polygon'}}]};
+  context.fakeLayer={clearLayers(){},addData(features){added=features;},addTo(){},getLayers:()=>[layer]};
+  context.fakeMap={getBounds:()=>({intersects:()=>false}),fitBounds(){fit=true;},hasLayer:()=>true};
+  vm.runInContext('radarDiscussionsLayer=fakeLayer;radarMap=fakeMap;safeFetch=async()=>({json:async()=>feed});globalThis.toggle=toggleRadarDiscussions;',context);
+  await context.toggle();
+  assert.equal(added.length,1);
+  assert.equal(added[0].properties.name,'MD 0123');
+  assert.match(nodes.get('radarDiscussionsStatus').textContent,/outside this view/);
+  const button=nodes.get('radarDiscussionList').children[0];
+  assert.equal(button.textContent,'VIEW MD 0123');
+  button.handler();
+  assert.equal(fit,true);assert.equal(opened,true);
+});

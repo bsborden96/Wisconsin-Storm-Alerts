@@ -2625,11 +2625,11 @@ function ensureRadar() {
   });
 
   L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
     {
       maxZoom:19,
       className:'sv-dark-basemap',
-      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
     }
   ).addTo(radarMap);
 
@@ -2775,6 +2775,7 @@ async function selectRadarSource(resetProduct=true) {
       });
       const station = radarSites.find(s => s.id === site);
       if (station) {
+        if (resetProduct) radarMap.setView([station.lat,station.lon],8);
         radarSiteMarker = L.circleMarker([station.lat,station.lon],{pane:'radarTracks',radius:6,color:'#80d6ed',fillOpacity:1}).bindTooltip(site,{permanent:true,direction:'right',className:'sv-site-label'}).addTo(radarMap);
         radarSiteRange = L.circle([station.lat,station.lon],{pane:'radarTracks',radius:100*1852,color:'#80d6ed',weight:1,dashArray:'4 6',fill:false,interactive:false}).addTo(radarMap);
       }
@@ -3139,8 +3140,10 @@ function setRadarZoomMode(mode) {
     document.getElementById(id)?.classList.toggle('active',key === mode);
   });
 
-  if (radarMap && liveLat != null && liveLon != null) {
-    radarMap.setView([liveLat,liveLon],radarZoomLevel());
+  const site = radarSites.find(s => s.id === radarSite);
+  if (radarMap) {
+    const center = liveLat != null && liveLon != null ? [liveLat,liveLon] : site ? [site.lat,site.lon] : radarMap.getCenter();
+    radarMap.setView(center,radarZoomLevel());
   }
 }
 
@@ -3170,7 +3173,7 @@ function updateRadarWarnings() {
 function refreshRadar() {
   if (radarReplayLayer || radarReplayTimer) returnRadarLive();
   if (!radarLayer) {
-    ensureRadar();
+    if (radarMap) selectRadarSource(); else ensureRadar();
     return;
   }
 
@@ -3220,9 +3223,7 @@ function bindRadarControls() {
   document.getElementById('radarStateBtn')?.addEventListener('click',() => setRadarZoomMode('state'));
 
   document.getElementById('radarCenterBtn')?.addEventListener('click',() => {
-    if (radarMap && liveLat != null && liveLon != null) {
-      radarMap.setView([liveLat,liveLon],radarZoomLevel());
-    }
+    setRadarZoomMode(radarZoomMode);
   });
 
   const warnBtn = document.getElementById('radarWarningsBtn');
