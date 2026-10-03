@@ -7401,11 +7401,11 @@ body.sv-radar-open{overflow:hidden}
 .vector-decision {
   margin-top: 12px;
   padding: 18px 20px;
-  border: 1px solid rgba(85, 173, 196, .48);
+  border: 1px solid rgba(64, 145, 154, .28);
   border-radius: 14px;
-  background: linear-gradient(145deg, #18212a, #0e151d);
-  box-shadow: inset 0 1px rgba(255,255,255,.035), 0 12px 30px rgba(0,0,0,.22);
-  color: #edf5f8;
+  background: #101115;
+  box-shadow: inset 0 1px rgba(255,255,255,.025), 0 12px 30px rgba(0,0,0,.22);
+  color: #e8ecef;
 }
 .vector-decision-meta {
   display: flex;
@@ -7415,7 +7415,7 @@ body.sv-radar-open{overflow:hidden}
   margin-bottom: 10px;
   font-size: 14px;
 }
-.vector-decision-meta span { color: #c6dce8; }
+.vector-decision-meta span { color: #aab6bd; }
 .vector-decision > strong { display: block; font-size: clamp(20px, 3vw, 28px); line-height: 1.2; }
 .vector-decision p { margin: 8px 0 0; font-size: 16px; line-height: 1.45; }
 #vectorWarningArea { font-weight: 700; }
