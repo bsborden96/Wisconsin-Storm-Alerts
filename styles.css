@@ -7484,6 +7484,8 @@ body.sv-radar-open{overflow:hidden}
 .sv-radar-playback output { white-space:nowrap; }
 .sv-radar-playback a { color:#aad4e5; white-space:nowrap; }
 .sv-radar-layer-status { display:flex; flex-wrap:wrap; gap:4px 12px; min-height:0; color:#b6c5ce; font:10px/1.3 system-ui,sans-serif; }
+.sv-radar-layer-status a { color:#aad4e5; }
+.sv-radar-layer-status a[hidden] { display:none!important; }
 .sv-radar-layer-status:empty { display:none; }
 #svRadarDialog .sv-radar-layer-switches,#svRadarDialog .sv-radar-playback,#svRadarDialog .sv-radar-layer-status { flex-shrink:0; }
 @media(max-width:600px) {
