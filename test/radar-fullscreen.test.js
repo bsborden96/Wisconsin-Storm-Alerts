@@ -23,7 +23,7 @@ test('full-screen radar escapes the broadcast panel and restores the same map an
   const body=node('body'),host=node('div'),radar=node('div'),map=node('div'),opener=node('button');
   radar.id='graphicRadar';body.appendChild(host);host.appendChild(radar);radar.appendChild(map);
   const context=vm.createContext({console,setTimeout(){},clearTimeout(){},document:{body,activeElement:opener,
-    getElementById:id=>nodes.find(n=>n.id===id),createElement:node,createComment:()=>node('comment'),addEventListener(){}},window:{addEventListener(){}}});
+    getElementById:id=>nodes.find(n=>n.id===id),querySelector:()=>null,createElement:node,createComment:()=>node('comment'),addEventListener(){}},window:{addEventListener(){}}});
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../watch-live.js'),'utf8')+`
     selectView=()=>{};selectRadarProduct=()=>{};
     globalThis.api={open:openStormVectorRadarFullscreen,close:closeStormVectorRadarFullscreen};`,context);
