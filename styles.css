@@ -7598,7 +7598,7 @@ body > #svRadarDialog:not([hidden]) { position:fixed!important; inset:0!importan
 }
 
 /* Site-based radar workspace. */
-.sv-dark-basemap { filter:none; }
+.sv-dark-basemap { filter:invert(.94) hue-rotate(180deg) brightness(.8) saturate(.4); }
 .sv-radar-source-controls { display:flex; gap:8px; align-items:end; margin:6px 0; }
 .sv-radar-source-controls label { flex:1; min-width:0; color:#a7bac8; font:600 10px/1.4 system-ui,sans-serif; }
 .sv-radar-source-controls select { display:block; width:100%; min-height:40px; padding:6px; color:#e8f1f8; background:#151f2b; border:1px solid #475365; border-radius:5px; font:12px system-ui,sans-serif; }
