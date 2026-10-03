@@ -138,6 +138,7 @@ let radarTracksLayer = null;
 let radarTracksVisible = false;
 let radarTracksRequestId = 0;
 let radarDiscussionsLayer = null;
+let radarDiscussionsWmsLayer = null;
 let radarDiscussionsVisible = false;
 let radarDiscussionsRequestId = 0;
 
@@ -2749,7 +2750,7 @@ async function toggleRadarLoop() {
       const host = new URL(data.host);
       if (host.protocol !== 'https:' || host.hostname !== 'tilecache.rainviewer.com') throw new Error('Unexpected radar tile host');
       const frames = (data.radar?.past || []).filter(frame =>
-        Number.isFinite(frame.time) && /^\/v2\/radar\/\d+$/.test(frame.path)
+        Number.isFinite(frame.time) && /^\/v2\/radar\/[a-f0-9]{10,32}$/.test(frame.path)
       );
       if (frames.length < 2) throw new Error('Historical frames unavailable');
       radarReplayFrames = frames;
@@ -2835,6 +2836,9 @@ async function toggleRadarDiscussions() {
   if (!radarDiscussionsVisible) {
     radarDiscussionsLayer?.clearLayers();
     if (radarDiscussionsLayer && radarMap?.hasLayer(radarDiscussionsLayer)) radarMap.removeLayer(radarDiscussionsLayer);
+    if (radarDiscussionsWmsLayer && radarMap?.hasLayer(radarDiscussionsWmsLayer)) radarMap.removeLayer(radarDiscussionsWmsLayer);
+    const link = document.getElementById('radarDiscussionsLink');
+    if (link) link.hidden = true;
     setText('radarDiscussionsStatus','');
     return;
   }
@@ -2848,17 +2852,26 @@ async function toggleRadarDiscussions() {
     radarDiscussionsLayer.clearLayers();
     radarDiscussionsLayer.addData(data.features.filter(f => f.geometry));
     radarDiscussionsLayer.addTo(radarMap);
+    radarWarningLayer?.bringToFront();
+    const link = document.getElementById('radarDiscussionsLink');
+    if (link) link.hidden = false;
     const count = radarDiscussionsLayer.getLayers().filter(layer => {
       const bounds = layer.getBounds?.();
       return bounds?.isValid() && radarMap.getBounds().intersects(bounds);
     }).length;
     setText('radarDiscussionsStatus',count ? `${count} SPC discussion areas in view · not warnings` : 'No active SPC discussions in view');
   } catch (error) {
-    console.warn('SPC map discussions unavailable:',error);
+    console.warn('SPC discussion polygons unavailable; using WMS:',error);
     if (requestId === radarDiscussionsRequestId) {
-      radarDiscussionsVisible = false;
-      setRadarSwitch('radarDiscussionsBtn',false);
-      setText('radarDiscussionsStatus','SPC discussions unavailable');
+      if (!radarDiscussionsWmsLayer) radarDiscussionsWmsLayer = L.tileLayer.wms(
+        'https://mapservices.weather.noaa.gov/vector/services/outlooks/spc_mesoscale_discussion/MapServer/WMSServer',
+        {layers:'0',format:'image/png',transparent:true,version:'1.1.1',opacity:.75,attribution:'NOAA/SPC Mesoscale Discussions'}
+      );
+      radarDiscussionsWmsLayer.addTo(radarMap);
+      radarWarningLayer?.bringToFront();
+      const link = document.getElementById('radarDiscussionsLink');
+      if (link) link.hidden = false;
+      setText('radarDiscussionsStatus','Official SPC map overlay · active areas only');
     }
   }
 }
