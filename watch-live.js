@@ -2791,7 +2791,7 @@ function projectStormTrack(lat,lon,direction,speedKnots,minutes=30) {
 function renderRadarTracks() {
   if (!radarTracksLayer || !radarMap || !radarTracksVisible) return;
   radarTracksLayer.clearLayers();
-  const bounds = radarMap.getBounds().pad(.3);
+  const bounds = radarMap.getBounds();
   let count = 0;
   for (const feature of radarTracksFeatures) {
     const [lon,lat] = feature.geometry?.coordinates || [];
