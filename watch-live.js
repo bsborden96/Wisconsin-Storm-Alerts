@@ -139,6 +139,7 @@ let radarTracksVisible = false;
 let radarTracksRequestId = 0;
 let radarDiscussionsLayer = null;
 let radarDiscussionsWmsLayer = null;
+let radarDiscussionsTileErrors = 0;
 let radarDiscussionsVisible = false;
 let radarDiscussionsRequestId = 0;
 
@@ -2863,10 +2864,20 @@ async function toggleRadarDiscussions() {
   } catch (error) {
     console.warn('SPC discussion polygons unavailable; using WMS:',error);
     if (requestId === radarDiscussionsRequestId) {
-      if (!radarDiscussionsWmsLayer) radarDiscussionsWmsLayer = L.tileLayer.wms(
-        'https://mapservices.weather.noaa.gov/vector/services/outlooks/spc_mesoscale_discussion/MapServer/WMSServer',
-        {layers:'0',format:'image/png',transparent:true,version:'1.1.1',opacity:.75,attribution:'NOAA/SPC Mesoscale Discussions'}
-      );
+      if (!radarDiscussionsWmsLayer) {
+        radarDiscussionsWmsLayer = L.tileLayer.wms(
+          'https://mapservices.weather.noaa.gov/vector/services/outlooks/spc_mesoscale_discussion/MapServer/WMSServer',
+          {layers:'0',format:'image/png',transparent:true,version:'1.1.1',opacity:.75,attribution:'NOAA/SPC Mesoscale Discussions'}
+        );
+        radarDiscussionsWmsLayer.on('tileerror',() => {
+          if (++radarDiscussionsTileErrors < 3 || !radarDiscussionsVisible) return;
+          radarDiscussionsVisible = false;
+          setRadarSwitch('radarDiscussionsBtn',false);
+          radarMap?.removeLayer(radarDiscussionsWmsLayer);
+          setText('radarDiscussionsStatus','SPC map feed unavailable');
+        });
+      }
+      radarDiscussionsTileErrors = 0;
       radarDiscussionsWmsLayer.addTo(radarMap);
       radarWarningLayer?.bringToFront();
       const link = document.getElementById('radarDiscussionsLink');
