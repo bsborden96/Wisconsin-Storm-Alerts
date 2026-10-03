@@ -7511,3 +7511,9 @@ body.sv-radar-open{overflow:hidden}
 #svRadarDialog #radarFullscreenBtn { display:none; }
 #svRadarDialog .sv-radar-close:focus-visible { outline:2px solid #83c6d1; outline-offset:-4px; }
 @media(max-height:500px) { #svRadarDialog .radar-legend { display:none; } #svRadarDialog .sv-radar-close { min-height:36px; margin-bottom:5px; } }
+
+/* Body-level overlay avoids mobile dialog rendering differences. */
+#svRadarDialog:not([hidden]) { display:block; z-index:2147483000; isolation:isolate; }
+#svRadarDialog[hidden] { display:none!important; }
+#svRadarDialog .sv-radar-fullscreen { animation:none!important; transform:none!important; }
+#svRadarDialog .stormvector-radar { flex:1 1 0; background:#101821; }

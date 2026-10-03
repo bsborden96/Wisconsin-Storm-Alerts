@@ -32,6 +32,8 @@ test('full-screen radar escapes the broadcast panel and restores the same map an
   assert.equal(dialog.parentNode,body);
   assert.equal(radar.parentNode,dialog);
   assert.equal(dialog.open,true);
+  assert.equal(dialog.hidden,false);
+  assert.equal(host.inert,true);
   assert.equal(radar.children.includes(map),true);
   context.api.open();
   assert.equal(host.children.filter(n=>n.tag==='comment').length,1);
@@ -39,9 +41,11 @@ test('full-screen radar escapes the broadcast panel and restores the same map an
   assert.equal(radar.parentNode,host);
   assert.equal(focused,opener);
   assert.equal(body.classList.contains('sv-radar-open'),false);
+  assert.equal(dialog.hidden,true);
+  assert.equal(host.inert,undefined);
   context.api.open();
   let prevented=false;
-  dialog.listeners.cancel({preventDefault(){prevented=true;}});
+  dialog.listeners.keydown({key:'Escape',preventDefault(){prevented=true;}});
   assert.equal(prevented,true);
   assert.equal(dialog.open,false);
   assert.equal(radar.parentNode,host);
