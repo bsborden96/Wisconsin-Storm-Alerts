@@ -2229,11 +2229,34 @@ function renderSevereCenter(ctx) {
   document.getElementById('severeCenter')?.classList.toggle('warning-active',urgent.length > 0);
 }
 
+let radarFullscreenDialog = null;
+let radarFullscreenPlaceholder = null;
+let radarFullscreenFocus = null;
+
 function openStormVectorRadarFullscreen() {
   const radarView = document.getElementById('graphicRadar');
-  if (!radarView) return;
+  if (!radarView || radarFullscreenDialog?.open) return;
+  radarFullscreenFocus = document.activeElement;
   selectView('radar');
   selectRadarProduct('radar');
+  if (!radarFullscreenDialog) {
+    radarFullscreenDialog = document.createElement('dialog');
+    radarFullscreenDialog.id = 'svRadarDialog';
+    radarFullscreenDialog.setAttribute('aria-label','Full-screen weather radar');
+    document.body.appendChild(radarFullscreenDialog);
+    radarFullscreenDialog.addEventListener('cancel',event => {
+      event.preventDefault();
+      closeStormVectorRadarFullscreen();
+    });
+    radarFullscreenDialog.addEventListener('close',() => {
+      if (!radarFullscreenDialog.open) restoreRadarFromFullscreen();
+    });
+  }
+  // The top layer escapes the broadcast stage's isolated/clipped stacking context.
+  // Move the existing node so the Leaflet map and warning layers stay intact.
+  radarFullscreenPlaceholder = document.createComment('Radar returns here after full-screen mode');
+  radarView.parentNode.insertBefore(radarFullscreenPlaceholder,radarView);
+  radarFullscreenDialog.appendChild(radarView);
   radarView.classList.add('sv-radar-fullscreen');
   document.body.classList.add('sv-radar-open');
   let close = document.getElementById('svRadarCloseBtn');
@@ -2247,15 +2270,29 @@ function openStormVectorRadarFullscreen() {
     radarView.prepend(close);
   }
   close.hidden = false;
+  radarFullscreenDialog.showModal();
+  close.focus();
+  setTimeout(() => radarMap?.invalidateSize(),150);
+}
+
+function restoreRadarFromFullscreen() {
+  const radarView = document.getElementById('graphicRadar');
+  if (radarView && radarFullscreenPlaceholder?.parentNode) {
+    radarFullscreenPlaceholder.parentNode.replaceChild(radarView,radarFullscreenPlaceholder);
+  }
+  radarFullscreenPlaceholder = null;
+  radarView?.classList.remove('sv-radar-fullscreen');
+  document.body.classList.remove('sv-radar-open');
+  const close = document.getElementById('svRadarCloseBtn');
+  if (close) close.hidden = true;
+  radarFullscreenFocus?.focus?.({preventScroll:true});
+  radarFullscreenFocus = null;
   setTimeout(() => radarMap?.invalidateSize(),150);
 }
 
 function closeStormVectorRadarFullscreen() {
-  document.getElementById('graphicRadar')?.classList.remove('sv-radar-fullscreen');
-  document.body.classList.remove('sv-radar-open');
-  const close = document.getElementById('svRadarCloseBtn');
-  if (close) close.hidden = true;
-  setTimeout(() => radarMap?.invalidateSize(),150);
+  if (radarFullscreenDialog?.open) radarFullscreenDialog.close();
+  restoreRadarFromFullscreen();
 }
 
 function bindStormVectorFeatureControls() {
