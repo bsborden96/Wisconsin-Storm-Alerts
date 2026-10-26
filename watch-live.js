@@ -131,6 +131,12 @@ let radarLayer = null;
 let radarMarker = null;
 let radarWarningLayer = null;
 let radarWarningsVisible = true;
+let radarNationalWarnings = [];
+let radarWarningsCheckedAt = 0;
+let radarWarningsPending = false;
+let radarWarningsFailed = false;
+let radarWorkspaceActive = false;
+let radarLoopDelay = 1000;
 let radarZoomMode = 'local';
 let radarLastLoaded = null;
 let radarTileErrors = 0;
@@ -1758,11 +1764,11 @@ function createSpcLeafletMap(type) {
     );
 
   L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
     {
       maxZoom: 19,
       className: 'sv-dark-basemap',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      attribution: '<a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>'
     }
   )
   .addTo(map);
@@ -2265,6 +2271,8 @@ function openStormVectorRadarFullscreen() {
   const radarView = document.getElementById('graphicRadar');
   if (!radarView || (radarFullscreenDialog && !radarFullscreenDialog.hidden)) return;
   radarFullscreenFocus = document.activeElement;
+  const savedCenter = radarMap?.getCenter();
+  const savedZoom = radarMap?.getZoom();
   selectView('radar');
   selectRadarProduct('radar');
   if (!radarFullscreenDialog) {
@@ -2319,8 +2327,8 @@ function openStormVectorRadarFullscreen() {
   setTimeout(() => {
     resizeFullscreenRadar();
     if (radarMap) radarMap.setView(
-      [liveLat ?? 39,liveLon ?? -98],
-      liveLat == null ? 4 : radarMap.getZoom(),
+      savedCenter || [liveLat ?? 44.5,liveLon ?? -89.5],
+      savedZoom ?? (liveLat == null ? 6 : radarMap.getZoom()),
       {animate:false}
     );
   },200);
@@ -2501,6 +2509,7 @@ const VIEW_TITLES = {
 };
 
 function selectView(view, manual = true) {
+  if (view === 'radar') openRadarWorkspace();
   document.querySelectorAll('.vector-graphic-view').forEach(el => el.classList.remove('active'));
   document.querySelector(`[data-graphic="${view}"]`)?.classList.add('active');
 
@@ -2515,8 +2524,34 @@ function selectView(view, manual = true) {
 
   if (view === 'radar') {
     ensureRadar();
-    setTimeout(() => radarMap?.invalidateSize(),150);
+    refreshRadarWarningFeed();
+    setTimeout(() => radarMap?.invalidateSize({pan:false}),150);
   }
+}
+
+function openRadarWorkspace() {
+  const panel = document.getElementById('radarWorkspace');
+  if (!panel) return;
+  radarWorkspaceActive = true;
+  document.body.classList.add('sv-radar-mode');
+  panel.hidden = false;
+  document.getElementById('mainContent').hidden = true;
+  document.getElementById('liveStartOverlay').hidden = true;
+  document.getElementById('radarTab')?.setAttribute('aria-current','page');
+  document.getElementById('weatherTab')?.removeAttribute('aria-current');
+  setTimeout(() => radarMap?.invalidateSize({pan:false}),100);
+}
+
+function openWeatherWorkspace() {
+  radarWorkspaceActive = false;
+  document.body.classList.remove('sv-radar-mode');
+  document.getElementById('radarWorkspace').hidden = true;
+  document.getElementById('mainContent').hidden = false;
+  if (!currentWeatherContext) document.getElementById('liveStartOverlay').hidden = false;
+  document.getElementById('weatherTab')?.setAttribute('aria-current','page');
+  document.getElementById('radarTab')?.removeAttribute('aria-current');
+  pauseRadarLoop();
+  selectView('conditions');
 }
 
 function bindMainViewTabs() {
@@ -2613,7 +2648,7 @@ function ensureRadar() {
     zoomControl:true,
     attributionControl:true,
     preferCanvas:false
-  }).setView([liveLat ?? 39,liveLon ?? -98],liveLat == null ? 4 : 8);
+  }).setView([liveLat ?? 44.5,liveLon ?? -89.5],liveLat == null ? 6 : 8);
   for (const [name,z] of [['radarData',300],['radarDiscussions',430],['radarTracks',440],['radarWarnings',460]]) {
     radarMap.createPane(name).style.zIndex = String(z);
   }
@@ -2626,11 +2661,11 @@ function ensureRadar() {
   });
 
   L.tileLayer(
-    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
     {
-      maxZoom:19,
+      maxZoom:19,maxNativeZoom:16,
       className:'sv-dark-basemap',
-      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+      attribution:'<a href="https://www.usgs.gov/programs/national-geospatial-program/national-map">USGS The National Map</a>'
     }
   ).addTo(radarMap);
 
@@ -2687,7 +2722,10 @@ function ensureRadar() {
       const p = feature.properties || {};
       layer.bindPopup(
         `<strong>${escapeHtml(p.event || 'Weather Alert')}</strong><br>` +
-        `${escapeHtml(p.areaDesc || '')}`
+        `${escapeHtml(p.areaDesc || '')}<br>` +
+        `${escapeHtml(p.instruction || p.headline || '')}<br>` +
+        `Expires: ${escapeHtml(new Date(p.ends || p.expires).toLocaleTimeString())}<br>` +
+        `${escapeHtml(p.description || '')}`
       );
     }
   }).addTo(radarMap);
@@ -2707,11 +2745,18 @@ function ensureRadar() {
 
   loadRadarSites();
   if (!radarRefreshTimer) radarRefreshTimer = setInterval(() => {
-    if (document.hidden || selectedView !== 'radar' || radarReplayLayer || radarReplayTimer || !radarLayer) return;
-    refreshRadar();
-  },180000);
+    if (document.hidden || !radarWorkspaceActive) return;
+    refreshRadarWarningFeed();
+    if (radarTracksVisible) refreshRadarTracks();
+    if (!radarReplayLayer && !radarReplayTimer && radarLayer) refreshRadar();
+  },60000);
+  updateRadarWarnings();
+  refreshRadarWarningFeed();
   updateRadarForLocation();
-  setTimeout(() => radarMap?.invalidateSize(),200);
+  setTimeout(() => {
+    radarMap?.invalidateSize({pan:false});
+    radarMap?.setView([liveLat ?? 44.5,liveLon ?? -89.5],liveLat == null ? 6 : 8,{animate:false});
+  },200);
 }
 
 async function loadRadarSites() {
@@ -2858,11 +2903,12 @@ function showRadarFrame(index) {
       opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,
       pane:'radarData',maxNativeZoom:frame.site ? 12 : 7,maxZoom:19,attribution:frame.site ? 'NWS Level III via Iowa Environmental Mesonet' : 'Radar data by <a href="https://www.rainviewer.com/">RainViewer</a>'
     }).addTo(radarMap);
+    radarReplayLayer.on('tileerror',() => setText('radarMapHud','Historical radar tile unavailable · image incomplete'));
   } else radarReplayLayer.setUrl(radarFrameUrl(frame));
   const time = new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
   setText('radarFrameTime',`${time} · frame time`);
   setText('radarMapHud',`${frame.site ? frame.site+' '+frame.product : 'RainViewer history'} · ${time}`);
-  setText('radarScanStatus',`History · ${time} · overlays show current conditions`);
+  setText('radarScanStatus',`History · ${time} · warning outlines and tracks are CURRENT, not historical`);
   const slider = document.getElementById('radarFrameSlider');
   if (slider) slider.value = String(radarReplayIndex);
 }
@@ -2884,6 +2930,7 @@ function returnRadarLive() {
   const controls = document.getElementById('radarPlaybackControls');
   if (controls) controls.hidden = true;
   setText('radarMapHud',radarSite === 'mosaic' ? 'NOAA MRMS · Reflectivity' : `${radarSite} · ${radarField}`);
+  if (radarSite === 'mosaic') setText('radarScanStatus','Live national composite · image time unknown');
   if (radarSite !== 'mosaic') setText('radarScanStatus',radarScanTime ? `Scan ${new Date(radarScanTime).toLocaleTimeString()} · ${radarSite} ${radarField}` : 'Scan time unavailable');
 }
 
@@ -2908,7 +2955,7 @@ async function toggleRadarLoop() {
       const host = new URL(data.host);
       if (host.protocol !== 'https:' || host.hostname !== 'tilecache.rainviewer.com') throw new Error('Unexpected radar tile host');
       const frames = (data.radar?.past || []).filter(frame =>
-        Number.isFinite(frame.time) && /^\/v2\/radar\/[a-f0-9]{10,32}$/.test(frame.path)
+        Number.isFinite(frame.time) && /^\/v2\/radar\/[a-zA-Z0-9_-]+$/.test(frame.path)
       );
       if (frames.length < 2) throw new Error('Historical frames unavailable');
       radarReplayFrames = frames;
@@ -2922,7 +2969,7 @@ async function toggleRadarLoop() {
     const slider = document.getElementById('radarFrameSlider');
     if (slider) slider.max = String(radarReplayFrames.length-1);
     showRadarFrame(radarReplayLayer ? radarReplayIndex : 0);
-    radarReplayTimer = setInterval(() => showRadarFrame((radarReplayIndex+1)%radarReplayFrames.length),1300);
+    radarReplayTimer = setInterval(() => showRadarFrame((radarReplayIndex+1)%radarReplayFrames.length),radarLoopDelay);
     setRadarSwitch('radarPlayBtn',true);
     if (button) button.querySelector('span').textContent = 'PAUSE LOOP';
   } catch (error) {
@@ -2953,14 +3000,18 @@ function renderRadarTracks() {
     const direction = Number(p.drct), speed = Number(p.sknt);
     const valid = Date.parse(p.valid);
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || !Number.isFinite(direction) ||
-        !Number.isFinite(speed) || speed <= 0 || speed > 120 ||
-        !Number.isFinite(valid) || Date.now()-valid > 40*60*1000 || valid-Date.now() > 5*60*1000 ||
+        !Number.isFinite(speed) || p.drct == null || p.sknt == null || speed <= 0 || speed > 120 ||
+        !Number.isFinite(valid) || Date.now()-valid > 15*60*1000 || valid-Date.now() > 5*60*1000 ||
         !bounds.contains([lat,lon])) continue;
     const end = projectStormTrack(lat,lon,direction,speed);
     const label = `${escapeHtml(p.nexrad || 'NEXRAD')} cell ${escapeHtml(p.storm_id || '')}`;
     const popup = `<strong>${label}</strong><br>Estimated motion: ${Math.round(direction)}° at ${Math.round(speed*1.15078)} mph<br>Projected 30-minute path, not an arrival forecast.<br>Scan: ${escapeHtml(new Date(valid).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}`;
     L.polyline([[lat,lon],end],{pane:'radarTracks',color:'#f5cf7e',weight:2,dashArray:'6 5'}).bindPopup(popup).addTo(radarTracksLayer);
     L.circleMarker([lat,lon],{pane:'radarTracks',radius:5,color:'#fff',weight:1,fillColor:'#f5b54f',fillOpacity:1}).bindPopup(popup).addTo(radarTracksLayer);
+    for (const minutes of [10,20,30]) {
+      L.circleMarker(projectStormTrack(lat,lon,direction,speed,minutes),{pane:'radarTracks',radius:3,color:'#f5cf7e',fillOpacity:1})
+        .bindTooltip(`+${minutes} min · estimated`,{direction:'top'}).addTo(radarTracksLayer);
+    }
     if (++count >= 150) break;
   }
   if (!radarMap.hasLayer(radarTracksLayer)) radarTracksLayer.addTo(radarMap);
@@ -2988,6 +3039,11 @@ async function toggleRadarTracks() {
     setText('radarTracksStatus','');
     return;
   }
+  return refreshRadarTracks();
+}
+
+async function refreshRadarTracks() {
+  const requestId = ++radarTracksRequestId;
   setText('radarTracksStatus','Checking recent NEXRAD storm cells…');
   try {
     const response = await safeFetch('https://mesonet.agron.iastate.edu/geojson/nexrad_attr.py',{timeout:10000});
@@ -3159,23 +3215,54 @@ function updateRadarForLocation() {
 
   createRadarMarker();
   radarMarker?.bindTooltip(liveCityState || 'StormVector location',{direction:'top'});
-  radarMap.setView([liveLat,liveLon],radarZoomLevel());
+  if (!radarWorkspaceActive) radarMap.setView([liveLat,liveLon],radarZoomLevel());
 
   setTimeout(() => radarMap?.invalidateSize(),120);
+}
+
+function activeRadarWarnings(features, now = Date.now()) {
+  return (features || []).filter(a => {
+    const p = a.properties || {};
+    const end = Date.parse(p.ends || p.expires);
+    return a.geometry && ['Polygon','MultiPolygon'].includes(a.geometry.type) &&
+      p.status === 'Actual' && isUrgentWarning(a) && Number.isFinite(end) && end > now;
+  });
+}
+
+async function refreshRadarWarningFeed() {
+  if (radarWarningsPending || (radarWarningsCheckedAt && Date.now()-radarWarningsCheckedAt < 25000)) return;
+  radarWarningsPending = true;
+  setText('radarWarningStatus','Checking nationwide NWS warning polygons…');
+  try {
+    const response = await safeFetch('https://api.weather.gov/alerts/active?status=actual&message_type=alert,update',{timeout:12000});
+    const data = await response.json();
+    if (!Array.isArray(data.features)) throw new Error('Invalid warning feed');
+    radarNationalWarnings = activeRadarWarnings(data.features);
+    radarWarningsCheckedAt = Date.now();
+    radarWarningsFailed = false;
+  } catch (error) {
+    radarWarningsFailed = true;
+    // Retain unexpired last-known polygons, explicitly labeled as unverified.
+  } finally {
+    radarWarningsPending = false;
+    updateRadarWarnings();
+  }
 }
 
 function updateRadarWarnings() {
   if (!radarWarningLayer) return;
   radarWarningLayer.clearLayers();
-
-  if (!radarWarningsVisible || !currentWeatherContext) return;
-
-  (currentWeatherContext.alerts || [])
-    .filter(a => a.geometry && isUrgentWarning(a))
-    .forEach(a => radarWarningLayer.addData(a));
+  const features = activeRadarWarnings(radarNationalWarnings);
+  if (radarWarningsVisible) features.forEach(a => radarWarningLayer.addData(a));
+  const age = radarWarningsCheckedAt ? Math.round((Date.now()-radarWarningsCheckedAt)/1000) : null;
+  const unavailable = radarWarningsFailed || age == null || age > 90;
+  setText('radarWarningStatus',unavailable
+    ? `NWS warning map UNVERIFIED${age == null ? '' : ' · last success '+Math.round(age/60)+' min ago'}. Check official warnings.`
+    : `${features.length} active NWS warning polygons nationwide · checked ${new Date(radarWarningsCheckedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}${radarWarningsVisible ? '' : ' · layer hidden'}`);
 }
 
 function refreshRadar() {
+  refreshRadarWarningFeed();
   if (radarReplayLayer || radarReplayTimer) returnRadarLive();
   if (!radarLayer) {
     if (radarMap) selectRadarSource(); else ensureRadar();
@@ -3191,11 +3278,29 @@ function refreshRadar() {
 }
 
 function bindRadarControls() {
+  document.getElementById('weatherTab')?.addEventListener('click',openWeatherWorkspace);
+  document.getElementById('radarTab')?.addEventListener('click',() => selectView('radar'));
+  for (const [id,step] of [['radarPreviousBtn',-1],['radarNextBtn',1]]) {
+    document.getElementById(id)?.addEventListener('click',() => {
+      pauseRadarLoop();
+      if (radarReplayFrames.length) showRadarFrame((radarReplayIndex+step+radarReplayFrames.length)%radarReplayFrames.length);
+    });
+  }
+  document.getElementById('radarLoopSpeed')?.addEventListener('change',event => {
+    radarLoopDelay = Number(event.target.value);
+    if (radarReplayTimer) {
+      clearInterval(radarReplayTimer);
+      radarReplayTimer = setInterval(() => showRadarFrame((radarReplayIndex+1)%radarReplayFrames.length),radarLoopDelay);
+    }
+  });
+  document.addEventListener('visibilitychange',() => {
+    if (document.hidden) pauseRadarLoop();
+    else if (radarWorkspaceActive) { refreshRadarWarningFeed(); refreshRadar(); }
+  });
   document.getElementById('radarSiteSelect')?.addEventListener('change',event => { radarSite = event.target.value; selectRadarSource(); });
   document.getElementById('radarFieldSelect')?.addEventListener('change',event => { radarField = event.target.value; selectRadarSource(false); });
   document.getElementById('radarNearestBtn')?.addEventListener('click',() => {
-    const center = radarMap?.getCenter();
-    const lat = liveLat ?? center?.lat ?? 43.6, lon = liveLon ?? center?.lng ?? -88.7;
+    const lat = liveLat ?? 44.5, lon = liveLon ?? -89.5;
     const nearest = [...radarSites].sort((a,b) => radarMap.distance([lat,lon],[a.lat,a.lon])-radarMap.distance([lat,lon],[b.lat,b.lon]))[0];
     if (nearest) { radarSite = nearest.id; document.getElementById('radarSiteSelect').value = radarSite; selectRadarSource(); radarMap.setView([nearest.lat,nearest.lon],8); }
   });

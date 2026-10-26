@@ -17,3 +17,11 @@ Warning checks run every 30 seconds while the browser allows the page to run. Re
 The observation shows its reported age. Radar tile load time is not the radar image observation time; that image time is unknown here. The forecast issue time is also not verified by this app.
 
 Run `node --test test/*.test.js` for the briefing and failure drills, and `node --check watch-live.js` for a syntax check.
+
+## Dedicated radar workspace
+
+The top-level Radar tab opens independently of the spoken briefing or location setup. It starts over Wisconsin and retains the radar map when returning between tabs. Controls include site/product selection, reflectivity and available velocity products, historical scan looping with speed/step/scrub controls, distance measurement, opacity, SPC discussions, and full screen. USGS The National Map supplies the base map.
+
+Radar warning outlines come from a separate nationwide NWS active-alert request every minute while the radar workspace is visible. They do not depend on alerts for the selected point. Only actual, unexpired warning polygons are drawn. A failed or stale check is labeled unverified. Historical radar frames retain current warning/track overlays, explicitly labeled as such.
+
+NOAA's Threats-in-Motion project is explained with a link to https://gsl.noaa.gov/tim/. No operational TIM feed has been verified or connected. Official NWS polygons are never translated or cleared based on projected motion. Optional NEXRAD tracks show estimated 30-minute motion with 10-minute markers; source scans older than 15 minutes are excluded. They are not warning boundaries or arrival forecasts.

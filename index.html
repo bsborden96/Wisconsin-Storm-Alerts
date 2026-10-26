@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261003-16"
+    href="styles.css?v=radar20261026-20261003-16"
   >
 
 </head>
@@ -186,6 +186,10 @@
   </div>
 
 </header>
+<nav class="sv-primary-nav" aria-label="StormVector sections">
+  <button id="weatherTab" type="button" aria-controls="mainContent" aria-current="page">WEATHER BRIEFING</button>
+  <button id="radarTab" type="button" aria-controls="radarWorkspace">RADAR</button>
+</nav>
 
 
 <!-- ═══════════════════════════════════════════════
@@ -680,446 +684,7 @@
              RADAR
         ═════════════════════════════════════════ -->
 
-        <div
-          id="graphicRadar"
-          class="vector-graphic-view vector-radar-view"
-          data-graphic="radar">
 
-
-          <!-- RADAR PRODUCT SELECTOR -->
-
-          <div class="radar-product-selector">
-
-
-            <button
-              class="radar-product-btn active"
-              type="button"
-              data-radar-product="radar">
-
-              RADAR
-
-            </button>
-
-
-            <button
-              class="radar-product-btn"
-              type="button"
-              data-radar-product="spc">
-
-              SPC OUTLOOK
-
-            </button>
-
-
-            <button
-              class="radar-product-btn"
-              type="button"
-              data-radar-product="tornado">
-
-              TORNADO
-
-            </button>
-
-          </div>
-
-
-          <!-- RADAR PRODUCT -->
-
-          <div
-            id="radarProductRadar"
-            class="radar-product-panel active">
-
-
-            <div class="radar-toolbar">
-
-
-              <div>
-
-                <span class="graphic-label">
-                  LIVE NOAA RADAR
-                </span>
-
-
-                <span
-                  id="radarLocationLabel"
-                  class="radar-location-label">
-
-                  Selected location
-
-                </span>
-
-              </div>
-
-
-              <div class="radar-toolbar-actions">
-
-
-                <button
-                  id="radarLocalBtn"
-                  class="radar-tool-btn active"
-                  type="button">
-
-                  LOCAL
-
-                </button>
-
-
-                <button
-                  id="radarRegionalBtn"
-                  class="radar-tool-btn"
-                  type="button">
-
-                  REGIONAL
-
-                </button>
-
-
-                <button
-                  id="radarStateBtn"
-                  class="radar-tool-btn"
-                  type="button">
-
-                  STATE
-
-                </button>
-
-              </div>
-
-            </div>
-
-
-            <div class="sv-radar-source-controls">
-              <label>SITE<select id="radarSiteSelect" aria-label="Radar site"><option value="mosaic">National MRMS mosaic</option></select></label>
-              <label>PRODUCT<select id="radarFieldSelect" aria-label="Radar product" disabled><option value="N0B">Base reflectivity</option></select></label>
-              <button id="radarNearestBtn" class="radar-tool-btn" type="button">NEAREST SITE</button>
-            </div>
-            <p id="radarScanStatus" class="sv-radar-scan-status" aria-live="polite">National reflectivity composite</p>
-            <div class="sv-radar-map-wrap">
-              <div
-                id="stormVectorRadar"
-                class="stormvector-radar"
-                aria-label="NOAA MRMS reflectivity map with weather warnings">
-              </div>
-              <div class="sv-radar-map-hud" aria-live="polite">
-                <span class="sv-radar-live-dot" aria-hidden="true"></span>
-                <span id="radarMapHud">NOAA MRMS · Loading</span>
-              </div>
-            </div>
-
-            <details class="sv-radar-tools"><summary>LAYERS &amp; TOOLS</summary>
-            <div class="sv-radar-detail-row">
-              <button id="radarMeasureBtn" class="radar-tool-btn" type="button" aria-pressed="false">MEASURE DISTANCE</button>
-              <button id="radarMeasureClearBtn" class="radar-tool-btn" type="button" hidden>CLEAR</button>
-              <output id="radarMapReadout" aria-live="polite">Tap the map for coordinates</output>
-            </div>
-
-
-            <div class="radar-legend">
-
-              <div id="radarLegendTitle" class="radar-legend-title">
-                REFLECTIVITY
-              </div>
-
-
-              <div class="radar-legend-scale">
-
-                <span class="radar-db-1"></span>
-                <span class="radar-db-2"></span>
-                <span class="radar-db-3"></span>
-                <span class="radar-db-4"></span>
-                <span class="radar-db-5"></span>
-                <span class="radar-db-6"></span>
-
-              </div>
-
-
-              <div class="radar-legend-labels">
-
-                <span>
-                  LIGHT
-                </span>
-
-                <span>
-                  HEAVY
-                </span>
-
-              </div>
-
-            </div>
-
-            <div class="sv-radar-opacity-row">
-              <label for="radarOpacity">RADAR OPACITY</label>
-              <input id="radarOpacity" type="range" min="25" max="100" step="5" value="80" aria-label="Radar opacity">
-              <output id="radarOpacityValue" for="radarOpacity">80%</output>
-            </div>
-
-            <div class="sv-radar-layer-switches" aria-label="Radar layers">
-              <button id="radarPlayBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>PLAY LOOP</span><i aria-hidden="true"></i></button>
-              <button id="radarTracksBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>STORM TRACKS</span><i aria-hidden="true"></i></button>
-              <button id="radarDiscussionsBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>SPC DISCUSSIONS</span><i aria-hidden="true"></i></button>
-            </div>
-            <div id="radarPlaybackControls" class="sv-radar-playback" hidden>
-              <button id="radarLiveBtn" class="radar-tool-btn" type="button">LIVE</button>
-              <input id="radarFrameSlider" type="range" min="0" max="0" value="0" aria-label="Historical radar frame">
-              <output id="radarFrameTime" for="radarFrameSlider">Loading frames</output>
-              <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer data</a>
-            </div>
-            <div id="radarDiscussionList" class="sv-radar-discussion-list" hidden></div>
-            <div class="sv-radar-layer-status" aria-live="polite">
-              <span id="radarTracksStatus"></span>
-              <span id="radarDiscussionsStatus"></span>
-              <a id="radarDiscussionsLink" href="https://www.spc.noaa.gov/products/md/" target="_blank" rel="noopener noreferrer" hidden>Official SPC discussions</a>
-            </div>
-
-
-            <div class="radar-control-row">
-
-
-              <button
-                id="radarCenterBtn"
-                class="radar-tool-btn"
-                type="button">
-
-                RECENTER
-
-              </button>
-
-
-              <button
-                id="radarWarningsBtn"
-                class="radar-tool-btn active"
-                type="button">
-
-                WARNINGS ON
-
-              </button>
-
-
-              <button
-                id="radarRefreshBtn"
-                class="radar-tool-btn"
-                type="button">
-
-                REFRESH
-
-              </button>
-
-              <button
-                id="radarFullscreenBtn"
-                class="radar-tool-btn radar-fullscreen-btn"
-                type="button">
-
-                FULL SCREEN
-
-              </button>
-
-            </div>
-
-
-            </details>
-            <div class="radar-footer">
-
-              <span id="radarStatus">
-                Radar waiting for location
-              </span>
-
-              <span id="radarTimestamp">
-                Map not refreshed
-              </span>
-
-            </div>
-
-          </div>
-
-
-          <!-- ═══════════════════════════════════════
-               SPC OUTLOOK
-          ═════════════════════════════════════════ -->
-
-          <div
-            id="radarProductSpc"
-            class="radar-product-panel">
-
-
-            <div class="sv-severe-desk">
-
-
-              <div class="sv-severe-desk-head">
-
-                <span>
-                  STORM PREDICTION CENTER
-                </span>
-
-                <strong>
-                  DAY 1 OUTLOOK
-                </strong>
-
-              </div>
-
-
-              <div class="sv-severe-hero">
-
-                <span class="sv-severe-label">
-                  CURRENT LOCATION
-                </span>
-
-
-                <strong
-                  id="spcPanelRisk"
-                  class="sv-severe-risk">
-
-                  LOADING
-
-                </strong>
-
-
-                <p
-                  id="spcPanelDescription"
-                  class="sv-severe-description">
-
-                  Vector is checking the severe weather outlook.
-
-                </p>
-
-              </div>
-
-
-              <div class="sv-severe-grid">
-
-
-                <div class="sv-severe-stat">
-
-                  <span>
-                    LOCATION
-                  </span>
-
-                  <strong id="spcPanelLocation">
-                    --
-                  </strong>
-
-                </div>
-
-
-                <div class="sv-severe-stat">
-
-                  <span>
-                    ACTIVE ALERTS
-                  </span>
-
-                  <strong id="spcPanelAlerts">
-                    --
-                  </strong>
-
-                </div>
-
-
-                <div class="sv-severe-stat">
-
-                  <span>
-                    WIND
-                  </span>
-
-                  <strong id="spcPanelWind">
-                    --
-                  </strong>
-
-                </div>
-
-
-                <div class="sv-severe-stat">
-
-                  <span>
-                    STATUS
-                  </span>
-
-                  <strong id="spcPanelStatus">
-                    CHECKING
-                  </strong>
-
-                </div>
-
-              </div>
-
-
-              <div
-                id="spcPanelMessage"
-                class="sv-severe-message">
-
-                Vector will interpret the SPC outlook
-                for your current location.
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <!-- ═══════════════════════════════════════
-               TORNADO STATUS
-          ═════════════════════════════════════════ -->
-
-          <div
-            id="radarProductTornado"
-            class="radar-product-panel">
-
-
-            <div class="sv-severe-desk sv-tornado-desk">
-
-
-              <div class="sv-severe-desk-head">
-
-                <span>
-                  STORMVECTOR
-                </span>
-
-                <strong>
-                  TORNADO STATUS
-                </strong>
-
-              </div>
-
-
-              <div class="sv-tornado-status">
-
-                <span class="sv-severe-label">
-                  CURRENT LOCATION
-                </span>
-
-
-                <strong
-                  id="tornadoPanelStatus"
-                  class="sv-tornado-risk">
-
-                  NO ACTIVE TORNADO WARNING
-
-                </strong>
-
-
-                <p id="tornadoPanelDescription">
-
-                  Vector is monitoring National Weather
-                  Service tornado alerts affecting your location.
-
-                </p>
-
-              </div>
-
-
-              <div
-                id="tornadoPanelAlert"
-                class="sv-severe-message">
-
-                No tornado warning or tornado watch
-                is currently affecting this location.
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
 
 
         <!-- ═══════════════════════════════════════
@@ -1546,6 +1111,461 @@
 </main>
 
 
+
+<section id="radarWorkspace" class="sv-radar-workspace" aria-label="StormVector radar" hidden>
+  <div class="sv-radar-heading"><div><span class="graphic-label">STORMVECTOR / RADAR</span><h1>Follow the storm.</h1><p>Explore radar scans, official warnings and storm motion.</p></div><span class="sv-radar-source-badge">NOAA / NWS</span></div>
+        <div
+          id="graphicRadar"
+          class="vector-graphic-view vector-radar-view"
+          data-graphic="radar">
+
+
+          <!-- RADAR PRODUCT SELECTOR -->
+
+          <div class="radar-product-selector">
+
+
+            <button
+              class="radar-product-btn active"
+              type="button"
+              data-radar-product="radar">
+
+              RADAR
+
+            </button>
+
+
+            <button
+              class="radar-product-btn"
+              type="button"
+              data-radar-product="spc">
+
+              SPC OUTLOOK
+
+            </button>
+
+
+            <button
+              class="radar-product-btn"
+              type="button"
+              data-radar-product="tornado">
+
+              TORNADO
+
+            </button>
+
+          </div>
+
+
+          <!-- RADAR PRODUCT -->
+
+          <div
+            id="radarProductRadar"
+            class="radar-product-panel active">
+
+
+            <div class="radar-toolbar">
+
+
+              <div>
+
+                <span class="graphic-label">
+                  LIVE NOAA RADAR
+                </span>
+
+
+                <span
+                  id="radarLocationLabel"
+                  class="radar-location-label">
+
+                  Selected location
+
+                </span>
+
+              </div>
+
+
+              <div class="radar-toolbar-actions">
+
+
+                <button
+                  id="radarLocalBtn"
+                  class="radar-tool-btn active"
+                  type="button">
+
+                  LOCAL
+
+                </button>
+
+
+                <button
+                  id="radarRegionalBtn"
+                  class="radar-tool-btn"
+                  type="button">
+
+                  REGIONAL
+
+                </button>
+
+
+                <button
+                  id="radarStateBtn"
+                  class="radar-tool-btn"
+                  type="button">
+
+                  STATE
+
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div class="sv-radar-source-controls">
+              <label>SITE<select id="radarSiteSelect" aria-label="Radar site"><option value="mosaic">National MRMS mosaic</option></select></label>
+              <label>PRODUCT<select id="radarFieldSelect" aria-label="Radar product" disabled><option value="N0B">Base reflectivity</option></select></label>
+              <button id="radarNearestBtn" class="radar-tool-btn" type="button">NEAREST SITE</button>
+            </div>
+            <p id="radarScanStatus" class="sv-radar-scan-status" aria-live="polite">National reflectivity composite</p>
+            <div class="sv-radar-map-wrap">
+              <div class="sv-radar-map-key"><span>Red · tornado</span><span>Orange · severe storm</span><span>Gold dashed · estimated motion</span></div>
+              <div
+                id="stormVectorRadar"
+                class="stormvector-radar"
+                aria-label="NOAA MRMS reflectivity map with weather warnings">
+              </div>
+              <div class="sv-radar-map-hud" aria-live="polite">
+                <span class="sv-radar-live-dot" aria-hidden="true"></span>
+                <span id="radarMapHud">NOAA MRMS · Loading</span>
+              </div>
+            </div>
+
+            <div class="sv-radar-tools">
+            <div class="sv-radar-detail-row">
+              <button id="radarMeasureBtn" class="radar-tool-btn" type="button" aria-pressed="false">MEASURE DISTANCE</button>
+              <button id="radarMeasureClearBtn" class="radar-tool-btn" type="button" hidden>CLEAR</button>
+              <output id="radarMapReadout" aria-live="polite">Tap the map for coordinates</output>
+            </div>
+
+
+            <div class="radar-legend">
+
+              <div id="radarLegendTitle" class="radar-legend-title">
+                REFLECTIVITY
+              </div>
+
+
+              <div class="radar-legend-scale">
+
+                <span class="radar-db-1"></span>
+                <span class="radar-db-2"></span>
+                <span class="radar-db-3"></span>
+                <span class="radar-db-4"></span>
+                <span class="radar-db-5"></span>
+                <span class="radar-db-6"></span>
+
+              </div>
+
+
+              <div class="radar-legend-labels">
+
+                <span>
+                  LIGHT
+                </span>
+
+                <span>
+                  HEAVY
+                </span>
+
+              </div>
+
+            </div>
+
+            <div class="sv-radar-opacity-row">
+              <label for="radarOpacity">RADAR OPACITY</label>
+              <input id="radarOpacity" type="range" min="25" max="100" step="5" value="80" aria-label="Radar opacity">
+              <output id="radarOpacityValue" for="radarOpacity">80%</output>
+            </div>
+
+            <div class="sv-radar-layer-switches" aria-label="Radar layers">
+              <button id="radarPlayBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>PLAY LOOP</span><i aria-hidden="true"></i></button>
+              <button id="radarTracksBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>STORM TRACKS</span><i aria-hidden="true"></i></button>
+              <button id="radarDiscussionsBtn" class="sv-radar-switch" type="button" aria-pressed="false"><span>SPC DISCUSSIONS</span><i aria-hidden="true"></i></button>
+            </div>
+            <div id="radarPlaybackControls" class="sv-radar-playback" hidden>
+              <button id="radarPreviousBtn" class="radar-tool-btn" type="button" aria-label="Previous radar frame">◀</button>
+              <button id="radarNextBtn" class="radar-tool-btn" type="button" aria-label="Next radar frame">▶</button>
+              <label class="sv-loop-speed">SPEED <select id="radarLoopSpeed" aria-label="Radar loop speed"><option value="1800">Slow</option><option value="1000" selected>Normal</option><option value="500">Fast</option></select></label>
+              <button id="radarLiveBtn" class="radar-tool-btn" type="button">LIVE</button>
+              <input id="radarFrameSlider" type="range" min="0" max="0" value="0" aria-label="Historical radar frame">
+              <output id="radarFrameTime" for="radarFrameSlider">Loading frames</output>
+              <a href="https://www.rainviewer.com/" target="_blank" rel="noopener noreferrer">RainViewer data</a>
+            </div>
+            <div id="radarDiscussionList" class="sv-radar-discussion-list" hidden></div>
+            <p id="radarWarningStatus" class="sv-warning-feed-status" aria-live="polite">NWS warning map not checked yet</p>
+            <div class="sv-radar-layer-status" aria-live="polite">
+              <span id="radarTracksStatus"></span>
+              <span id="radarDiscussionsStatus"></span>
+              <a id="radarDiscussionsLink" href="https://www.spc.noaa.gov/products/md/" target="_blank" rel="noopener noreferrer" hidden>Official SPC discussions</a>
+            </div>
+
+
+            <div class="radar-control-row">
+
+
+              <button
+                id="radarCenterBtn"
+                class="radar-tool-btn"
+                type="button">
+
+                RECENTER
+
+              </button>
+
+
+              <button
+                id="radarWarningsBtn"
+                class="radar-tool-btn active"
+                type="button">
+
+                WARNINGS ON
+
+              </button>
+
+
+              <button
+                id="radarRefreshBtn"
+                class="radar-tool-btn"
+                type="button">
+
+                REFRESH
+
+              </button>
+
+              <button
+                id="radarFullscreenBtn"
+                class="radar-tool-btn radar-fullscreen-btn"
+                type="button">
+
+                FULL SCREEN
+
+              </button>
+
+            </div>
+
+
+            </div>
+            <div class="radar-footer">
+
+              <span id="radarStatus">
+                Radar waiting for location
+              </span>
+
+              <span id="radarTimestamp">
+                Map not refreshed
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <!-- ═══════════════════════════════════════
+               SPC OUTLOOK
+          ═════════════════════════════════════════ -->
+
+          <div
+            id="radarProductSpc"
+            class="radar-product-panel">
+
+
+            <div class="sv-severe-desk">
+
+
+              <div class="sv-severe-desk-head">
+
+                <span>
+                  STORM PREDICTION CENTER
+                </span>
+
+                <strong>
+                  DAY 1 OUTLOOK
+                </strong>
+
+              </div>
+
+
+              <div class="sv-severe-hero">
+
+                <span class="sv-severe-label">
+                  CURRENT LOCATION
+                </span>
+
+
+                <strong
+                  id="spcPanelRisk"
+                  class="sv-severe-risk">
+
+                  LOADING
+
+                </strong>
+
+
+                <p
+                  id="spcPanelDescription"
+                  class="sv-severe-description">
+
+                  Vector is checking the severe weather outlook.
+
+                </p>
+
+              </div>
+
+
+              <div class="sv-severe-grid">
+
+
+                <div class="sv-severe-stat">
+
+                  <span>
+                    LOCATION
+                  </span>
+
+                  <strong id="spcPanelLocation">
+                    --
+                  </strong>
+
+                </div>
+
+
+                <div class="sv-severe-stat">
+
+                  <span>
+                    ACTIVE ALERTS
+                  </span>
+
+                  <strong id="spcPanelAlerts">
+                    --
+                  </strong>
+
+                </div>
+
+
+                <div class="sv-severe-stat">
+
+                  <span>
+                    WIND
+                  </span>
+
+                  <strong id="spcPanelWind">
+                    --
+                  </strong>
+
+                </div>
+
+
+                <div class="sv-severe-stat">
+
+                  <span>
+                    STATUS
+                  </span>
+
+                  <strong id="spcPanelStatus">
+                    CHECKING
+                  </strong>
+
+                </div>
+
+              </div>
+
+
+              <div
+                id="spcPanelMessage"
+                class="sv-severe-message">
+
+                Vector will interpret the SPC outlook
+                for your current location.
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- ═══════════════════════════════════════
+               TORNADO STATUS
+          ═════════════════════════════════════════ -->
+
+          <div
+            id="radarProductTornado"
+            class="radar-product-panel">
+
+
+            <div class="sv-severe-desk sv-tornado-desk">
+
+
+              <div class="sv-severe-desk-head">
+
+                <span>
+                  STORMVECTOR
+                </span>
+
+                <strong>
+                  TORNADO STATUS
+                </strong>
+
+              </div>
+
+
+              <div class="sv-tornado-status">
+
+                <span class="sv-severe-label">
+                  CURRENT LOCATION
+                </span>
+
+
+                <strong
+                  id="tornadoPanelStatus"
+                  class="sv-tornado-risk">
+
+                  NO ACTIVE TORNADO WARNING
+
+                </strong>
+
+
+                <p id="tornadoPanelDescription">
+
+                  Vector is monitoring National Weather
+                  Service tornado alerts affecting your location.
+
+                </p>
+
+              </div>
+
+
+              <div
+                id="tornadoPanelAlert"
+                class="sv-severe-message">
+
+                No tornado warning or tornado watch
+                is currently affecting this location.
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+  <details class="sv-tim-info"><summary>Threats-in-Motion · what it means</summary>
+    <p>NOAA’s Threats-in-Motion (TIM) project develops warning areas that follow a storm and can update as often as every minute. Its goal is more consistent lead time as storms move.</p>
+    <p>StormVector has not connected an operational TIM feed. Solid colored outlines on this map are the official NWS warning polygons as issued. Dashed gold storm tracks are estimated NEXRAD cell motion, not TIM warnings or arrival forecasts. An estimated path never cancels a warning.</p>
+    <a href="https://gsl.noaa.gov/tim/" target="_blank" rel="noopener noreferrer">Read NOAA’s Threats-in-Motion project</a>
+  </details>
+</section>
+
 <!-- MUSIC -->
 
 <audio
@@ -1569,7 +1589,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261003-16"></script>
+<script src="watch-live.js?v=20261026-radar-1"></script>
 
 
 </body>
