@@ -396,6 +396,7 @@ function updateDecision(ctx) {
 
 function syncAlertUi(ctx) {
   if (!ctx) return;
+  renderWinter(ctx);
   renderSevere(ctx);
   renderSevereCenter(ctx);
   renderMesoscale(ctx);
@@ -426,6 +427,7 @@ function resetLocationAlertState() {
   alertCheckPending = false;
   knownPriorityAlertIds.clear();
   currentWeatherContext = null;
+  renderWinter(null);
   setText('dataStatusSummary','Checking new location');
   setText('timelineChanges','Checking the forecast for this location.');
   const timeline = document.getElementById('stormTimeline');
@@ -917,10 +919,9 @@ function fillSearchInputs(value) {
 async function selectSearchedLocation(result) {
   if (!result) return;
 
-  if (!liveStarted) unlockMediaFromUserGesture();
-
   speechGeneration++;
   try { speechSynthesis.cancel(); } catch (_) {}
+  if (!liveStarted) unlockMediaFromUserGesture();
   setRobotSpeaking(false);
 
   liveLat = Number(result.latitude);
@@ -962,7 +963,6 @@ async function selectSearchedLocation(result) {
     }
 
     if (!liveMuted) {
-      await speakStandalone(`Switching StormVector coverage to ${liveCityState}.`);
       startCurrentRundown();
     }
   } catch (error) {
@@ -1108,7 +1108,7 @@ async function fetchOpenMeteo(lat, lon) {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     '&current=temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
-    '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m' +
+    '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,apparent_temperature,snowfall' +
     '&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=2&timezone=auto';
 
   const res = await safeFetch(url,{timeout:10000});
@@ -2532,6 +2532,8 @@ function selectView(view, manual = true) {
 function openRadarWorkspace() {
   const panel = document.getElementById('radarWorkspace');
   if (!panel) return;
+  document.getElementById('winterWorkspace').hidden = true;
+  document.getElementById('winterTab').removeAttribute('aria-current');
   radarWorkspaceActive = true;
   document.body.classList.add('sv-radar-mode');
   panel.hidden = false;
@@ -2543,6 +2545,8 @@ function openRadarWorkspace() {
 }
 
 function openWeatherWorkspace() {
+  document.getElementById('winterWorkspace').hidden = true;
+  document.getElementById('winterTab').removeAttribute('aria-current');
   radarWorkspaceActive = false;
   document.body.classList.remove('sv-radar-mode');
   document.getElementById('radarWorkspace').hidden = true;
@@ -3278,6 +3282,7 @@ function refreshRadar() {
 }
 
 function bindRadarControls() {
+  document.getElementById('winterTab')?.addEventListener('click',openWinterWorkspace);
   document.getElementById('weatherTab')?.addEventListener('click',openWeatherWorkspace);
   document.getElementById('radarTab')?.addEventListener('click',() => selectView('radar'));
   for (const [id,step] of [['radarPreviousBtn',-1],['radarNextBtn',1]]) {
@@ -3495,9 +3500,11 @@ function unlockMediaFromUserGesture() {
   }
 
   if ('speechSynthesis' in window) {
-    const utter = createUtterance('');
-    utter.volume = 0;
-    speechSynthesis.speak(utter);
+    if (!liveMuted) {
+      speechSynthesis.resume();
+      const utter = createUtterance('StormVector is connecting to your local weather.');
+      speechSynthesis.speak(utter);
+    }
   }
 }
 
@@ -3624,7 +3631,7 @@ function speakSegment(index) {
   const text = liveSegments[index];
   setCaption(text);
 
-  if (!('speechSynthesis' in window)) return;
+  if (!('speechSynthesis' in window)) { setText('liveAudioStatus','Voice unavailable in this browser. Captions remain available.'); return; }
 
   const generation = speechGeneration;
   const utter = createUtterance(text);
@@ -3648,12 +3655,15 @@ function speakSegment(index) {
     }, /warning|emergency/i.test(text) ? 550 : 350);
   };
 
-  utter.onerror = () => {
+  utter.onerror = (event) => {
     if (generation !== speechGeneration) return;
     setRobotSpeaking(false);
-    setTimeout(() => speakSegment(index+1),350);
+    restoreMusic();
+    setText('liveAudioStatus','Voice could not play (' + (event.error || 'unknown') + '). Tap PLAY / REPLAY VECTOR to retry.');
+    scheduleNextRundown();
   };
 
+  speechSynthesis.resume();
   speechSynthesis.speak(utter);
 }
 
@@ -3693,11 +3703,14 @@ function speakStandalone(text) {
 }
 
 function replaySegment() {
-  if (!liveSegments.length || liveMuted) return;
+  if (!currentWeatherContext) return;
+  liveMuted = false;
+  updateAudioControls();
+  if (!liveSegments.length) buildRundown(currentWeatherContext);
   speechGeneration++;
   try { speechSynthesis.cancel(); } catch (_) {}
   setRobotSpeaking(false);
-  setTimeout(() => speakSegment(liveSegIdx),100);
+  speakSegment(liveSegIdx);
 }
 
 function updateAudioControls() {
@@ -4410,3 +4423,43 @@ window.addEventListener('beforeunload',() => {
     try { liveMusic.pause(); } catch (_) {}
   }
 });
+
+function openWinterWorkspace(){
+  radarWorkspaceActive=false;
+  document.body.classList.remove('sv-radar-mode');
+  pauseRadarLoop();
+  document.getElementById('radarWorkspace').hidden=true;
+  document.getElementById('mainContent').hidden=true;
+  document.getElementById('winterWorkspace').hidden=false;
+  document.getElementById('liveStartOverlay').hidden=!!currentWeatherContext;
+  for(const id of ['weatherTab','radarTab','winterTab']){
+    const el=document.getElementById(id);
+    if(id==='winterTab') el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current');
+  }
+  renderWinter(currentWeatherContext);
+}
+function renderWinter(ctx){
+  const h=ctx?.hourly||{}, now=Date.now();
+  const rows=(h.time||[]).map((t,i)=>({i,t:forecastTimeMs(t,ctx)})).filter(x=>x.t>=now&&x.t<now+86400000);
+  const val=(key,i)=>h[key]?.[i]==null?null:Number(h[key][i]);
+  const complete=rows.length===24;
+  const snow=rows.map(x=>val('snowfall',x.i));
+  const feels=rows.map(x=>val('apparent_temperature',x.i));
+  const codes=rows.map(x=>val('weather_code',x.i));
+  setText('winterLocation',ctx?.cityState||'Choose a location to load winter conditions.');
+  setText('winterFeels',ctx?.feelsF==null?'—':ctx.feelsF+'°F');
+  setText('winterSnow',complete&&snow.every(Number.isFinite)?(snow.reduce((a,b)=>a+b,0)/2.54).toFixed(1)+' in':'Unavailable');
+  setText('winterLow',complete&&feels.every(Number.isFinite)?Math.round(Math.min(...feels))+'°F':'Unavailable');
+  setText('winterIce',codes.some(c=>[56,57,66,67].includes(c))?'Possible':complete&&codes.every(Number.isFinite)?'Not indicated':'Unavailable');
+  const alerts=document.getElementById('winterAlerts');
+  if(alerts){
+    alerts.replaceChildren();
+    const items=(ctx?.alerts||[]).filter(a=>/winter|snow|blizzard|ice storm|freez|cold|wind chill|frost/i.test(a.properties?.event||''));
+    if(!ctx?.alertsAvailable) alerts.append(document.createTextNode('Official alert status unavailable. Check weather.gov directly. '));
+    if(!items.length&&ctx?.alertsAvailable) alerts.textContent='No active winter-related NWS alerts for this location.';
+    for(const a of items){const p=a.properties||{}, el=document.createElement('p');el.textContent=[p.event,p.headline,p.instruction].filter(Boolean).join(' — ');alerts.append(el);}
+  }
+  setText('winterForecast',Object.values(ctx?.forecast||{}).filter(Boolean).join(' ')||'Forecast unavailable.');
+  const box=document.getElementById('winterHours');
+  if(box){box.replaceChildren();if(!rows.length)box.textContent='Hourly forecast unavailable.';for(const {i,t} of rows){const el=document.createElement('div');el.className='sv-winter-hour';const clock=new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',...(ctx.timeZone?{timeZone:ctx.timeZone}:{})});const f=val('apparent_temperature',i),n=val('snowfall',i);el.textContent=clock+' · Feels '+(f==null?'—':Math.round(f)+'°F')+' · Snow '+(n==null?'—':(n/2.54).toFixed(1)+' in')+([56,57,66,67].includes(val('weather_code',i))?' · Freezing precipitation':'');box.append(el);}}
+}
