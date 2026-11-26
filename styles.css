@@ -7654,3 +7654,6 @@ body.watch-live-page #mainContent{padding-top:0!important}
 .sv-winter-grid article,.sv-winter-panel{background:#15151c;border:1px solid #393144;border-radius:12px;padding:15px}
 .sv-winter-grid strong{font-size:clamp(18px,5vw,28px);color:#fff}
 .sv-winter-panel{margin-top:12px}.sv-winter-panel p{white-space:pre-line}.sv-winter-note{font-size:12px;color:#b5afbf}.sv-winter-hour{padding:9px 0;border-bottom:1px solid #34303c;font-size:13px}.sv-winter a{color:#cbb0ed}
+
+.sv-location-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:8px 14px;background:#101014;font:12px system-ui;color:#ddd}.sv-location-tools span{flex:1}.sv-location-tools button{background:#241936;color:#eee;border:1px solid #594077;border-radius:7px;padding:8px;font:12px system-ui}
+.sv-winter details>summary{cursor:pointer;font:600 15px system-ui;padding:5px 0;color:#eee}.sv-winter details>summary strong{float:right;font-size:13px}.sv-winter details[open]>summary{margin-bottom:12px}.winter-legend{display:flex;flex-wrap:wrap;gap:8px}.winter-legend span{font-size:11px;display:inline-flex;align-items:center;gap:5px}.winter-legend span:before{content:'';width:9px;height:9px;border-radius:2px;background:var(--road)}.sv-winter[hidden]{display:none!important}
