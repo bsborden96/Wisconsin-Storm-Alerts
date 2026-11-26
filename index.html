@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=20261125-3"
+    href="styles.css?v=20261126-4"
   >
 
 </head>
@@ -190,7 +190,7 @@
   <button id="weatherTab" type="button" aria-controls="mainContent" aria-current="page">WEATHER BRIEFING</button>
   <button id="radarTab" type="button" aria-controls="radarWorkspace">RADAR</button>
   <button id="winterTab" type="button" aria-controls="winterWorkspace">WINTER</button>
-</nav><div class="sv-audio-strip"><button id="enableVectorAudio" type="button">Enable Vector audio</button><span id="vectorAudioFeedback" role="status">Tap to listen</span></div><div class="sv-location-tools"><span id="savedCoverageLabel">Choose location</span><button id="savedChangeLocation" type="button">Change location</button><button id="forgetCoverage" type="button">Forget saved location</button></div>
+</nav><div class="sv-location-tools"><span id="savedCoverageLabel">Choose location</span><button id="savedChangeLocation" type="button">Change location</button><button id="forgetCoverage" type="button">Forget saved location</button></div>
 
 
 <!-- ═══════════════════════════════════════════════
@@ -1567,7 +1567,7 @@
   </details>
 </section>
 
-<section id="winterWorkspace" class="sv-winter" hidden aria-label="Winter weather"><h1>Winter center</h1><p id="winterLocation">Choose a location</p><div class="winter-nav" role="group" aria-label="Winter products"><button type="button" data-winter="travel" aria-pressed="true">Travel</button><button type="button" data-winter="snow" aria-pressed="false">Snow</button><button type="button" data-winter="hazards" aria-pressed="false">Hazards</button><button type="button" data-winter="outlooks" aria-pressed="false">Outlooks</button></div><div class="winter-view" id="winter-travel" ><details class="sv-winter-panel" open><summary>Forecast travel risk <strong id="winterTravelRisk">Unknown</strong></summary><p id="winterTravelReason">Waiting for forecast.</p><p class="sv-winter-note">Weather-based estimate, not verified pavement conditions.</p><p id="winterRoadStatus">Actual road conditions: unknown. Check your state transportation agency.</p></details><details open class="sv-winter-panel"><summary>Travel and safety</summary><p>Check road conditions before leaving. Bridges and overpasses can freeze before other roads. Follow official warnings and avoid unnecessary travel during dangerous conditions.</p><a id="winterRoadLink" href="https://www.fhwa.dot.gov/trafficinfo/" target="_blank" rel="noopener">Find state road conditions</a> · <a href="https://www.weather.gov/safety/winter">NWS winter safety</a></details><details class="sv-winter-panel"><summary>Road condition legend</summary><div class="winter-legend"><span style="--road:#29965c">Clear</span><span style="--road:#347dcc">Wet</span><span style="--road:#d7b92e">Partially covered</span><span style="--road:#e58a28">Snow covered</span><span style="--road:#d94343">Ice covered</span><span style="--road:#713ca0">Travel not advised</span><span style="--road:#555961">Closed</span><span style="--road:#999">Unknown</span></div></details></div><div class="winter-view" id="winter-snow" hidden><div class="sv-winter-grid"><article><h2>Feels like</h2><strong id="winterFeels">—</strong></article><article><h2>Next 24h snowfall</h2><strong id="winterSnow">—</strong></article><article><h2>Lowest feels-like · 24h</h2><strong id="winterLow">—</strong></article><article><h2>Freezing precipitation</h2><strong id="winterIce">—</strong></article></div><details open class="sv-winter-panel"><summary>Snow accumulation and winter hazards</summary><div id="winterExtended">Waiting for forecast.</div></details><details class="sv-winter-panel"><summary>Next 24 hours</summary><div id="winterHours">Waiting for forecast.</div></details></div><div class="winter-view" id="winter-hazards" hidden><details open class="sv-winter-panel"><summary>Official NWS winter alerts</summary><div id="winterAlerts" role="status">Not checked.</div></details><details class="sv-winter-panel"><summary>Local NWS forecast</summary><p id="winterForecast">Waiting for forecast.</p></details></div><div class="winter-view" id="winter-outlooks" hidden><details open class="sv-winter-panel"><summary>Official winter maps and outlooks</summary><p><a href="https://www.wpc.ncep.noaa.gov/wwd/wssi/wssi.php" target="_blank" rel="noopener">Winter Storm Severity Index</a></p><p><a href="https://www.wpc.ncep.noaa.gov/wwd/winter_wx.shtml" target="_blank" rel="noopener">WPC snowfall and ice outlooks</a></p><p><a href="https://radar.weather.gov/" target="_blank" rel="noopener">Official NOAA radar</a></p></details></div><p class="sv-winter-note">Model forecasts are not verified road reports. Follow official alerts.</p></section>
+<section id="winterWorkspace" class="sv-winter" hidden aria-label="Winter weather"><div class="winter-heading"><h1>Winter outlook</h1><p id="winterLocation">Choose a location</p></div><div class="winter-alert-band" id="winterAlerts" role="status">Checking official alerts</div><div class="winter-hero"><small>24-HOUR SNOWFALL · MODEL FORECAST</small><strong id="winterSnow">—</strong><div id="winterNarrative">Waiting for forecast</div><div class="winter-metrics"><div><small>Feels like now</small><b id="winterFeels">—</b></div><div><small>Lowest feels like</small><b id="winterLow">—</b></div><div><small>Freezing rain</small><b id="winterIce">—</b></div></div></div><article class="winter-card"><h2>Travel outlook <span id="winterTravelRisk">Unknown</span></h2><p id="winterTravelReason">Waiting for forecast</p><a id="winterRoadLink" href="https://www.fhwa.dot.gov/trafficinfo/" target="_blank" rel="noopener">Official road conditions ↗</a><small>Forecast risk, not observed road conditions.</small></article><article class="winter-card"><h2>Hourly winter forecast</h2><div id="winterHours" class="winter-hour-strip"></div><small>Swipe to explore the next 24 hours.</small></article><article class="winter-card"><h2>Snow accumulation &amp; hazards</h2><div id="winterExtended"></div></article><details class="winter-card"><summary>Official local forecast</summary><p id="winterForecast"></p></details><details class="winter-card"><summary>Additional official winter products</summary><p><a href="https://www.wpc.ncep.noaa.gov/wwd/wssi/wssi.php" target="_blank" rel="noopener">Winter Storm Severity Index ↗</a></p><p><a href="https://www.wpc.ncep.noaa.gov/wwd/winter_wx.shtml" target="_blank" rel="noopener">Snow and ice probability outlook ↗</a></p></details><p class="sv-winter-note">Open-Meteo model estimates and NWS alerts. Ice thickness and actual pavement conditions are not measured here.</p></section>
 <!-- MUSIC -->
 
 <audio
@@ -1591,7 +1591,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261125-3"></script>
+<script src="watch-live.js?v=20261126-4"></script>
 
 
 </body>
