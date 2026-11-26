@@ -136,7 +136,7 @@ let radarWarningsCheckedAt = 0;
 let radarWarningsPending = false;
 let radarWarningsFailed = false;
 let radarWorkspaceActive = false;
-let radarLoopDelay = 1000;
+let radarLoopDelay = 700;
 let radarZoomMode = 'local';
 let radarLastLoaded = null;
 let radarTileErrors = 0;
@@ -2903,17 +2903,30 @@ function radarFrameUrl(frame) {
 }
 
 let radarPendingFrame=null;
-function showRadarFrame(index) {
- if(!radarMap||!radarReplayFrames.length||radarPendingFrame)return;
- const target=Math.max(0,Math.min(radarReplayFrames.length-1,index)),frame=radarReplayFrames[target],request=radarReplayRequestId;
- const layer=L.tileLayer(radarFrameUrl(frame),{opacity:0,pane:'radarData',maxNativeZoom:frame.site?12:7,maxZoom:19,attribution:frame.site?'NWS Level III via IEM':'RainViewer'});
- radarPendingFrame=layer;let failed=false,done=false;
- const finish=()=>{if(done)return;done=true;clearTimeout(timeout);if(radarPendingFrame===layer)radarPendingFrame=null;if(failed||request!==radarReplayRequestId){radarMap.removeLayer(layer);if(failed)setText('radarMapHud','Frame unavailable · retaining previous image');return;}
- const previous=radarReplayLayer;radarReplayLayer=layer;radarReplayIndex=target;layer.setOpacity(Number(document.getElementById('radarOpacity')?.value||80)/100);
- if(previous)radarMap.removeLayer(previous);if(radarLayer&&radarMap.hasLayer(radarLayer))radarMap.removeLayer(radarLayer);
- const time=new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});setText('radarFrameTime',time+' · frame time');setText('radarMapHud',(frame.site?frame.site+' '+frame.product:'RainViewer history')+' · '+time);setText('radarScanStatus','History · '+time+' · warning outlines are current');const slider=document.getElementById('radarFrameSlider');if(slider)slider.value=String(target);
- };
- const timeout=setTimeout(()=>{failed=true;finish();},12000);layer.on('tileerror',()=>{failed=true;});layer.once('load',finish);layer.addTo(radarMap);
+let radarBufferedLayers=[];
+function clearRadarBuffer(){for(const item of radarBufferedLayers)if(radarMap.hasLayer(item.layer))radarMap.removeLayer(item.layer);radarBufferedLayers=[];}
+async function bufferRadarFrames(request){
+ clearRadarBuffer();
+ const frames=radarReplayFrames.slice(-12);
+ const items=frames.map(frame=>({frame,layer:L.tileLayer(radarFrameUrl(frame),{opacity:0,pane:'radarData',maxNativeZoom:frame.site?12:7,maxZoom:19,keepBuffer:2}),ready:false}));
+ radarBufferedLayers=items;
+ await Promise.all(items.map(item=>new Promise(resolve=>{let failed=false,done=false;const finish=()=>{if(done)return;done=true;clearTimeout(timer);item.ready=!failed;resolve();};const timer=setTimeout(()=>{failed=true;finish();},15000);item.layer.on('tileerror',()=>{failed=true;});item.layer.once('load',finish);item.layer.addTo(radarMap);})));
+ if(request!==radarReplayRequestId)return false;
+ radarBufferedLayers=items.filter(item=>{if(!item.ready)radarMap.removeLayer(item.layer);return item.ready;});
+ radarReplayFrames=radarBufferedLayers.map(item=>item.frame);
+ return radarBufferedLayers.length>=2;
+}
+function showRadarFrame(index){
+ if(!radarBufferedLayers.length)return;
+ const target=Math.max(0,Math.min(radarBufferedLayers.length-1,index)),item=radarBufferedLayers[target];
+ if(item.layer.isLoading())return;
+ const previous=radarReplayLayer;
+ item.layer.setOpacity(Number(document.getElementById('radarOpacity')?.value||80)/100);
+ if(previous&&previous!==item.layer)previous.setOpacity(0);
+ radarReplayLayer=item.layer;radarReplayIndex=target;
+ if(radarLayer&&radarMap.hasLayer(radarLayer))radarMap.removeLayer(radarLayer);
+ const time=new Date(item.frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+ setText('radarFrameTime',time+' · frame time');setText('radarMapHud','Buffered radar · '+time);setText('radarScanStatus','History · '+time+' · warning outlines are current');const slider=document.getElementById('radarFrameSlider');if(slider)slider.value=String(target);
 }
 function pauseRadarLoop() {
   if (radarReplayTimer) clearInterval(radarReplayTimer);
@@ -2925,6 +2938,7 @@ function pauseRadarLoop() {
 
 function returnRadarLive() {
   radarReplayRequestId++;
+  clearRadarBuffer();
   if(radarPendingFrame&&radarMap){radarMap.removeLayer(radarPendingFrame);radarPendingFrame=null;}
   pauseRadarLoop();
   if (radarReplayLayer && radarMap) radarMap.removeLayer(radarReplayLayer);
@@ -2965,6 +2979,9 @@ async function toggleRadarLoop() {
       radarReplayHost = host.origin;
     }
     if (requestId !== radarReplayRequestId) return;
+    setText('radarMapHud','Buffering radar animation…');
+    if (!await bufferRadarFrames(requestId)) { if(requestId!==radarReplayRequestId)return; throw new Error('Insufficient loaded frames'); }
+    if(requestId!==radarReplayRequestId)return;
     const controls = document.getElementById('radarPlaybackControls');
     if (controls) controls.hidden = false;
     const credit = controls?.querySelector('a');
@@ -3266,7 +3283,7 @@ function updateRadarWarnings() {
 
 function refreshRadar() {
   refreshRadarWarningFeed();
-  if (radarReplayLayer || radarReplayTimer) returnRadarLive();
+  if (radarReplayLayer || radarReplayTimer || radarBufferedLayers.length) return;
   if (!radarLayer) {
     if (radarMap) selectRadarSource(); else ensureRadar();
     return;
@@ -3458,7 +3475,8 @@ function startMusic() {
   const music = ensureMusic();
   if (!music || musicMuted || !liveStarted || musicShouldPause(currentWeatherContext)) return;
   music.loop = true;
-  music.volume = 0.16;
+  music.volume = robotSpeaking ? 0.045 : 0.16;
+  if (!music.paused) return;
   music.play().then(updateAudioControls).catch(err => {
     console.warn('Music play blocked:',err);
     updateAudioControls();
@@ -3468,7 +3486,7 @@ function startMusic() {
 function stopMusic() {
   const music = ensureMusic();
   if (!music) return;
-  music.pause();
+  if (!music.paused) music.pause();
   updateAudioControls();
 }
 
@@ -3641,7 +3659,9 @@ function speakSegment(index) {
   const utter = createUtterance(text);
   retainedVectorUtterance = utter;
 
+  const watchdog=setTimeout(()=>{if(generation!==speechGeneration)return;setRobotSpeaking(false);restoreMusic();setText('liveAudioStatus','Voice did not start. Tap replay to retry.');},5000);
   utter.onstart = () => {
+    clearTimeout(watchdog);
     if (generation !== speechGeneration) return;
     duckMusic();
     setRobotSpeaking(true);
@@ -3650,6 +3670,7 @@ function speakSegment(index) {
   };
 
   utter.onend = () => {
+    clearTimeout(watchdog);
     if (generation !== speechGeneration) return;
     setRobotSpeaking(false);
     restoreMusic();
@@ -3662,6 +3683,7 @@ function speakSegment(index) {
   };
 
   utter.onerror = (event) => {
+    clearTimeout(watchdog);
     if (generation !== speechGeneration) return;
     setRobotSpeaking(false);
     restoreMusic();
@@ -3677,9 +3699,9 @@ function speakSegment(index) {
 function startCurrentRundown() {
   clearSpeechLoopTimer();
   speechGeneration++;
-  try { speechSynthesis.cancel(); } catch (_) {}
+  const generation=speechGeneration;
   setRobotSpeaking(false);
-  speakSegment(0);
+  if ('speechSynthesis' in window && speechSynthesis.speaking) { speechSynthesis.cancel(); setTimeout(()=>{if(generation===speechGeneration)speakSegment(0);},250); } else speakSegment(0);
 }
 
 function speakStandalone(text) {
@@ -3714,8 +3736,8 @@ function replaySegment() {
   liveMuted = false;
   updateAudioControls();
   if (!liveSegments.length) buildRundown(currentWeatherContext);
+  clearSpeechLoopTimer();
   speechGeneration++;
-  try { speechSynthesis.cancel(); } catch (_) {}
   setRobotSpeaking(false);
   speakSegment(liveSegIdx);
 }
