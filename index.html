@@ -65,7 +65,7 @@
 
   <link
     rel="stylesheet"
-    href="styles.css?v=radar20261026-20261003-16"
+    href="styles.css?v=20261125-1"
   >
 
 </head>
@@ -189,6 +189,7 @@
 <nav class="sv-primary-nav" aria-label="StormVector sections">
   <button id="weatherTab" type="button" aria-controls="mainContent" aria-current="page">WEATHER BRIEFING</button>
   <button id="radarTab" type="button" aria-controls="radarWorkspace">RADAR</button>
+  <button id="winterTab" type="button" aria-controls="winterWorkspace">WINTER</button>
 </nav>
 
 
@@ -1019,7 +1020,7 @@
         type="button"
         onclick="replaySegment()">
 
-        REPLAY LAST
+        PLAY / REPLAY VECTOR
 
       </button>
 
@@ -1566,6 +1567,15 @@
   </details>
 </section>
 
+<section id="winterWorkspace" class="sv-winter" hidden aria-label="Winter weather">
+<h1>Winter weather</h1><p id="winterLocation">Choose a location to load winter conditions.</p>
+<div class="sv-winter-grid"><article><h2>Feels like</h2><strong id="winterFeels">—</strong></article><article><h2>Next 24h snowfall</h2><strong id="winterSnow">—</strong></article><article><h2>Lowest feels-like · 24h</h2><strong id="winterLow">—</strong></article><article><h2>Freezing precipitation</h2><strong id="winterIce">—</strong></article></div>
+<p class="sv-winter-note">Open-Meteo model estimates, not observed accumulation or official road conditions. Freezing precipitation is based on forecast weather codes, not ice thickness.</p>
+<article class="sv-winter-panel"><h2>Official NWS winter alerts</h2><div id="winterAlerts" role="status">Not checked.</div></article>
+<article class="sv-winter-panel"><h2>Local NWS forecast</h2><p id="winterForecast">Waiting for forecast.</p></article>
+<article class="sv-winter-panel"><h2>Next 24 hours</h2><div id="winterHours">Waiting for forecast.</div></article>
+<article class="sv-winter-panel"><h2>Travel and safety</h2><p>Check road conditions before leaving. Bridges and overpasses can freeze before other roads. Follow official warnings and avoid unnecessary travel during dangerous conditions.</p><a href="https://511wi.gov/">Wisconsin 511 road conditions</a> · <a href="https://www.weather.gov/safety/winter">NWS winter safety</a></article>
+</section>
 <!-- MUSIC -->
 
 <audio
@@ -1589,7 +1599,7 @@
 
 <script src="broadcast-library.js?v=20261002-2"></script>
 <script src="mesoscale.js?v=20260928-1"></script>
-<script src="watch-live.js?v=20261026-radar-1"></script>
+<script src="watch-live.js?v=20261125-1"></script>
 
 
 </body>
