@@ -3616,6 +3616,7 @@ function scheduleNextRundown() {
 }
 
 
+let retainedVectorUtterance = null;
 function speakSegment(index) {
   if (liveMuted || !liveSegments.length) return;
 
@@ -3640,12 +3641,14 @@ function speakSegment(index) {
 
   const generation = speechGeneration;
   const utter = createUtterance(text);
+  retainedVectorUtterance = utter;
 
   utter.onstart = () => {
     if (generation !== speechGeneration) return;
     duckMusic();
     setRobotSpeaking(true);
     setLiveBadge('LIVE');
+    setText('vectorAudioFeedback','Vector is speaking');
   };
 
   utter.onend = () => {
@@ -3664,8 +3667,9 @@ function speakSegment(index) {
     if (generation !== speechGeneration) return;
     setRobotSpeaking(false);
     restoreMusic();
+    setText('vectorAudioFeedback','Playback failed — tap Enable Vector audio');
     setText('liveAudioStatus','Voice could not play (' + (event.error || 'unknown') + '). Tap PLAY / REPLAY VECTOR to retry.');
-    scheduleNextRundown();
+    if (event.error !== 'not-allowed') scheduleNextRundown();
   };
 
   speechSynthesis.resume();
@@ -4510,3 +4514,5 @@ function renderWinterExtras(ctx){
  add('Minimum forecast visibility',vis==null?'Unavailable':(vis/1609.344).toFixed(1)+' mi');add('Peak forecast gust',gust==null?'Unavailable':Math.round(gust)+' mph');
  add('Freezing precipitation',ice?'Possible':'Not indicated or unavailable');add('Ice thickness','Not available from this model');add('Pavement temperature','No verified sensor feed');
 }
+
+document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('[data-winter]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('[data-winter]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.querySelectorAll('.winter-view').forEach(x=>x.hidden=x.id!=='winter-'+b.dataset.winter);}));document.getElementById('enableVectorAudio')?.addEventListener('click',()=>{if(!('speechSynthesis' in window)){setText('vectorAudioFeedback','Voice unavailable');return;}if(!currentWeatherContext){setText('vectorAudioFeedback','Waiting for weather data');return;}try{liveMuted=false;clearSpeechLoopTimer();pickVoice();buildRundown(currentWeatherContext);setText('vectorAudioFeedback','Starting voice…');startCurrentRundown();updateAudioControls();}catch(e){setText('vectorAudioFeedback','Voice startup failed: '+e.message);}});});
