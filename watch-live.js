@@ -764,6 +764,7 @@ async function returnToMyLocation() {
     previousSnapshot = null;
     await prepareBroadcast();
     if (generation !== locationGeneration) return;
+    hideStartOverlay();
     if (liveStarted && !liveMuted) {
       await speakStandalone(`Switching StormVector coverage back to ${liveCityState || 'your current location'}.`);
       startCurrentRundown();
@@ -1032,6 +1033,7 @@ async function fetchNwsPoint(lat, lon) {
     }
 
     return {
+      stateCode:rel.state || null,
       cityState: [rel.city,stateName(rel.state)].filter(Boolean).join(', '),
       stationUrl:p.observationStations || null,
       periods,
@@ -1108,8 +1110,8 @@ async function fetchOpenMeteo(lat, lon) {
   const url =
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     '&current=temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
-    '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,apparent_temperature,snowfall' +
-    '&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=2&timezone=auto';
+    '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,apparent_temperature,snowfall,visibility,precipitation,snow_depth' +
+    '&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=4&timezone=auto';
 
   const res = await safeFetch(url,{timeout:10000});
   const data = await res.json();
@@ -1308,6 +1310,7 @@ async function prepareBroadcast(options = {}) {
 
   const ctx = {
     cityState:liveCityState,
+    stateCode:nws.stateCode,
     tempF:observation?.tempF ?? fallback.tempF ?? null,
     feelsF:fallback.feelsF ?? observation?.tempF ?? null,
     humidity:observation?.humidity ?? fallback.humidity ?? null,
@@ -1339,6 +1342,7 @@ async function prepareBroadcast(options = {}) {
   };
 
   currentWeatherContext = ctx;
+  saveCoverage();
   alertCheckPending = false;
   if (ctx.alertsAvailable && alertPollId === alertPollAtStart) lastAlertCheckAt = new Date();
   if (!liveStarted && ctx.alertsAvailable) (ctx.alerts || []).filter(isUrgentWarning).forEach(a => knownPriorityAlertIds.add(a.id));
@@ -3418,6 +3422,7 @@ function buildRundown(ctx) {
     liveSegments.splice(Math.min(urgent.length ? 3 : 2,liveSegments.length),0,...discussion);
   }
 
+  if (!urgent.length && !watch) { const winter = winterSummary(ctx); if (winter) liveSegments.push(winter); }
   liveSegIdx = 0;
   rememberListenerUpdate(ctx);
 }
@@ -3769,7 +3774,7 @@ function showLocationOverlay() {
 }
 
 async function startBroadcast() {
-  if (liveStarted) return;
+  if (liveStarted) { await returnToMyLocation(); return; }
 
   const button = document.getElementById('liveStartBtn');
   unlockMediaFromUserGesture();
@@ -4439,6 +4444,7 @@ function openWinterWorkspace(){
   renderWinter(currentWeatherContext);
 }
 function renderWinter(ctx){
+  renderWinterExtras(ctx);
   const h=ctx?.hourly||{}, now=Date.now();
   const rows=(h.time||[]).map((t,i)=>({i,t:forecastTimeMs(t,ctx)})).filter(x=>x.t>=now&&x.t<now+86400000);
   const val=(key,i)=>h[key]?.[i]==null?null:Number(h[key][i]);
@@ -4462,4 +4468,45 @@ function renderWinter(ctx){
   setText('winterForecast',Object.values(ctx?.forecast||{}).filter(Boolean).join(' ')||'Forecast unavailable.');
   const box=document.getElementById('winterHours');
   if(box){box.replaceChildren();if(!rows.length)box.textContent='Hourly forecast unavailable.';for(const {i,t} of rows){const el=document.createElement('div');el.className='sv-winter-hour';const clock=new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',...(ctx.timeZone?{timeZone:ctx.timeZone}:{})});const f=val('apparent_temperature',i),n=val('snowfall',i);el.textContent=clock+' · Feels '+(f==null?'—':Math.round(f)+'°F')+' · Snow '+(n==null?'—':(n/2.54).toFixed(1)+' in')+([56,57,66,67].includes(val('weather_code',i))?' · Freezing precipitation':'');box.append(el);}}
+}
+
+const COVERAGE_KEY='stormvector.coverage.v1';
+function saveCoverage(){
+ if(!locationReady || !Number.isFinite(liveLat)||!Number.isFinite(liveLon))return;
+ try{localStorage.setItem(COVERAGE_KEY,JSON.stringify({lat:liveLat,lon:liveLon,mode:locationMode,city:liveCityState,search:selectedSearchLocation}));}catch(_){}
+ setText('savedCoverageLabel',liveCityState||'Saved location');
+}
+async function restoreCoverage(){
+ let p;try{p=JSON.parse(localStorage.getItem(COVERAGE_KEY)||'null');}catch(_){return;}
+ if(!p||!Number.isFinite(p.lat)||!Number.isFinite(p.lon)||Math.abs(p.lat)>90||Math.abs(p.lon)>180||locationReady)return;
+ liveLat=p.lat;liveLon=p.lon;liveCityState=p.city;locationMode=p.mode==='device'?'device':'search';selectedSearchLocation=p.search;locationReady=true;
+ resetLocationAlertState();const generation=locationGeneration;
+ hideStartOverlay();setLocationText(p.city||'Saved location');setText('savedCoverageLabel',p.city||'Saved location');
+ try{await prepareBroadcast();if(generation!==locationGeneration)return;liveStarted=true;startTimers();setLiveBadge('LIVE');setCaption('Saved location restored. Tap Play / Replay Vector to enable voice.');if(locationMode==='device'){setLocationSource('Last known device location');try{const perm=await navigator.permissions?.query({name:'geolocation'});if(perm?.state==='granted'&&locationMode==='device')startMovingLocationWatch();}catch(_){}}}catch(e){showLocationOverlay();setCaption('Saved location could not load. Choose a location to retry.');}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+ document.getElementById('savedChangeLocation')?.addEventListener('click',()=>{const b=document.getElementById('liveStartBtn');if(b){b.disabled=false;b.textContent='USE MY LOCATION';}showLocationOverlay();});
+ document.getElementById('forgetCoverage')?.addEventListener('click',()=>{try{localStorage.removeItem(COVERAGE_KEY);}catch(_){} location.reload();});
+ restoreCoverage();
+});
+function winterRows(ctx,hours){const h=ctx?.hourly||{},now=Date.now();return (h.time||[]).map((t,i)=>({i,t:forecastTimeMs(t,ctx)})).filter(x=>x.t>=now&&x.t<now+hours*3600000);}
+function winterValue(ctx,key,i){const v=ctx?.hourly?.[key]?.[i];return v==null||!Number.isFinite(Number(v))?null:Number(v);}
+function winterTotal(ctx,hours){const rows=winterRows(ctx,hours),v=rows.map(x=>winterValue(ctx,'snowfall',x.i));return rows.length===hours&&v.every(Number.isFinite)?v.reduce((a,b)=>a+b,0)/2.54:null;}
+function winterSummary(ctx){const n=winterTotal(ctx,24);return n!=null&&n>=0.5?'The model projects '+n.toFixed(1)+' inches of snow over the next 24 hours. Check official forecasts and road conditions before traveling.':null;}
+function renderWinterExtras(ctx){
+ const rows=winterRows(ctx,24),v=(k,i)=>winterValue(ctx,k,i),codes=rows.map(x=>v('weather_code',x.i)),snow=winterTotal(ctx,24);
+ const ice=codes.some(c=>[56,57,66,67].includes(c)),snowing=codes.some(c=>[71,73,75,77,85,86].includes(c)),wet=codes.some(c=>[51,53,55,61,63,65,80,81,82].includes(c));
+ let risk='Unknown',reason='Insufficient forecast data.',color='#999';
+ if(ice){risk='High';reason='Freezing precipitation is forecast.';color='#d94343';}else if(snowing){risk='Elevated';reason='Snow is forecast; slippery roads are possible.';color='#e58a28';}else if(wet){risk='Caution';reason='Rain or drizzle is forecast.';color='#347dcc';}else if(rows.length===24&&codes.every(Number.isFinite)){risk='No precipitation signal';reason='No rain, snow or freezing precipitation indicated. Existing ice or snow may remain.';color='#29965c';}
+ setText('winterTravelRisk',risk);setText('winterTravelReason',reason);const el=document.getElementById('winterTravelRisk');if(el)el.style.color=color;
+ const state=String(ctx?.stateCode||ctx?.cityState?.split(',').pop()?.trim()||'');
+ const links={WI:['Wisconsin','https://511wi.gov/'],MN:['Minnesota','https://511mn.org/'],IL:['Illinois','https://www.gettingaroundillinois.com/'],IA:['Iowa','https://511ia.org/'],MI:['Michigan','https://mdotjboss.state.mi.us/MiDrive/map'],IN:['Indiana','https://511in.org/'],OH:['Ohio','https://www.ohgo.com/'],ND:['North Dakota','https://travel.dot.nd.gov/'],SD:['South Dakota','https://sd511.org/']};
+ const link=links[state]||Object.values(links).find(x=>x[0]===state);const a=document.getElementById('winterRoadLink');if(a){a.href=link?link[1]:'https://www.fhwa.dot.gov/trafficinfo/';a.textContent=link?link[0]+' official road conditions':'Find official state road conditions'+(state?' · '+state:'');}
+ const box=document.getElementById('winterExtended');if(!box)return;box.replaceChildren();
+ const add=(label,value)=>{const p=document.createElement('p');p.textContent=label+': '+value;box.append(p);};
+ for(const n of [6,12,24,48,72]){const total=winterTotal(ctx,n);add(n+'h model snowfall',total==null?'Unavailable':total.toFixed(1)+' in');}
+ const minmax=(k,fn)=>{const a=rows.map(x=>v(k,x.i));return rows.length===24&&a.every(Number.isFinite)?fn(...a):null;};
+ const vis=minmax('visibility',Math.min),gust=minmax('wind_gusts_10m',Math.max);
+ add('Minimum forecast visibility',vis==null?'Unavailable':(vis/1609.344).toFixed(1)+' mi');add('Peak forecast gust',gust==null?'Unavailable':Math.round(gust)+' mph');
+ add('Freezing precipitation',ice?'Possible':'Not indicated or unavailable');add('Ice thickness','Not available from this model');add('Pavement temperature','No verified sensor feed');
 }
