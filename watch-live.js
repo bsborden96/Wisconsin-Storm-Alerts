@@ -766,7 +766,6 @@ async function returnToMyLocation() {
     if (generation !== locationGeneration) return;
     hideStartOverlay();
     if (liveStarted && !liveMuted) {
-      await speakStandalone(`Switching StormVector coverage back to ${liveCityState || 'your current location'}.`);
       startCurrentRundown();
     }
   } catch (error) {
@@ -922,7 +921,8 @@ async function selectSearchedLocation(result) {
 
   speechGeneration++;
   try { speechSynthesis.cancel(); } catch (_) {}
-  if (!liveStarted) unlockMediaFromUserGesture();
+  liveMuted = false;
+  unlockMediaFromUserGesture();
   setRobotSpeaking(false);
 
   liveLat = Number(result.latitude);
@@ -1111,7 +1111,7 @@ async function fetchOpenMeteo(lat, lon) {
     `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
     '&current=temperature_2m,apparent_temperature,relative_humidity_2m,dew_point_2m,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m' +
     '&hourly=temperature_2m,precipitation_probability,weather_code,wind_speed_10m,wind_gusts_10m,apparent_temperature,snowfall,visibility,precipitation,snow_depth' +
-    '&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=4&timezone=auto';
+    '&temperature_unit=fahrenheit&wind_speed_unit=mph&forecast_days=4&timezone=auto&timeformat=unixtime';
 
   const res = await safeFetch(url,{timeout:10000});
   const data = await res.json();
@@ -2136,6 +2136,7 @@ function timelineWeatherLabel(code) {
 function forecastTimeMs(time, ctx) {
   // Open-Meteo's local wall times have no offset; do not interpret them in the viewer's zone.
   if (!time) return NaN;
+  if (typeof time === 'number') return time * 1000;
   if (/Z$|[+-]\d{2}:\d{2}$/.test(time)) return Date.parse(time);
   return ctx.utcOffsetSeconds == null ? Date.parse(time)
     : Date.parse(time + 'Z') - ctx.utcOffsetSeconds * 1000;
@@ -2901,26 +2902,19 @@ function radarFrameUrl(frame) {
   return `${radarReplayHost}${frame.path}/256/{z}/{x}/{y}/2/1_1.png`;
 }
 
+let radarPendingFrame=null;
 function showRadarFrame(index) {
-  if (!radarMap || !radarReplayFrames.length) return;
-  radarReplayIndex = Math.max(0,Math.min(radarReplayFrames.length-1,index));
-  const frame = radarReplayFrames[radarReplayIndex];
-  if (!radarReplayLayer) {
-    radarMap.removeLayer(radarLayer);
-    radarReplayLayer = L.tileLayer(radarFrameUrl(frame),{
-      opacity:Number(document.getElementById('radarOpacity')?.value || 80)/100,
-      pane:'radarData',maxNativeZoom:frame.site ? 12 : 7,maxZoom:19,attribution:frame.site ? 'NWS Level III via Iowa Environmental Mesonet' : 'Radar data by <a href="https://www.rainviewer.com/">RainViewer</a>'
-    }).addTo(radarMap);
-    radarReplayLayer.on('tileerror',() => setText('radarMapHud','Historical radar tile unavailable · image incomplete'));
-  } else radarReplayLayer.setUrl(radarFrameUrl(frame));
-  const time = new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
-  setText('radarFrameTime',`${time} · frame time`);
-  setText('radarMapHud',`${frame.site ? frame.site+' '+frame.product : 'RainViewer history'} · ${time}`);
-  setText('radarScanStatus',`History · ${time} · warning outlines and tracks are CURRENT, not historical`);
-  const slider = document.getElementById('radarFrameSlider');
-  if (slider) slider.value = String(radarReplayIndex);
+ if(!radarMap||!radarReplayFrames.length||radarPendingFrame)return;
+ const target=Math.max(0,Math.min(radarReplayFrames.length-1,index)),frame=radarReplayFrames[target],request=radarReplayRequestId;
+ const layer=L.tileLayer(radarFrameUrl(frame),{opacity:0,pane:'radarData',maxNativeZoom:frame.site?12:7,maxZoom:19,attribution:frame.site?'NWS Level III via IEM':'RainViewer'});
+ radarPendingFrame=layer;let failed=false,done=false;
+ const finish=()=>{if(done)return;done=true;clearTimeout(timeout);if(radarPendingFrame===layer)radarPendingFrame=null;if(failed||request!==radarReplayRequestId){radarMap.removeLayer(layer);if(failed)setText('radarMapHud','Frame unavailable · retaining previous image');return;}
+ const previous=radarReplayLayer;radarReplayLayer=layer;radarReplayIndex=target;layer.setOpacity(Number(document.getElementById('radarOpacity')?.value||80)/100);
+ if(previous)radarMap.removeLayer(previous);if(radarLayer&&radarMap.hasLayer(radarLayer))radarMap.removeLayer(radarLayer);
+ const time=new Date(frame.time*1000).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});setText('radarFrameTime',time+' · frame time');setText('radarMapHud',(frame.site?frame.site+' '+frame.product:'RainViewer history')+' · '+time);setText('radarScanStatus','History · '+time+' · warning outlines are current');const slider=document.getElementById('radarFrameSlider');if(slider)slider.value=String(target);
+ };
+ const timeout=setTimeout(()=>{failed=true;finish();},12000);layer.on('tileerror',()=>{failed=true;});layer.once('load',finish);layer.addTo(radarMap);
 }
-
 function pauseRadarLoop() {
   if (radarReplayTimer) clearInterval(radarReplayTimer);
   radarReplayTimer = null;
@@ -2931,6 +2925,7 @@ function pauseRadarLoop() {
 
 function returnRadarLive() {
   radarReplayRequestId++;
+  if(radarPendingFrame&&radarMap){radarMap.removeLayer(radarPendingFrame);radarPendingFrame=null;}
   pauseRadarLoop();
   if (radarReplayLayer && radarMap) radarMap.removeLayer(radarReplayLayer);
   radarReplayLayer = null;
@@ -3335,6 +3330,7 @@ function bindRadarControls() {
     const opacity = Number(event.target.value);
     radarLayer?.setOpacity(opacity / 100);
     radarReplayLayer?.setOpacity(opacity / 100);
+    radarReplayLayer?.setOpacity(opacity / 100);
     setText('radarOpacityValue',`${opacity}%`);
   });
   document.getElementById('radarLocalBtn')?.addEventListener('click',() => setRadarZoomMode('local'));
@@ -3445,7 +3441,8 @@ function pickVoice() {
 
 function createUtterance(text) {
   const utter = new SpeechSynthesisUtterance(removeEmojis(text));
-  if (liveVoice) utter.voice = liveVoice;
+  utter.lang = 'en-US';
+  if (liveVoice && !/iPhone|iPad|iPod/i.test(navigator.userAgent)) utter.voice = liveVoice;
   utter.rate = /iPhone|iPad|iPod/i.test(navigator.userAgent) ? 0.97 : 0.98;
   utter.pitch = 1;
   utter.volume = 1;
@@ -3508,6 +3505,7 @@ function unlockMediaFromUserGesture() {
     if (!liveMuted) {
       speechSynthesis.resume();
       const utter = createUtterance('StormVector is connecting to your local weather.');
+      retainedVectorUtterance = utter;
       speechSynthesis.speak(utter);
     }
   }
@@ -3778,9 +3776,10 @@ function showLocationOverlay() {
 }
 
 async function startBroadcast() {
-  if (liveStarted) { await returnToMyLocation(); return; }
+  if (liveStarted) { liveMuted=false; unlockMediaFromUserGesture(); await returnToMyLocation(); return; }
 
   const button = document.getElementById('liveStartBtn');
+  liveMuted=false;
   unlockMediaFromUserGesture();
 
   if (button) {
@@ -4471,7 +4470,10 @@ function renderWinter(ctx){
   }
   setText('winterForecast',Object.values(ctx?.forecast||{}).filter(Boolean).join(' ')||'Forecast unavailable.');
   const box=document.getElementById('winterHours');
-  if(box){box.replaceChildren();if(!rows.length)box.textContent='Hourly forecast unavailable.';for(const {i,t} of rows){const el=document.createElement('div');el.className='sv-winter-hour';const clock=new Date(t).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',...(ctx.timeZone?{timeZone:ctx.timeZone}:{})});const f=val('apparent_temperature',i),n=val('snowfall',i);el.textContent=clock+' · Feels '+(f==null?'—':Math.round(f)+'°F')+' · Snow '+(n==null?'—':(n/2.54).toFixed(1)+' in')+([56,57,66,67].includes(val('weather_code',i))?' · Freezing precipitation':'');box.append(el);}}
+  const describe=c=>c==null?'Unavailable':[56,57,66,67].includes(c)?'Freezing rain':[71,73,75,77,85,86].includes(c)?'Snow':[51,53,55,61,63,65,80,81,82].includes(c)?'Rain':c===0?'Clear':[1,2,3].includes(c)?'Cloudy':[45,48].includes(c)?'Fog':[95,96,99].includes(c)?'Thunderstorms':'Other';
+  const first=rows.find(x=>[56,57,66,67,71,73,75,77,85,86].includes(val('weather_code',x.i)));
+  setText('winterNarrative',first?'Winter precipitation forecast around '+forecastClock(first.t,ctx)+'.':complete&&codes.every(Number.isFinite)?'No winter precipitation indicated in the next 24 hours.':'Hourly forecast incomplete.');
+  if(box){box.replaceChildren();if(!rows.length)box.textContent='Hourly forecast unavailable.';for(const {i,t} of rows){const el=document.createElement('div');el.className='winter-hour-card';const c=val('weather_code',i),temp=val('temperature_2m',i),f=val('apparent_temperature',i),n=val('snowfall',i),g=val('wind_gusts_10m',i),pop=val('precipitation_probability',i);for(const [tag,value] of [['small',forecastClock(t,ctx)],['b',timelineIcon(c)+' '+(temp==null?'—':Math.round(temp)+'°')],['span',describe(c)],['small','Feels '+(f==null?'—':Math.round(f)+'°')],['small','Snow '+(n==null?'—':(n/2.54).toFixed(1)+' in')],['small','Precip '+(pop==null?'—':pop+'%')],['small','Gust '+(g==null?'—':Math.round(g)+' mph')]]){const node=document.createElement(tag);node.textContent=value;el.append(node);}box.append(el);}}
 }
 
 const COVERAGE_KEY='stormvector.coverage.v1';
@@ -4486,7 +4488,7 @@ async function restoreCoverage(){
  liveLat=p.lat;liveLon=p.lon;liveCityState=p.city;locationMode=p.mode==='device'?'device':'search';selectedSearchLocation=p.search;locationReady=true;
  resetLocationAlertState();const generation=locationGeneration;
  hideStartOverlay();setLocationText(p.city||'Saved location');setText('savedCoverageLabel',p.city||'Saved location');
- try{await prepareBroadcast();if(generation!==locationGeneration)return;liveStarted=true;startTimers();setLiveBadge('LIVE');setCaption('Saved location restored. Tap Play / Replay Vector to enable voice.');if(locationMode==='device'){setLocationSource('Last known device location');try{const perm=await navigator.permissions?.query({name:'geolocation'});if(perm?.state==='granted'&&locationMode==='device')startMovingLocationWatch();}catch(_){}}}catch(e){showLocationOverlay();setCaption('Saved location could not load. Choose a location to retry.');}
+ try{await prepareBroadcast();if(generation!==locationGeneration)return;liveStarted=true;startTimers();setLiveBadge('LIVE');startMusic();startCurrentRundown();setCaption('Saved location restored. Tap the broadcast voice control if your browser blocks automatic audio.');if(locationMode==='device'){setLocationSource('Last known device location');try{const perm=await navigator.permissions?.query({name:'geolocation'});if(perm?.state==='granted'&&locationMode==='device')startMovingLocationWatch();}catch(_){}}}catch(e){showLocationOverlay();setCaption('Saved location could not load. Choose a location to retry.');}
 }
 document.addEventListener('DOMContentLoaded',()=>{
  document.getElementById('savedChangeLocation')?.addEventListener('click',()=>{const b=document.getElementById('liveStartBtn');if(b){b.disabled=false;b.textContent='USE MY LOCATION';}showLocationOverlay();});
@@ -4507,7 +4509,7 @@ function renderWinterExtras(ctx){
  const links={WI:['Wisconsin','https://511wi.gov/'],MN:['Minnesota','https://511mn.org/'],IL:['Illinois','https://www.gettingaroundillinois.com/'],IA:['Iowa','https://511ia.org/'],MI:['Michigan','https://mdotjboss.state.mi.us/MiDrive/map'],IN:['Indiana','https://511in.org/'],OH:['Ohio','https://www.ohgo.com/'],ND:['North Dakota','https://travel.dot.nd.gov/'],SD:['South Dakota','https://sd511.org/']};
  const link=links[state]||Object.values(links).find(x=>x[0]===state);const a=document.getElementById('winterRoadLink');if(a){a.href=link?link[1]:'https://www.fhwa.dot.gov/trafficinfo/';a.textContent=link?link[0]+' official road conditions':'Find official state road conditions'+(state?' · '+state:'');}
  const box=document.getElementById('winterExtended');if(!box)return;box.replaceChildren();
- const add=(label,value)=>{const p=document.createElement('p');p.textContent=label+': '+value;box.append(p);};
+ const add=(label,value)=>{const p=document.createElement('div');p.className='winter-stat';const a=document.createElement('small'),b=document.createElement('b');a.textContent=label;b.textContent=value;p.append(a,b);box.append(p);};
  for(const n of [6,12,24,48,72]){const total=winterTotal(ctx,n);add(n+'h model snowfall',total==null?'Unavailable':total.toFixed(1)+' in');}
  const minmax=(k,fn)=>{const a=rows.map(x=>v(k,x.i));return rows.length===24&&a.every(Number.isFinite)?fn(...a):null;};
  const vis=minmax('visibility',Math.min),gust=minmax('wind_gusts_10m',Math.max);
